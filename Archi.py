@@ -48,7 +48,7 @@ of the networks and at 64×64 resolution in the upsampling
 part of the generator.
 
 
-[2]  https://arxiv.org/pdf/1809.11096.pdf
+[2]  https://arxiv.org/pdf/1809.11096.pdf  Page19 pour les Resblock down/up
 [14] https://arxiv.org/pdf/1703.06868.pdf
 [15] https://arxiv.org/pdf/1502.03167.pdf
 [19] https://arxiv.org/pdf/1603.08155.pdf
@@ -69,6 +69,11 @@ class ResidualBlock(nn.Module):
                                stride=stride, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.downsample = downsample
+        # TODO
+        # TODO
+        # TODO CHANGER LES CONV EN RESBLOCK COMME LIGNE 51 !
+        # TODO
+        # TODO
 
     def forward(self, x):
         residual = x
