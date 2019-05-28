@@ -1,4 +1,5 @@
 from face_alignment import FaceAlignment, LandmarksType
+from torch.utils.data import DataLoader, Dataset
 
 
 def get_landmarks(image):
@@ -13,9 +14,9 @@ def get_landmarks_folder(path_folder):
     return fa.get_landmarks_from_directory(path_folder)
 
 
-class framLoader(Dataset):
+class frameLoader(Dataset):
     def __init__(self, root_dir):
-        super(framLoader, self).__init__()
+        super(frameLoader, self).__init__()
         self.root_dir = root_dir
         self.persons = glob.iglob(f"{self.root_dir}/*")
         self.folder_2_pic = [root

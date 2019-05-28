@@ -1,0 +1,4 @@
+torch==1.0.1
+torchvision==0.2.1
+face-alignment==1.0.0
+numpy==1.15.4
