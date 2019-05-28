@@ -2,7 +2,7 @@ import torch
 from matplotlib import pyplot as plt
 
 from Archi import Discriminator, Embedder, Generator
-from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR, ROOT_IMAGE
+from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR, ROOT_IMAGE,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR)
 
 
@@ -36,8 +36,12 @@ class Checkpoints:
         self.losses_follow = [self.loss_follow, self.lossDisc_follow,
                               self.lossEmbGen_follow]
 
-    def visualize(self, ldm_gen, synth_im, gt_im, loss, lossEmb, lossDisc,
-                  save_fig=False, name='plop'):
+    def visualize(self, ldm_gen, synth_im, gt_im, save_fig=False, name='plop'):
+        "-----------------------"
+        # TODO Faire une vraie accuracy
+        accuracy = 0.5
+        # TODO
+        "------------------------"
         fig, axes = plt.subplots(2, 3)  # , figsize=(15, 10))
         axes[0, 0].imshow(ldm_gen.permute(1, 2, 0).cpu().detach().numpy())
         axes[0, 0].axis("off")
@@ -51,17 +55,15 @@ class Checkpoints:
         axes[0, 2].axis("off")
         axes[0, 2].set_title('Ground truth')
 
-        axes[1, 0].plot(loss)
-        axes[1, 0].axis("off")
-        axes[1, 0].set_title('Landmarks')
+        axes[1, 0].plot(self.loss_follow, label='Total loss')
+        axes[1, 0].set_title('Total loss')
 
-        axes[0, 1].imshow(synth_im.permute(1, 2, 0).cpu().detach().numpy())
-        axes[0, 1].axis("off")
-        axes[0, 1].set_title('Synthesized image')
+        axes[1, 1].plot(self.lossEmb, label='Emb loss')
+        axes[1, 1].plot(self.lossDisc, label='Disc loss')
+        axes[1, 1].set_title('Emb and disc losses')
 
-        axes[0, 2].imshow(gt_im.permute(1, 2, 0).cpu().detach().numpy())
-        axes[0, 2].axis("off")
-        axes[0, 2].set_title('Ground truth')
+        axes[1, 2].plot(accuracy)
+        axes[1, 2].set_title('Accuracy')
 
         if save_fig:
             fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
