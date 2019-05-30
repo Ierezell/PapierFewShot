@@ -2,3 +2,6 @@ vox2*
 .vscode
 dataset
 weights
+dataset/*
+weights/*
+weights/vgg_face.pth
