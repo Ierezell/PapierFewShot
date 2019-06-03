@@ -71,19 +71,12 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x):
         residual = x
-        print("res  ", residual.size())
         residual = self.adaDimVonc(residual)
-        print("res  ", residual.size())
         out = self.conv1(x)
-        print("conv1  ", out.size())
         out = self.bn1(out)
-        print("bn1  ", out.size())
         out = self.relu(out)
-        print("relu  ", out.size())
         out = self.conv2(out)
-        print("conv2  ", out.size())
         out = self.bn2(out)
-        print("bn2  ", out.size())
         if self.downsample:
             residual = self.downsample(x)
         out += residual
@@ -101,10 +94,9 @@ class Embedder(nn.Module):
 
     def forward(self, x):
         out = self.residual1(x)
-        # out = self.residual2(out)
-        # out = self.residual3(out)
-        # out = self.residual4(out)
-        # out = self.residual5(out)
+        out = self.residual2(out)
+        out = self.residual3(out)
+        out = self.residual4(out)
         print(out.size())
         return out
 
