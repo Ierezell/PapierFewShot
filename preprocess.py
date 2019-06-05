@@ -54,15 +54,15 @@ class frameLoader(Dataset):
                           for i, name in enumerate(self.ids)}
 
     def __getitem__(self, index):
-        # mp4File = np.random.choice(self.mp4files)
         mp4File = self.mp4files[index]
+        itemId = self.id_to_int[mp4File.split('/')[-3]]
         # print(mp4File)
         video = cv2.VideoCapture(mp4File)
         total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         frameIndex = np.random.randint(0, total_frame_nb)
         video.set(cv2.CAP_PROP_POS_FRAMES, frameIndex)
         gt_im = video.read()[1]
-        landmark_image = np.zeros(gt_im.shape, np.int32)
+        landmark_image = np.zeros(gt_im.shape, np.float32)
         landmarks = self.face_landmarks.get_landmarks(gt_im)[0]
         # Machoire
         cv2.polylines(landmark_image, [np.int32(landmarks[0:17])],
@@ -92,7 +92,7 @@ class frameLoader(Dataset):
         cv2.polylines(landmark_image, [np.int32(landmarks[60:68])],
                       isClosed=True, color=(255, 255, 0))
 
-        gt_im_landmarks_tensor = transforms.ToTensor()(landmark_image)
+        gt_landmarks = transforms.ToTensor()(landmark_image)
         gt_im_tensor = transforms.ToTensor()(gt_im)
         # print("gt_done")
         indexOk = False
@@ -143,7 +143,7 @@ class frameLoader(Dataset):
             context_tensors.append(transforms.ToTensor()(ctxt_ldmk_img))
         # print("context done")
         context_tensors = torch.cat(context_tensors)
-        return gt_im_tensor, gt_im_landmarks_tensor, context_tensors
+        return gt_im_tensor, gt_landmarks, context_tensors, itemId
 
     def __len__(self):
         return len(self.mp4files)
@@ -157,7 +157,7 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=8):
     # train_datas, valid_datas = random_split(datas, (size_train, size_valid))
     train_loader = DataLoader(datas, batch_size=BATCH_SIZE,
                               shuffle=True, num_workers=8)
-    return train_loader
+    return train_loader, len(datas.ids)
 
 
 def view_batch():
@@ -167,7 +167,7 @@ def view_batch():
     # size_valid = len(datas) - int(0.8 * len(datas))
     # train_datas, valid_datas = random_split(datas, (size_train, size_valid))
     train_loader = DataLoader(datas, batch_size=BATCH_SIZE,
-                              shuffle=True, num_workers=4)
+                              shuffle=True, num_workers=8)
     real_batch = next(train_loader)
     batch_view = torch.stack(real_batch[0], dim=1).view(-1, 3, 224, 224)
     # %matplotlib inline

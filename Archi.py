@@ -1,6 +1,6 @@
 from torch import nn
-
-
+import torch
+from settings import LATENT_SIZE
 """
 
 https://cs.stanford.edu/people/jcjohns/papers/fast-style/fast-style-supp.pdf
@@ -53,226 +53,294 @@ part of the generator.
 [33] https://arxiv.org/pdf/1802.05957.pdf
 [36] https://arxiv.org/pdf/1607.08022.pdf
 
+
+TODO W est un embedding, le disciminateur prédit un vecteur que l'on fait
+ensuite produit scalaire avec l'embedding de la video i.
+TODO mettre l'attenttion
+TODO mettre les resblock au lieu des convs
+
 """
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+    def __init__(self, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                               stride=stride, padding=1, bias=False)
-        self.adaDimVonc = nn.Conv2d(in_channels, out_channels, kernel_size=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.adaDimVonc = nn.utils.spectral_norm(nn.Conv2d(in_channels,
+                                                           out_channels,
+                                                           kernel_size=1)
+                                                 )
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3,
-                               stride=stride, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.downsample = downsample
+        self.conv1 = nn.utils.spectral_norm(nn.Conv2d(in_channels,
+                                                      out_channels,
+                                                      kernel_size=3, padding=1,
+                                                      bias=False)
+                                            )
+        self.in1 = nn.InstanceNorm2d(out_channels, affine=True)
+        self.conv2 = nn.utils.spectral_norm(nn.Conv2d(out_channels,
+                                                      out_channels,
+                                                      kernel_size=3, padding=1,
+                                                      bias=False)
+                                            )
+        self.in2 = nn.InstanceNorm2d(out_channels, affine=True)
 
     def forward(self, x):
         residual = x
         residual = self.adaDimVonc(residual)
         out = self.conv1(x)
-        out = self.bn1(out)
+        out = self.in1(out)
         out = self.relu(out)
         out = self.conv2(out)
-        out = self.bn2(out)
-        if self.downsample:
-            residual = self.downsample(x)
+        out = self.in2(out)
         out += residual
         out = self.relu(out)
         return out
 
 
+class ResidualBlockDown(nn.Module):
+    def __init__(self, in_channels, out_channels, norm=True):
+        super(ResidualBlockDown, self).__init__()
+        self.norm = norm
+        self.conv1 = nn.utils.spectral_norm(nn.Conv2d(in_channels,
+                                                      out_channels,
+                                                      kernel_size=3, padding=1,
+                                                      bias=False))
+        self.conv2 = nn.utils.spectral_norm(nn.Conv2d(out_channels,
+                                                      out_channels,
+                                                      kernel_size=3, padding=1,
+                                                      bias=False))
+        self.adaDim = nn.utils.spectral_norm(nn.Conv2d(in_channels,
+                                                       out_channels,
+                                                       kernel_size=1,
+                                                       bias=False))
+        self.relu = nn.ReLU(inplace=True)
+        self.avgPool = nn.AvgPool2d(kernel_size=3)
+        self.in1 = nn.InstanceNorm2d(out_channels, affine=True)
+        self.in2 = nn.InstanceNorm2d(out_channels, affine=True)
+
+    def forward(self, x):
+        residual = x
+        residual = self.avgPool(self.adaDim(residual))
+        out = self.conv1(x)
+        if self.norm:
+            out = self.in1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        if self.norm:
+            out = self.in2(out)
+        out = self.relu(out)
+        out = self.avgPool(out)
+        out += residual
+        # out = self.relu(out)
+        return out
+
+
+class ResidualBlockUp(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResidualBlockUp, self).__init__()
+        self.in1 = nn.InstanceNorm2d(in_channels, affine=True)
+        self.in2 = nn.InstanceNorm2d(out_channels, affine=True)
+        self.conv1 = nn.utils.spectral_norm(nn.Conv2d(in_channels*2,
+                                                      out_channels,
+                                                      kernel_size=3,
+                                                      bias=False))
+        self.adaDim = nn.utils.spectral_norm(nn.Conv2d(in_channels*2,
+                                                       out_channels,
+                                                       kernel_size=1,
+                                                       bias=False))
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.utils.spectral_norm(nn.Conv2d(out_channels,
+                                                      out_channels,
+                                                      kernel_size=3,
+                                                      bias=False))
+        self.upsampleConvX = nn.utils.spectral_norm(
+            nn.ConvTranspose2d(in_channels, out_channels,
+                               kernel_size=2, padding=0, stride=2))
+
+        self.upsampleConvRes = nn.utils.spectral_norm(
+            nn.ConvTranspose2d(in_channels, out_channels,
+                               kernel_size=2, padding=0, stride=2))
+        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
+        # 'nearest', 'linear', 'bilinear', 'bicubic' and 'trilinear'
+
+    def forward(self, x):
+        residual = x
+        residual = self.upsampleConvX(self.adaDim(residual))
+        out = self.relu(self.in1(x))
+        out = self.upsampleConvRes(out)
+        out = self.conv1(out)
+        out = self.relu(self.in2(x))
+        out = self.conv2(out)
+        out += residual
+        # out = self.relu(out)
+        return out
+
+# ##############
+#   Attention  #
+# ##############
+
+
+class Attention(nn.Module):
+    def __init__(self, in_channels):
+        super(Attention, self).__init__()
+        self.convF = nn.utils.spectral_norm(nn.Conv2d(in_channels, in_channels,
+                                                      kernel_size=1,
+                                                      padding=0, stride=1,
+                                                      bias=False)
+                                            )
+        self.convG = nn.utils.spectral_norm(nn.Conv2d(in_channels, in_channels,
+                                                      kernel_size=1,
+                                                      padding=0, stride=1,
+                                                      bias=False)
+                                            )
+        self.convH = nn.utils.spectral_norm(nn.Conv2d(in_channels, in_channels,
+                                                      kernel_size=1,
+                                                      padding=0, stride=1,
+                                                      bias=False)
+                                            )
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        f = self.convF(x)
+        g = self.convG(x)
+        h = self.convH(x)
+
+        attn_map = self.softmax(torch.bmm(f, g))
+        attn = torch.bmm(h, attn_map)
+        return x + attn
+
+
+# ###############
+#    Embedder   #
+# ###############
+
+
 class Embedder(nn.Module):
     def __init__(self):
         super(Embedder, self).__init__()
-        self.residual1 = ResidualBlock(48, 64)
-        self.residual2 = ResidualBlock(64, 128)
-        self.residual3 = ResidualBlock(128, 256)
-        self.residual4 = ResidualBlock(256, 512)
+        self.residual1 = ResidualBlockDown(48, 64)
+        self.residual2 = ResidualBlockDown(64, 128)
+        self.residual3 = ResidualBlockDown(128, 256)
+        self.residual4 = ResidualBlockDown(256, 512)
+        self.residual5 = ResidualBlockDown(512, 512)
 
     def forward(self, x):
         out = self.residual1(x)
         out = self.residual2(out)
         out = self.residual3(out)
         out = self.residual4(out)
-        print(out.size())
+        out = self.residual5(out)
+        out = out.squeeze()
         return out
+
+# ################
+#    Generator   #
+# ################
 
 
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
-        self.conv1_32_9_1 = nn.Conv2d(3, 32, kernel_size=9, stride=1,
-                                      padding=1, bias=False)
-
-        self.conv2_64_3_2 = nn.Conv2d(32, 64, kernel_size=3, stride=2,
-                                      padding=1, bias=False)
-
-        self.conv3_128_3_2 = nn.Conv2d(64, 128, kernel_size=3, stride=2,
-                                       padding=1, bias=False)
-
+        # Down
+        self.conv1_32_9_1 = nn.utils.spectral_norm(nn.Conv2d(3, 32,
+                                                             kernel_size=9,
+                                                             stride=1,
+                                                             padding=1,
+                                                             bias=False)
+                                                   )
+        self.Norm1 = nn.InstanceNorm2d(32, affine=True)
+        self.conv2_64_3_2 = nn.utils.spectral_norm(nn.Conv2d(32, 64,
+                                                             kernel_size=3,
+                                                             stride=2,
+                                                             padding=1,
+                                                             bias=False)
+                                                   )
+        self.Norm2 = nn.InstanceNorm2d(64, affine=True)
+        self.conv3_128_3_2 = nn.utils.spectral_norm(nn.Conv2d(64, 128,
+                                                              kernel_size=3,
+                                                              stride=2,
+                                                              padding=1,
+                                                              bias=False)
+                                                    )
+        self.Norm3 = nn.InstanceNorm2d(128, affine=True)
+        # Constant
         self.ResBlock_128 = ResidualBlock(128, 128)
+        self.NormRes = nn.InstanceNorm2d(128, affine=True)
+        # Up
+        self.deconv1_64_3_2 = nn.utils.spectral_norm(
+            nn.ConvTranspose2d(128, 64,
+                               kernel_size=3, stride=2, padding=1)
+        )
+        self.Norm4 = nn.InstanceNorm2d(64, affine=True)
 
-        self.deconv1_64_3_2 = nn.ConvTranspose2d(128, 64, kernel_size=3,
-                                                 stride=2)
-        self.deconv2_32_3_2 = nn.ConvTranspose2d(64, 32, kernel_size=3,
-                                                 stride=2)
-        self.deconv3_3_9_1 = nn.ConvTranspose2d(32, 3, kernel_size=9,
-                                                stride=1)
+        self.deconv2_32_3_2 = nn.utils.spectral_norm(
+            nn.ConvTranspose2d(64, 32,
+                               kernel_size=3, stride=2, padding=1)
+        )
+        self.Norm5 = nn.InstanceNorm2d(32, affine=True)
 
-        self.spatial_batchNorm = None
-        self.relu = None
-        self.tanh = None
+        self.deconv3_3_9_1 = nn.utils.spectral_norm(
+            nn.ConvTranspose2d(32, 3, kernel_size=9, stride=1, padding=0))
+        self.Norm6 = nn.InstanceNorm2d(3, affine=True)
+        # affine dit sic'est entrainable ou pas
+
+        self.relu = nn.ReLU()
+        self.tanh = nn.Tanh()
 
     def forward(self, img):
-        # TODO
-        # TODO
         # TODO CHANGER LES CONV EN RESBLOCK COMME PAPIER LIGNE 51 !
-        # TODO
-        # TODO
+        x = self.relu(self.Norm1(self.conv1_32_9_1(img)))
+        x = self.relu(self.Norm2(self.conv2_64_3_2(x)))
+        x = self.relu(self.Norm3(self.conv3_128_3_2(x)))
+        x = self.ResBlock_128(x)
+        x = self.ResBlock_128(x)
+        x = self.ResBlock_128(x)
+        x = self.ResBlock_128(x)
+        x = self.ResBlock_128(x)
+        # self.Norm4.weight = norm_weights[0:128]
+        # self.Norm4.bias = norm_weights[128:256]
+        x = self.relu(self.Norm4(self.deconv1_64_3_2(x)))
+        # self.Norm5.weight = norm_weights[0:32]
+        # self.Norm5.weight = norm_weights[0:32]
+        x = self.relu(self.Norm5(self.deconv2_32_3_2(x)))
+        # self.Norm6.weight = norm_weights[0:32]
+        # self.Norm6.weight = norm_weights[0:32]
+        x = self.relu(self.Norm6(self.deconv3_3_9_1(x)))
+        return x
 
-        x = self.relu(self.spatial_batchNorm(self.conv1_32_9_9_1(img)))
-        x = self.relu(self.spatial_batchNorm(self.conv1_64_3_3_2(x)))
-        x = self.relu(self.spatial_batchNorm(self.conv1_128_3_3_2(x)))
-        x = self.ResBlock_128(x)
-        x = self.ResBlock_128(x)
-        x = self.ResBlock_128(x)
-        x = self.ResBlock_128(x)
-        x = self.ResBlock_128(x)
-        x = self.relu(self.spatial_batchNorm(self.deconv1_64_3_3_2(x)))
-        x = self.relu(self.spatial_batchNorm(self.conv1_32_3_3_2(x)))
-        x = self.relu(self.spatial_batchNorm(self.conv1_3_9_9_1(x)))
-        return None
+# ######################
+#     Discriminator    #
+# ######################
 
 
 class Discriminator(nn.Module):
-    def __init__(self, ):
+    def __init__(self, num_persons, fine_tunning=False):
         super(Discriminator, self).__init__()
+        self.residual1 = ResidualBlockDown(6, 64, norm=False)
+        self.residual2 = ResidualBlockDown(64, 128, norm=False)
+        self.residual3 = ResidualBlockDown(128, 256, norm=False)
+        self.residual4 = ResidualBlockDown(256, 512,  norm=False)
+        self.residual5 = ResidualBlockDown(512, 512,  norm=False)
+        self.embeddings = nn.Embedding(num_persons, 512)
+        self.w0 = nn.Parameter(torch.rand(LATENT_SIZE))
+        self.b = nn.Parameter(torch.rand(1))
 
-    def forward(sefl, arg):
-        return None
-
-
-# class Vgg_face(nn.Module):
-
-#     def __init__(self):
-#         super(Vgg_face, self).__init__()
-#         self.meta = {'mean': [129.186279296875,
-#                               104.76238250732422,
-#                               93.59396362304688],
-#                      'std': [1, 1, 1],
-#                      'imageSize': [224, 224, 3]}
-#         self.conv1_1 = nn.Conv2d(3, 64, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu1_1 = nn.ReLU(inplace=True)
-#         self.conv1_2 = nn.Conv2d(64, 64, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu1_2 = nn.ReLU(inplace=True)
-#         self.pool1 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-#                                   dilation=1, ceil_mode=False)
-#         self.conv2_1 = nn.Conv2d(64, 128, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu2_1 = nn.ReLU(inplace=True)
-#         self.conv2_2 = nn.Conv2d(128, 128, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu2_2 = nn.ReLU(inplace=True)
-#         self.pool2 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-#                                   dilation=1, ceil_mode=False)
-#         self.conv3_1 = nn.Conv2d(128, 256, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu3_1 = nn.ReLU(inplace=True)
-#         self.conv3_2 = nn.Conv2d(256, 256, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu3_2 = nn.ReLU(inplace=True)
-#         self.conv3_3 = nn.Conv2d(256, 256, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu3_3 = nn.ReLU(inplace=True)
-#         self.pool3 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-#                                   dilation=1, ceil_mode=False)
-#         self.conv4_1 = nn.Conv2d(256, 512, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu4_1 = nn.ReLU(inplace=True)
-#         self.conv4_2 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu4_2 = nn.ReLU(inplace=True)
-#         self.conv4_3 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu4_3 = nn.ReLU(inplace=True)
-#         self.pool4 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-#                                   dilation=1, ceil_mode=False)
-#         self.conv5_1 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu5_1 = nn.ReLU(inplace=True)
-#         self.conv5_2 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu5_2 = nn.ReLU(inplace=True)
-#         self.conv5_3 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-#                                  padding=(1, 1))
-#         self.relu5_3 = nn.ReLU(inplace=True)
-#         self.pool5 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-#                                   dilation=1, ceil_mode=False)
-#         self.fc6 = nn.Linear(in_features=25088, out_features=4096, bias=True)
-#         self.relu6 = nn.ReLU(inplace=True)
-#         self.dropout6 = nn.Dropout(p=0.5)
-#         self.fc7 = nn.Linear(in_features=4096, out_features=4096, bias=True)
-#         self.relu7 = nn.ReLU(inplace=True)
-#         self.dropout7 = nn.Dropout(p=0.5)
-#         self.fc8 = nn.Linear(in_features=4096, out_features=2622, bias=True)
-
-#     def forward(self, x0):
-#         x1 = self.conv1_1(x0)
-#         x2 = self.relu1_1(x1)
-#         x3 = self.conv1_2(x2)
-#         x4 = self.relu1_2(x3)
-#         x5 = self.pool1(x4)
-#         x6 = self.conv2_1(x5)
-#         x7 = self.relu2_1(x6)
-#         x8 = self.conv2_2(x7)
-#         x9 = self.relu2_2(x8)
-#         x10 = self.pool2(x9)
-#         x11 = self.conv3_1(x10)
-#         x12 = self.relu3_1(x11)
-#         x13 = self.conv3_2(x12)
-#         x14 = self.relu3_2(x13)
-#         x15 = self.conv3_3(x14)
-#         x16 = self.relu3_3(x15)
-#         x17 = self.pool3(x16)
-#         x18 = self.conv4_1(x17)
-#         x19 = self.relu4_1(x18)
-#         x20 = self.conv4_2(x19)
-#         x21 = self.relu4_2(x20)
-#         x22 = self.conv4_3(x21)
-#         x23 = self.relu4_3(x22)
-#         x24 = self.pool4(x23)
-#         x25 = self.conv5_1(x24)
-#         x26 = self.relu5_1(x25)
-#         x27 = self.conv5_2(x26)
-#         x28 = self.relu5_2(x27)
-#         x29 = self.conv5_3(x28)
-#         x30 = self.relu5_3(x29)
-#         x31_preflatten = self.pool5(x30)
-#         x31 = x31_preflatten.view(x31_preflatten.size(0), -1)
-#         x32 = self.fc6(x31)
-#         x33 = self.relu6(x32)
-#         x34 = self.dropout6(x33)
-#         x35 = self.fc7(x34)
-#         x36 = self.relu7(x35)
-#         x37 = self.dropout7(x36)
-#         x38 = self.fc8(x37)
-#         return x38
-
-
-# def vgg_face_dag(weights_path=None, **kwargs):
-#     """
-#     load imported model instance
-
-#     Args:
-#         weights_path (str): If set, loads model weights from the given path
-#     """
-#     model = Vgg_face()
-#     if weights_path:
-#         state_dict = torch.load(weights_path)
-#         model.load_state_dict(state_dict)
-#     return model
+    def forward(self, x, indexes):
+        features_maps = []
+        out = self.residual1(x)
+        features_maps.append(out)
+        out = self.residual2(out)
+        features_maps.append(out)
+        out = self.residual3(out)
+        features_maps.append(out)
+        out = self.residual4(out)
+        features_maps.append(out)
+        out = self.residual5(out).squeeze()
+        features_maps.append(out)
+        w0 = self.w0.repeat(x.size(0)).view(x.size(0), LATENT_SIZE)
+        print("emb", self.embeddings(indexes).size())
+        print("out", out.size())
+        print("w0", w0.size())
+        print("w0+out", (w0+out).size())
+        out = torch.bmm(out+w0, self.embeddings(indexes))
+        out += self.b
+        return out, features_maps
