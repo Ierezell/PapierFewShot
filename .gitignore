@@ -5,3 +5,4 @@ weights
 dataset/*
 weights/*
 weights/vgg_face.pth
+*/weights/vgg_face.pth
