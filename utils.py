@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
@@ -7,6 +8,14 @@ from Archi import Discriminator, Embedder, Generator
 from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
                       ROOT_IMAGE)
+=======
+import torch
+from matplotlib import pyplot as plt
+
+from Archi import Discriminator, Embedder, Generator
+from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR, ROOT_IMAGE
+                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR)
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
 
 
 def load_models(load_previous_state=True):
@@ -39,12 +48,17 @@ class Checkpoints:
         self.losses_follow = [self.loss_follow, self.lossDisc_follow,
                               self.lossEmbGen_follow]
 
+<<<<<<< HEAD
     def visualize(self, ldm_gen, synth_im, gt_im, save_fig=False, name='plop'):
         "-----------------------"
         # TODO Faire une vraie accuracy
         accuracy = 0.5
         # TODO
         "------------------------"
+=======
+    def visualize(self, ldm_gen, synth_im, gt_im, loss, lossEmb, lossDisc,
+                  save_fig=False, name='plop'):
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
         fig, axes = plt.subplots(2, 3)  # , figsize=(15, 10))
         axes[0, 0].imshow(ldm_gen.permute(1, 2, 0).cpu().detach().numpy())
         axes[0, 0].axis("off")
@@ -58,6 +72,7 @@ class Checkpoints:
         axes[0, 2].axis("off")
         axes[0, 2].set_title('Ground truth')
 
+<<<<<<< HEAD
         axes[1, 0].plot(self.loss_follow, label='Total loss')
         axes[1, 0].set_title('Total loss')
 
@@ -67,6 +82,19 @@ class Checkpoints:
 
         axes[1, 2].plot(accuracy)
         axes[1, 2].set_title('Accuracy')
+=======
+        axes[1, 0].plot(loss)
+        axes[1, 0].axis("off")
+        axes[1, 0].set_title('Landmarks')
+
+        axes[0, 1].imshow(synth_im.permute(1, 2, 0).cpu().detach().numpy())
+        axes[0, 1].axis("off")
+        axes[0, 1].set_title('Synthesized image')
+
+        axes[0, 2].imshow(gt_im.permute(1, 2, 0).cpu().detach().numpy())
+        axes[0, 2].axis("off")
+        axes[0, 2].set_title('Ground truth')
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
 
         if save_fig:
             fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
@@ -83,6 +111,7 @@ class Checkpoints:
             self.best_loss_EmbGen = lossEmbGen
             torch.save(embedder.state_dict(), PATH_WEIGHTS_EMBEDDER)
             torch.save(generator.state_dict(), PATH_WEIGHTS_GENERATOR)
+<<<<<<< HEAD
 
 
 def plot_grad_flow(named_parameters):
@@ -117,3 +146,5 @@ def plot_grad_flow(named_parameters):
                 Line2D([0], [0], color="b", lw=4),
                 Line2D([0], [0], color="k", lw=4)],
                ['max-gradient', 'mean-gradient', 'zero-gradient'])
+=======
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a

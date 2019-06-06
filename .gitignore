@@ -1,8 +1,11 @@
 vox2*
 .vscode
+<<<<<<< HEAD
 dataset
 weights
 dataset/*
 weights/*
 weights/vgg_face.pth
 */weights/vgg_face.pth
+=======
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a

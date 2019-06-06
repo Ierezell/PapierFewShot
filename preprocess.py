@@ -1,5 +1,6 @@
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
+<<<<<<< HEAD
 from settings import ROOT_DATASET, BATCH_SIZE, DEVICE
 import glob
 import torch
@@ -23,6 +24,8 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.dataset import random_split
 from torchvision import models, transforms
 from torch.optim.lr_scheduler import CosineAnnealingLR
+=======
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
 
 
 def get_landmarks(image):
@@ -38,6 +41,7 @@ def get_landmarks_folder(path_folder):
 
 
 class frameLoader(Dataset):
+<<<<<<< HEAD
     def __init__(self, root_dir=ROOT_DATASET, K_shots=8):
         super(frameLoader, self).__init__()
         self.face_landmarks = FaceAlignment(LandmarksType._2D,
@@ -45,6 +49,10 @@ class frameLoader(Dataset):
                                             device=str(DEVICE))
         # device="cuda:0")
         self.K_shots = K_shots
+=======
+    def __init__(self, root_dir):
+        super(frameLoader, self).__init__()
+>>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
         self.root_dir = root_dir
         self.ids = glob.glob(f"{self.root_dir}/*")
         self.contexts = glob.glob(f"{self.root_dir}/*/*")
