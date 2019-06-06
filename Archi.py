@@ -364,7 +364,7 @@ class Discriminator(nn.Module):
         print("W0 : ", w0.size())
         print("out : ", out.size())
         print("out+w0", (out+w0).size())
-        print("embeddinghzeu : ", self.embeddings.size())
+        print("embeddinghzeu : ", self.embeddings(indexes).size())
         out = torch.bmm(out+w0, self.embeddings(indexes))
         print("WAZAAAAAAAAAA : ",out.size())
         out += self.b
