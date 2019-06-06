@@ -100,8 +100,8 @@ class frameLoader(Dataset):
         while not indexOk:
             if contextIndex + self.K_shots > total_frame_nb:
                 contextIndex -= 1
-                print(f"reduce ! frameIndex is {frameIndex} :",
-                      f"contextIndex was {contextIndex} on {total_frame_nb}")
+                # print(f"reduce ! frameIndex is {frameIndex} :",
+                #      f"contextIndex was {contextIndex} on {total_frame_nb}")
             else:
                 indexOk = True
 

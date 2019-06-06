@@ -14,6 +14,10 @@ We sum these losses with the weights equal to
                       T           (i)      (i)
 LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
                      i=1          k         k           1
+
+
+
+Qustion : comment faire avec les scores des batch ? sum ? mean ?
 """
 
 #
@@ -25,13 +29,13 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='mean')
+        self.l1 = nn.L1Loss(reduction='sum')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
         loss = 0
         for ft_gt, ft_synth in zip(features_gt, features_synth):
-            loss += self.L1(ft_gt, ft_synth)
-        return -score_disc_synth+loss
+            loss = self.l1(ft_gt, ft_synth)
+        return -(torch.sum(score_disc_synth)/score_disc_synth.size(0))+loss
 
 
 # #########
@@ -43,7 +47,7 @@ class matchLoss(nn.Module):
         self.l1 = nn.L1Loss(reduction='sum')
 
     def forward(self, ei, Wi):
-        return self.l1(ei, Wi)
+        return self.l1(ei.unsqueeze(1), Wi)
 
 
 # #########
@@ -54,7 +58,11 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        return torch.max(0, 1+score_synth) + torch.max(0, 1-score_gt)
+        loss = torch.max(torch.Tensor([0]),
+                         torch.Tensor([1])+torch.sum(score_synth)) +\
+            torch.max(torch.Tensor([0]),
+                      torch.Tensor([1])-torch.sum(score_gt))
+        return loss
 
 
 # #########
@@ -65,12 +73,12 @@ class contentLoss(nn.Module):
         super(contentLoss, self).__init__()
         self.vgg_layers = vgg19(pretrained=True).features
 
-        self.vgg_Face = _Vgg_face()
-        self.vgg_Face.load_state_dict(
-            torch.load(f'{ROOT_WEIGHTS}vgg_face.pth')
-        )
+        # self.vgg_Face = _Vgg_face()
+        # self.vgg_Face.load_state_dict(
+        #     torch.load(f'{ROOT_WEIGHTS}vgg_face.pth')
+        # )
 
-        self.vgg_layers_Face = self.vgg_Face.features
+        # self.vgg_layers_Face = self.vgg_Face.features
         self.layer_name_mapping_vgg19 = {
             '1': "relu1",
             '6': "relu2",
@@ -78,22 +86,22 @@ class contentLoss(nn.Module):
             '20': "relu4",
             '29': "relu5",
         }
-        self.layer_name_mapping_vggFace = {
-            '1': "relu1",
-            '6': "relu2",
-            '11': "relu3",
-            '18': "relu4",
-            '25': "relu5",
-        }
+        # self.layer_name_mapping_vggFace = {
+        #     '1': "relu1",
+        #     '6': "relu2",
+        #     '11': "relu3",
+        #     '18': "relu4",
+        #     '25': "relu5",
+        # }
         self.l1 = nn.L1Loss()
 
     def forward(self, gt, synth):
         # output_gt = {}
         # output_synth = {}
-        gtFace = gt.copy()
-        synthFace = synth.copy()
+        # gtFace = gt.copy()
+        # synthFace = synth.copy()
         lossVgg19 = 0
-        lossVggFace = 0
+        # lossVggFace = 0
         for name, module in self.vgg_layers._modules.items():
             gt = module(gt)
             synth = module(synth)
@@ -105,12 +113,12 @@ class contentLoss(nn.Module):
                 # output_synth[self.layer_name_mapping[name]] = synth
                 lossVgg19 += self.l1(gt, synth)
 
-        for name, module in self.vgg_layers_Face._modules.items():
-            gtFace = module(gtFace)
-            synthFace = module(synthFace)
-            if name in self.layer_name_mapping_vgg19:
-                lossVggFace += self.l1(gtFace, synth)
-        return 1e-2*lossVgg19 + 2e-3*lossVggFace
+        # for name, module in self.vgg_layers_Face._modules.items():
+        #     gtFace = module(gtFace)
+        #     synthFace = module(synthFace)
+        #     if name in self.layer_name_mapping_vgg19:
+        #         lossVggFace += self.l1(gtFace, synth)
+        return 1e-2*lossVgg19  # + 2e-3*lossVggFace
 
 
 class _Vgg_face(nn.Module):
