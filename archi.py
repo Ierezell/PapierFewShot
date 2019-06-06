@@ -65,10 +65,10 @@ TODO mettre les resblock au lieu des convs
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
-        self.adaDimVonc = nn.utils.spectral_norm(nn.Conv2d(in_channels,
-                                                           out_channels,
-                                                           kernel_size=1)
-                                                 )
+        self.adaDimRes = nn.utils.spectral_norm(nn.Conv2d(in_channels,
+                                                          out_channels,
+                                                          kernel_size=1)
+                                                )
         self.relu = nn.ReLU(inplace=True)
         self.conv1 = nn.utils.spectral_norm(nn.Conv2d(in_channels,
                                                       out_channels,
@@ -85,11 +85,13 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x):
         residual = x
-        residual = self.adaDimVonc(residual)
+        residual = self.adaDimRes(residual)
         out = self.conv1(x)
+        # print("Size out1 res : ", out.size())
         out = self.in1(out)
         out = self.relu(out)
         out = self.conv2(out)
+        # print("Size out2 res : ", out.size())
         out = self.in2(out)
         out += residual
         out = self.relu(out)
@@ -222,6 +224,8 @@ class Embedder(nn.Module):
         self.residual3 = ResidualBlockDown(128, 256)
         self.residual4 = ResidualBlockDown(256, 512)
         self.residual5 = ResidualBlockDown(512, 512)
+        self.FcWeights = nn.utils.spectral_norm(nn.Linear(512, 1379))
+        self.FcBias = nn.utils.spectral_norm(nn.Linear(512, 1379))
 
     def forward(self, x):
         # 2, 48, 224, 224
@@ -236,7 +240,8 @@ class Embedder(nn.Module):
         out = self.residual5(out)
         # 2, 512, 1, 1
         out = out.squeeze()
-        return out
+        return out, {"weights": self.FcWeights(out),
+                     "bias": self.FcBias(out)}
 
 # ################
 #    Generator   #
@@ -247,41 +252,28 @@ class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
         # Down
-        self.conv1_32_9_1 = nn.utils.spectral_norm(nn.Conv2d(3, 32,
-                                                             kernel_size=9,
-                                                             stride=1,
-                                                             padding=1,
-                                                             bias=False)
-                                                   )
+        self.conv1_32_9_1 = nn.utils.spectral_norm(
+            nn.Conv2d(3, 32, kernel_size=9, stride=1, padding=1, bias=False))
         self.Norm1 = nn.InstanceNorm2d(32, affine=True)
-        self.conv2_64_3_2 = nn.utils.spectral_norm(nn.Conv2d(32, 64,
-                                                             kernel_size=3,
-                                                             stride=2,
-                                                             padding=1,
-                                                             bias=False)
-                                                   )
+        self.conv2_64_3_2 = nn.utils.spectral_norm(
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False))
         self.Norm2 = nn.InstanceNorm2d(64, affine=True)
-        self.conv3_128_3_2 = nn.utils.spectral_norm(nn.Conv2d(64, 128,
-                                                              kernel_size=3,
-                                                              stride=2,
-                                                              padding=1,
-                                                              bias=False)
-                                                    )
+        self.conv3_128_3_2 = nn.utils.spectral_norm(
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False))
         self.Norm3 = nn.InstanceNorm2d(128, affine=True)
         # Constant
-        self.ResBlock_128 = ResidualBlock(128, 128)
-        self.NormRes = nn.InstanceNorm2d(128, affine=True)
+        self.ResBlock_128_1 = ResidualBlock(128, 128)
+        self.ResBlock_128_2 = ResidualBlock(128, 128)
+        self.ResBlock_128_3 = ResidualBlock(128, 128)
+        self.ResBlock_128_4 = ResidualBlock(128, 128)
+        self.ResBlock_128_5 = ResidualBlock(128, 128)
         # Up
         self.deconv1_64_3_2 = nn.utils.spectral_norm(
-            nn.ConvTranspose2d(128, 64,
-                               kernel_size=3, stride=2, padding=1)
-        )
+            nn.ConvTranspose2d(128, 64,  kernel_size=3, stride=2, padding=1))
         self.Norm4 = nn.InstanceNorm2d(64, affine=True)
 
         self.deconv2_32_3_2 = nn.utils.spectral_norm(
-            nn.ConvTranspose2d(64, 32,
-                               kernel_size=3, stride=2, padding=1)
-        )
+            nn.ConvTranspose2d(64, 32,  kernel_size=3, stride=2, padding=1))
         self.Norm5 = nn.InstanceNorm2d(32, affine=True)
 
         self.deconv3_3_9_1 = nn.utils.spectral_norm(
@@ -292,37 +284,92 @@ class Generator(nn.Module):
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
 
-    def forward(self, img):
+    def forward(self, img, paramNorm):
         # TODO CHANGER LES CONV EN RESBLOCK COMME PAPIER LIGNE 51 !
+        # print(paramNorm["weights"].narrow(1, 0*128, 128).type())
+        # print(paramNorm["weights"].narrow(1, 0*128, 128).size())
+        # self.ResBlock_128_1.in1.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 0*128, 128))
+        # self.ResBlock_128_1.in1.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 0*128, 128))
+        # self.ResBlock_128_1.in2.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 1*128, 128))
+        # self.ResBlock_128_1.in2.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 1*128, 128))
+
+        # self.ResBlock_128_2.in1.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 2*128, 128))
+        # self.ResBlock_128_2.in1.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 2*128, 128))
+        # self.ResBlock_128_2.in2.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 3*128, 128))
+        # self.ResBlock_128_2.in2.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 3*128, 128))
+
+        # self.ResBlock_128_3.in1.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 4*128, 128))
+        # self.ResBlock_128_3.in1.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 4*128, 128))
+        # self.ResBlock_128_3.in2.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 5*128, 128))
+        # self.ResBlock_128_3.in2.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 5*128, 128))
+
+        # self.ResBlock_128_4.in1.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 6*128, 128))
+        # self.ResBlock_128_4.in1.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 6*128, 128))
+        # self.ResBlock_128_4.in2.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 7*128, 128))
+        # self.ResBlock_128_4.in2.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 7*128, 128))
+
+        # self.ResBlock_128_5.in1.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 8*128, 128))
+        # self.ResBlock_128_5.in1.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 8*128, 128))
+        # self.ResBlock_128_5.in2.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 9*128, 128))
+        # self.ResBlock_128_5.in2.weight = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 9*128, 128))
+
+        # self.Norm4.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 1280, 64))
+        # self.Norm4.bias = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 1280, 64))
+        # self.Norm5.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 1280+64, 32))
+        # self.Norm5.bias = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 1280+64, 32))
+        # self.Norm6.weight = nn.Parameter(
+        #     paramNorm["weights"].narrow(1, 1280+64+32, 3))
+        # self.Norm6.bias = nn.Parameter(
+        #     paramNorm["bias"].narrow(1, 1280+64+32, 3))
+
+        # print("OKAYYYYYYYYYYYYYYY")
         # 2, 3, 224, 224
-        x = self.relu(self.Norm1(self.conv1_32_9_1(img)))
-        # 2, 32, 218, 218
-        x = self.relu(self.Norm2(self.conv2_64_3_2(x)))
-        # 2, 64, 109, 109
-        x = self.relu(self.Norm3(self.conv3_128_3_2(x)))
-        # 2, 128, 55, 55
-        x = self.ResBlock_128(x)
-        # 2, 128, 55, 55
-        x = self.ResBlock_128(x)
-        # 2, 128, 55, 55
-        x = self.ResBlock_128(x)
-        # 2, 128, 55, 55
-        x = self.ResBlock_128(x)
-        # 2, 128, 55, 55
-        x = self.ResBlock_128(x)
-        # 2, 128, 55, 55
-        # self.Norm4.weight = norm_weights[0:128]
-        # self.Norm4.bias = norm_weights[128:256]
-        x = self.relu(self.Norm4(self.deconv1_64_3_2(x)))
-        # 2, 64, 109, 109
-        # self.Norm5.weight = norm_weights[0:32]
-        # self.Norm5.weight = norm_weights[0:32]
-        x = self.relu(self.Norm5(self.deconv2_32_3_2(x)))
-        # 2, 32, 217, 217
-        # self.Norm6.weight = norm_weights[0:32]
-        # self.Norm6.weight = norm_weights[0:32]
-        x = self.relu(self.Norm6(self.deconv3_3_9_1(x)))
-        # 2, 3, 225, 225
+        x = self.relu(self.Norm1(self.conv1_32_9_1(img)))  # 2, 32, 218, 218
+        # print("1")
+        x = self.relu(self.Norm2(self.conv2_64_3_2(x)))  # 2, 64, 109, 109
+        # print("2")
+        x = self.relu(self.Norm3(self.conv3_128_3_2(x)))  # 2, 128, 55, 55
+        # print("3")
+        x = self.ResBlock_128_1(x)  # 2, 128, 55, 55
+        # print("4")
+        x = self.ResBlock_128_2(x)  # 2, 128, 55, 55
+        # print("5")
+        x = self.ResBlock_128_3(x)  # 2, 128, 55, 55
+        # print("6")
+        x = self.ResBlock_128_4(x)  # 2, 128, 55, 55
+        # print("7")
+        x = self.ResBlock_128_5(x)  # 2, 128, 55, 55
+        # print("8")
+        x = self.relu(self.Norm4(self.deconv1_64_3_2(x)))  # 2, 64, 109, 109
+        # print("9")
+        x = self.relu(self.Norm5(self.deconv2_32_3_2(x)))  # 2, 32, 217, 217
+        # print("10")
+        x = self.relu(self.Norm6(self.deconv3_3_9_1(x)))  # 2, 3, 225, 225
+        # print("11")
         return x
 
 # ######################
@@ -338,36 +385,38 @@ class Discriminator(nn.Module):
         self.residual3 = ResidualBlockDown(128, 256, norm=False)
         self.residual4 = ResidualBlockDown(256, 512,  norm=False)
         self.residual5 = ResidualBlockDown(512, 512,  norm=False)
+        self.attention = Attention(64)
         self.embeddings = nn.Embedding(num_persons, 512)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE))
         self.b = nn.Parameter(torch.rand(1))
 
     def forward(self, x, indexes):
         features_maps = []
-        2, 6, 224, 224
-        out = self.residual1(x)
+        # 2, 6, 224, 224
+        out = self.residual1(x)  # 2, 64, 74, 74
         features_maps.append(out)
-        2, 64, 74, 74
-        out = self.residual2(out)
+        # print("A")
+        out = self.residual2(out)  # 2, 128, 24, 24
         features_maps.append(out)
-        2, 64, 74, 74
-        out = self.residual3(out)
+        # print("B")
+        out = self.residual3(out)  # 2, 256, 8, 8
         features_maps.append(out)
-        2, 128, 24, 24
-        out = self.residual4(out)
+        # print("C")
+        out = self.residual4(out)  # 2, 512, 2, 2
         features_maps.append(out)
-        2, 256, 8, 8
-        out = self.residual5(out).squeeze()
+        # print("D")
+        out = self.residual5(out).squeeze()  # 2, 512, (1, 1)
         features_maps.append(out)
-        2, 512, 2, 2
+        # print("E")
         w0 = self.w0.repeat(x.size(0)).view(x.size(0), LATENT_SIZE)
-        print("W0 : ", w0.size())
-        print("out : ", out.size())
-        print("out+w0", (out+w0).size())
-        print("INDEXES : ",indexes)
-        print("embeddinghzeu : ", self.embeddings(indexes).size())
-        out = torch.bmm(out+w0, self.embeddings(indexes))
-        print("WAZAAAAAAAAAA : ",out.size())
-        out += self.b
-        print(out.size())
+        # print("W0 : ", w0.size())
+        # print("out : ", out.size())
+        # print("out+w0", (out+w0).size())
+        # print("INDEXES : ", indexes)
+        # print("embeddinghzeu : ", self.embeddings(indexes).size())
+        out = torch.bmm(self.embeddings(indexes), (out+w0).unsqueeze(2))
+        # print("WAZAAAAAAAAAA : ", out.size(), out)
+        b = self.b.repeat(x.size(0)).view(x.size(0), 1, 1)
+        out += b
+        # print("Final ! : ",out.size(),out )
         return out, features_maps
