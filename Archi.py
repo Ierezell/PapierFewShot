@@ -224,11 +224,17 @@ class Embedder(nn.Module):
         self.residual5 = ResidualBlockDown(512, 512)
 
     def forward(self, x):
+        # 2, 48, 224, 224
         out = self.residual1(x)
+        # 2, 64, 74, 74
         out = self.residual2(out)
+        # 2, 128, 24, 24
         out = self.residual3(out)
+        # 2, 256, 8, 8
         out = self.residual4(out)
+        # 2, 512, 2, 2
         out = self.residual5(out)
+        # 2, 512, 1, 1
         out = out.squeeze()
         return out
 
@@ -288,23 +294,35 @@ class Generator(nn.Module):
 
     def forward(self, img):
         # TODO CHANGER LES CONV EN RESBLOCK COMME PAPIER LIGNE 51 !
+        # 2, 3, 224, 224
         x = self.relu(self.Norm1(self.conv1_32_9_1(img)))
+        # 2, 32, 218, 218
         x = self.relu(self.Norm2(self.conv2_64_3_2(x)))
+        # 2, 64, 109, 109
         x = self.relu(self.Norm3(self.conv3_128_3_2(x)))
+        # 2, 128, 55, 55
         x = self.ResBlock_128(x)
+        # 2, 128, 55, 55
         x = self.ResBlock_128(x)
+        # 2, 128, 55, 55
         x = self.ResBlock_128(x)
+        # 2, 128, 55, 55
         x = self.ResBlock_128(x)
+        # 2, 128, 55, 55
         x = self.ResBlock_128(x)
+        # 2, 128, 55, 55
         # self.Norm4.weight = norm_weights[0:128]
         # self.Norm4.bias = norm_weights[128:256]
         x = self.relu(self.Norm4(self.deconv1_64_3_2(x)))
+        # 2, 64, 109, 109
         # self.Norm5.weight = norm_weights[0:32]
         # self.Norm5.weight = norm_weights[0:32]
         x = self.relu(self.Norm5(self.deconv2_32_3_2(x)))
+        # 2, 32, 217, 217
         # self.Norm6.weight = norm_weights[0:32]
         # self.Norm6.weight = norm_weights[0:32]
         x = self.relu(self.Norm6(self.deconv3_3_9_1(x)))
+        # 2, 3, 225, 225
         return x
 
 # ######################
@@ -326,21 +344,29 @@ class Discriminator(nn.Module):
 
     def forward(self, x, indexes):
         features_maps = []
+        2, 6, 224, 224
         out = self.residual1(x)
         features_maps.append(out)
+        2, 64, 74, 74
         out = self.residual2(out)
         features_maps.append(out)
+        2, 64, 74, 74
         out = self.residual3(out)
         features_maps.append(out)
+        2, 128, 24, 24
         out = self.residual4(out)
         features_maps.append(out)
+        2, 256, 8, 8
         out = self.residual5(out).squeeze()
         features_maps.append(out)
+        2, 512, 2, 2
         w0 = self.w0.repeat(x.size(0)).view(x.size(0), LATENT_SIZE)
-        print("emb", self.embeddings(indexes).size())
-        print("out", out.size())
-        print("w0", w0.size())
-        print("w0+out", (w0+out).size())
+        print("W0 : ", w0.size())
+        print("out : ", out.size())
+        print("out+w0", (out+w0).size())
+        print("embeddinghzeu : ", self.embeddings.size())
         out = torch.bmm(out+w0, self.embeddings(indexes))
+        print("WAZAAAAAAAAAA : ",out.size())
         out += self.b
+        print(out.size())
         return out, features_maps
