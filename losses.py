@@ -1,7 +1,7 @@
 from torchvision.models.vgg import vgg19
 import torch.nn as nn
 import torch
-from settings import ROOT_WEIGHTS
+from settings import ROOT_WEIGHTS, BATCH_SIZE, LATENT_SIZE
 """
 
 For the calculation of LCNT, we evaluate L1 loss between activations of
@@ -33,8 +33,10 @@ class adverserialLoss(nn.Module):
 
     def forward(self, score_disc_synth, features_gt, features_synth):
         loss = 0
+        # with torch.no_grad():
         for ft_gt, ft_synth in zip(features_gt, features_synth):
-            loss = self.l1(ft_gt, ft_synth)
+            loss += self.l1(ft_gt, ft_synth)
+        # loss /= len(features_synth)
         return -(torch.sum(score_disc_synth)/score_disc_synth.size(0))+loss
 
 
@@ -47,7 +49,10 @@ class matchLoss(nn.Module):
         self.l1 = nn.L1Loss(reduction='sum')
 
     def forward(self, ei, Wi):
-        return self.l1(ei.unsqueeze(1), Wi)
+        # with torch.no_grad():
+        ei = ei.view(BATCH_SIZE, LATENT_SIZE)
+        Wi = Wi.view(BATCH_SIZE, LATENT_SIZE)
+        return self.l1(ei, Wi)/BATCH_SIZE
 
 
 # #########
@@ -58,11 +63,12 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
+        # with torch.no_grad():
         loss = torch.max(torch.Tensor([0]),
                          torch.Tensor([1])+torch.sum(score_synth)) +\
             torch.max(torch.Tensor([0]),
                       torch.Tensor([1])-torch.sum(score_gt))
-        return loss
+        return loss.squeeze()
 
 
 # #########
@@ -71,7 +77,9 @@ class discriminatorLoss(nn.Module):
 class contentLoss(nn.Module):
     def __init__(self):
         super(contentLoss, self).__init__()
-        self.vgg_layers = vgg19(pretrained=True).features
+        self.vgg = vgg19(pretrained=True)
+        self.vgg.eval()
+        self.vgg_layers = self.vgg.features
 
         # self.vgg_Face = _Vgg_face()
         # self.vgg_Face.load_state_dict(
@@ -102,6 +110,7 @@ class contentLoss(nn.Module):
         # synthFace = synth.copy()
         lossVgg19 = 0
         # lossVggFace = 0
+        # with torch.no_grad():
         for name, module in self.vgg_layers._modules.items():
             gt = module(gt)
             synth = module(synth)
@@ -118,7 +127,8 @@ class contentLoss(nn.Module):
         #     synthFace = module(synthFace)
         #     if name in self.layer_name_mapping_vgg19:
         #         lossVggFace += self.l1(gtFace, synth)
-        return 1e-2*lossVgg19  # + 2e-3*lossVggFace
+        # return 1e-2*lossVgg19  # + 2e-3*lossVggFace
+        return lossVgg19  # + 2e-3*lossVggFace
 
 
 class _Vgg_face(nn.Module):

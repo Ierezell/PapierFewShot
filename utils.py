@@ -1,34 +1,28 @@
-<<<<<<< HEAD
+import inspect
+import sys
+
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
-
-from Archi import Discriminator, Embedder, Generator
+from face_alignment import FaceAlignment, LandmarksType
+from archi import Discriminator, Embedder, Generator
 from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
                       ROOT_IMAGE)
-=======
-import torch
-from matplotlib import pyplot as plt
-
-from Archi import Discriminator, Embedder, Generator
-from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR, ROOT_IMAGE
-                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR)
->>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
 
 
-def load_models(load_previous_state=True):
+def load_models(nb_pers, load_previous_state=True):
     embedder = Embedder()
     generator = Generator()
-    discriminator = Discriminator()
+    discriminator = Discriminator(nb_pers)
     if load_previous_state:
-        embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER),
-                                 map_location=torch.device(DEVICE))
-        generator.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR),
-                                  map_location=torch.device(DEVICE))
-        discriminator.load_state_dict(torch.load(PATH_WEIGHTS_DISCRIMINATOR),
-                                      map_location=torch.device(DEVICE))
+        embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
+        generator.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR))
+        discriminator.load_state_dict(torch.load(PATH_WEIGHTS_DISCRIMINATOR))
+    # embedder = embedder.to(DEVICE)
+    # generator = generator.to(DEVICE)
+    # discriminator = discriminator.to(DEVICE)
     return embedder, generator, discriminator
 
 
@@ -42,79 +36,106 @@ class Checkpoints:
         self.best_loss_Disc = 1e10
 
     def addCheckpoint(self, lossEmbGen, lossDisc):
+        lossEmbGen = lossEmbGen.detach()
+        lossDisc = lossDisc.detach()
         self.loss_follow.append(lossEmbGen+lossDisc)
         self.lossEmbGen_follow.append(lossEmbGen)
         self.lossDisc_follow.append(lossDisc)
         self.losses_follow = [self.loss_follow, self.lossDisc_follow,
                               self.lossEmbGen_follow]
 
-<<<<<<< HEAD
-    def visualize(self, ldm_gen, synth_im, gt_im, save_fig=False, name='plop'):
+    def visualize(self, fig, axes,
+                  gt_landmarks, synth_im, gt_im, *models,
+                  save_fig=False, name='plop'):
         "-----------------------"
         # TODO Faire une vraie accuracy
         accuracy = 0.5
-        # TODO
         "------------------------"
-=======
-    def visualize(self, ldm_gen, synth_im, gt_im, loss, lossEmb, lossDisc,
-                  save_fig=False, name='plop'):
->>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
-        fig, axes = plt.subplots(2, 3)  # , figsize=(15, 10))
-        axes[0, 0].imshow(ldm_gen.permute(1, 2, 0).cpu().detach().numpy())
+        # plt.figure('Mon')
+        # plt.clf()
+        axes[0, 0].clear()
+        axes[0, 0].imshow(gt_landmarks.permute(1, 2, 0).cpu().numpy())
         axes[0, 0].axis("off")
         axes[0, 0].set_title('Landmarks')
 
-        axes[0, 1].imshow(synth_im.permute(1, 2, 0).cpu().detach().numpy())
+        axes[0, 1].clear()
+        axes[0, 1].imshow(synth_im.permute(1, 2, 0).cpu().numpy())
         axes[0, 1].axis("off")
         axes[0, 1].set_title('Synthesized image')
 
-        axes[0, 2].imshow(gt_im.permute(1, 2, 0).cpu().detach().numpy())
+        axes[0, 2].clear()
+        axes[0, 2].imshow(gt_im.permute(1, 2, 0).cpu().numpy())
         axes[0, 2].axis("off")
         axes[0, 2].set_title('Ground truth')
 
-<<<<<<< HEAD
+        axes[1, 0].clear()
         axes[1, 0].plot(self.loss_follow, label='Total loss')
         axes[1, 0].set_title('Total loss')
 
-        axes[1, 1].plot(self.lossEmb, label='Emb loss')
-        axes[1, 1].plot(self.lossDisc, label='Disc loss')
-        axes[1, 1].set_title('Emb and disc losses')
+        axes[1, 1].clear()
+        axes[1, 1].plot(self.lossEmbGen_follow, label='EmbGen loss')
+        axes[1, 1].plot(self.lossDisc_follow, label='Disc loss')
+        axes[1, 1].set_title('EmbGen disc losses')
 
+        axes[1, 2].clear()
         axes[1, 2].plot(accuracy)
         axes[1, 2].set_title('Accuracy')
-=======
-        axes[1, 0].plot(loss)
-        axes[1, 0].axis("off")
-        axes[1, 0].set_title('Landmarks')
 
-        axes[0, 1].imshow(synth_im.permute(1, 2, 0).cpu().detach().numpy())
-        axes[0, 1].axis("off")
-        axes[0, 1].set_title('Synthesized image')
-
-        axes[0, 2].imshow(gt_im.permute(1, 2, 0).cpu().detach().numpy())
-        axes[0, 2].axis("off")
-        axes[0, 2].set_title('Ground truth')
->>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
-
+        for i, m in enumerate(models):
+            ave_grads = []
+            max_grads = []
+            layers = []
+            for n, p in m.named_parameters():
+                if(p.requires_grad) and ("bias" not in n):
+                    layers.append('.'.join(n.split('.')[: -1]))
+                    p.detach()
+                    try:
+                        ave_grads.append(p.grad.abs().mean())
+                    except AttributeError:
+                        # print("No gradient for layer : ", n)
+                        ave_grads.append(0)
+                    try:
+                        max_grads.append(p.grad.abs().max())
+                    except AttributeError:
+                        max_grads.append(0)
+            axes[2, i].clear()
+            axes[2, i].bar(np.arange(len(max_grads)), max_grads,
+                           alpha=1, lw=1, color="c")
+            axes[2, i].bar(np.arange(len(max_grads)), ave_grads,
+                           alpha=1, lw=1, color="r")
+            axes[2, i].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
+            axes[2, i].set_xticks(np.arange(len(layers)))
+            axes[2, i].set_xticklabels(layers, rotation="vertical",
+                                       fontsize='small')
+            axes[2, i].set_xlim(left=0, right=len(ave_grads))
+            axes[2, i].set_ylim(bottom=min(ave_grads), top=max(ave_grads))
+            # zoom in on the lower gradient regions
+            axes[2, i].set_xlabel("Layers")
+            axes[2, i].set_ylabel("average gradient")
+            axes[2, i].set_title(f"{m.__class__.__name__} gradient flow")
+            axes[2, i].grid(True)
+            axes[2, i].legend([Line2D([0], [0], color="c", lw=4),
+                               Line2D([0], [0], color="r", lw=4)],
+                              ['max-gradient', 'mean-gradient'])
         if save_fig:
             fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
-        plt.show()
+        fig.canvas.draw_idle()
+        fig.canvas.flush_events()
 
     def save(self, lossEmbGen, lossDisc, embedder, generator, discriminator):
         if lossDisc < self.best_loss_Disc:
-            print('\n'+'-'*21+"\n| Poids sauvegardés |\n"+'-'*21+'\n')
+            print('\n'+'-'*25+"\n| Poids disc sauvegardés |\n"+'-'*25+'\n')
             self.best_loss_Disc = lossDisc
             torch.save(discriminator.state_dict(), PATH_WEIGHTS_DISCRIMINATOR)
 
         if lossEmbGen < self.best_loss_EmbGen:
-            print('\n'+'-'*21+"\n| Poids sauvegardés |\n"+'-'*21+'\n')
-            self.best_loss_EmbGen = lossEmbGen
+            print('\n'+'-'*35+"\n| Poids Emb & Gen sauvegardés |\n"+'-'*35+'\n')
+            self.best_loss_Emb = lossEmbGen
             torch.save(embedder.state_dict(), PATH_WEIGHTS_EMBEDDER)
             torch.save(generator.state_dict(), PATH_WEIGHTS_GENERATOR)
-<<<<<<< HEAD
 
 
-def plot_grad_flow(named_parameters):
+def plot_grad_flow(fig, axes, *models):
     '''
     Plots the gradients flowing through different layers in the net
     during training.
@@ -124,27 +145,75 @@ def plot_grad_flow(named_parameters):
     Usage: Plug this function in Trainer class after loss.backwards() as
     "plot_grad_flow(self.model.named_parameters())"
     to visualize the gradient flow'''
-    ave_grads = []
-    max_grads = []
-    layers = []
-    for n, p in named_parameters:
-        if(p.requires_grad) and ("bias" not in n):
-            layers.append(n)
-            ave_grads.append(p.grad.abs().mean())
-            max_grads.append(p.grad.abs().max())
-    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
-    plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
-    plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
-    plt.xticks(range(0, len(ave_grads), 1), layers, rotation="vertical")
-    plt.xlim(left=0, right=len(ave_grads))
-    plt.ylim(bottom=-0.001, top=0.02)  # zoom in on the lower gradient regions
-    plt.xlabel("Layers")
-    plt.ylabel("average gradient")
-    plt.title("Gradient flow")
-    plt.grid(True)
-    plt.legend([Line2D([0], [0], color="c", lw=4),
-                Line2D([0], [0], color="b", lw=4),
-                Line2D([0], [0], color="k", lw=4)],
-               ['max-gradient', 'mean-gradient', 'zero-gradient'])
-=======
->>>>>>> ac30765079493b5fb6f8b925301f46cd6ba6f86a
+    for i, m in enumerate(models):
+        ave_grads = []
+        max_grads = []
+        layers = []
+        for n, p in m.named_parameters():
+            if(p.requires_grad) and ("bias" not in n):
+                p.detach()
+                layers.append('.'.join(n.split('.')[:-1]))
+                try:
+                    ave_grads.append(p.grad.abs().mean())
+                except AttributeError:
+                    print("No gradient for layer : ", n)
+                    ave_grads.append(0)
+                try:
+                    max_grads.append(p.grad.abs().max())
+                except AttributeError:
+                    max_grads.append(0)
+        axes[i].bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1,
+                    color="c")
+        axes[i].bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1,
+                    color="b")
+        axes[i].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
+        axes[i].set_xticks(np.arange(len(layers)))
+        axes[i].set_xticklabels(layers, rotation="vertical", fontsize='small')
+        axes[i].set_xlim(left=0, right=len(ave_grads))
+        axes[i].set_ylim(bottom=min(ave_grads), top=max(ave_grads))
+        # zoom in on the lower gradient regions
+        axes[i].set_xlabel("Layers")
+        axes[i].set_ylabel("average gradient")
+        axes[i].set_title(f"{m.__class__.__name__} gradient flow")
+        axes[i].grid(True)
+        axes[i].legend([Line2D([0], [0], color="c", lw=4),
+                        Line2D([0], [0], color="b", lw=4),
+                        Line2D([0], [0], color="k", lw=4)],
+                       ['max-gradient', 'mean-gradient', 'zero-gradient'])
+    fig.cla()
+    fig.clf()
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+
+def get_size(obj, seen=None):
+    """Recursively finds size of objects in bytes"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if hasattr(obj, '__dict__'):
+        for cls in obj.__class__.__mro__:
+            if '__dict__' in cls.__dict__:
+                d = cls.__dict__['__dict__']
+                if inspect.isgetsetdescriptor(d) or inspect.ismemberdescriptor(d):
+                    size += get_size(obj.__dict__, seen)
+                break
+    if isinstance(obj, dict):
+        size += sum((get_size(v, seen) for v in obj.values()))
+        size += sum((get_size(k, seen) for k in obj.keys()))
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        try:
+            size += sum((get_size(i, seen) for i in obj))
+        except TypeError:
+            print("0-D")
+
+    if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
+        size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
+
+    return size
