@@ -1,7 +1,11 @@
-vox2*
+vox2_test_mp4.zip
 .vscode
+.vscode/*
 dataset
-weights
 dataset/*
-weights/vgg_face.pth
-*/weights/vgg_face.pth
+weights
+weights/*
+runs
+runs/*
+__pycache__/*
+__pycache__
