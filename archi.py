@@ -204,7 +204,8 @@ class Attention(nn.Module):
 class Embedder(nn.Module):
     def __init__(self):
         super(Embedder, self).__init__()
-        self.residual1 = ResidualBlockDown(K_SHOT*3, 64, norm=False, learn=False)
+        self.residual1 = ResidualBlockDown(
+            K_SHOT*3, 64, norm=False, learn=False)
         self.residual2 = ResidualBlockDown(64, 128, norm=False, learn=False)
         self.residual3 = ResidualBlockDown(128, 256, norm=False, learn=False)
         self.residual4 = ResidualBlockDown(256, 512, norm=False, learn=False)
@@ -212,6 +213,7 @@ class Embedder(nn.Module):
         # self.FcWeights = spectral_norm(nn.Linear(512, 1379))
         # self.FcBias = spectral_norm(nn.Linear(512, 1379))
         self.attention = Attention(128)
+        self.relu = nn.ReLU()
 
     def forward(self, x):  # b, 12, 224, 224
         # print(x)
@@ -225,6 +227,7 @@ class Embedder(nn.Module):
         out = self.residual4(out)  # b, 512, 14, 14
         out = self.residual5(out)  # b, 512, 7, 7
         out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
+        out = self.relu(out)
         return out
 
 
@@ -238,6 +241,7 @@ class Generator(nn.Module):
         self.ResDown1 = ResidualBlockDown(3, 32, norm=True, learn=False)
         self.ResDown2 = ResidualBlockDown(32, 64, norm=True, learn=False)
         self.ResDown3 = ResidualBlockDown(64, 128, norm=True, learn=False)
+        self.attentionDown = Attention(128)
         # Constant
         self.ResBlock_128_1 = ResidualBlock(128, 128, learn=False)
         self.ResBlock_128_2 = ResidualBlock(128, 128, learn=False)
@@ -248,6 +252,7 @@ class Generator(nn.Module):
         self.ResUp1 = ResidualBlockUp(128, 64, learn=False)
         self.ResUp2 = ResidualBlockUp(64, 32, learn=False)
         self.ResUp3 = ResidualBlockUp(32, 3, learn=False)
+        self.attentionUp = Attention(64)
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
@@ -265,6 +270,7 @@ class Generator(nn.Module):
         x = self.ResDown1(img)
         x = self.ResDown2(x)
         x = self.ResDown3(x)
+        x = self.attentionDown(x)
 
         x = self.ResBlock_128_1(x)  # 2, 128, 55, 55
         x = self.ResBlock_128_2(x)  # 2, 128, 55, 55
@@ -274,6 +280,7 @@ class Generator(nn.Module):
         x = self.ResBlock_128_5(x)  # 2, 128, 5
 
         x = self.ResUp1(x)  # 2, 64, 109, 109
+        x = self.attentionUp(x)
         x = self.ResUp2(x)
         x = self.ResUp3(x)
         return self.tanh(x)
@@ -294,19 +301,24 @@ class Discriminator(nn.Module):
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
+        self.relu = nn.ReLU()
 
     def forward(self, x, indexes):  # b, 6, 224, 224
         features_maps = []
         out = self.residual1(x)  # b, 64, 112, 112
+        features_maps.append(out)
         out = self.residual2(out)  # 2, 128, 56, 56
+        features_maps.append(out)
         out = self.attention(out)  # 2, 128, 56, 56
         features_maps.append(out)
         out = self.residual3(out)  # 2, 256, 28, 28
+        features_maps.append(out)
         out = self.residual4(out)  # 2, 512, 14, 14
         features_maps.append(out)
         out = self.residual5(out)  # 2, 512, 7,7
         features_maps.append(out)
         out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
+        out = self.relu(out)
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
         out = torch.bmm(
@@ -315,7 +327,6 @@ class Discriminator(nn.Module):
         )
         out = out.view(BATCH_SIZE)
         out += b
-
         return out, features_maps
 
 

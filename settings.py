@@ -1,7 +1,6 @@
 import torch
 
-# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-DEVICE = torch.device("cpu")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 2
 ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
@@ -10,6 +9,11 @@ PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
 PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS+'Discriminator.pt'
 BATCH_SIZE = 2
-LEARNING_RATE = 1e-3
+LEARNING_RATE_EMB = 5e-5
+LEARNING_RATE_GEN = 5e-5
+LEARNING_RATE_DISC = 2e-4
 LATENT_SIZE = 512
-K_SHOT = 5
+K_SHOT = 4
+PRINT_EVERY = 10
+LOAD_PREVIOUS = True
+NB_WORKERS = 0
