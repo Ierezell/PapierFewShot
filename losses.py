@@ -1,7 +1,7 @@
 from torchvision.models.vgg import vgg19
 import torch.nn as nn
 import torch
-from settings import ROOT_WEIGHTS, BATCH_SIZE, LATENT_SIZE
+from settings import ROOT_WEIGHTS, BATCH_SIZE, LATENT_SIZE, DEVICE
 """
 
 For the calculation of LCNT, we evaluate L1 loss between activations of
@@ -36,7 +36,8 @@ class adverserialLoss(nn.Module):
         # with torch.no_grad():
         for ft_gt, ft_synth in zip(features_gt, features_synth):
             loss += self.l1(ft_gt, ft_synth)
-        # loss /= len(features_synth)
+        loss /= len(features_synth)
+        # loss *= 10.0
         return -(torch.sum(score_disc_synth)/score_disc_synth.size(0))+loss
 
 
@@ -52,7 +53,7 @@ class matchLoss(nn.Module):
         # with torch.no_grad():
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)
         Wi = Wi.view(BATCH_SIZE, LATENT_SIZE)
-        return self.l1(ei, Wi)/BATCH_SIZE
+        return (self.l1(ei, Wi)/BATCH_SIZE)
 
 
 # #########
@@ -64,10 +65,10 @@ class discriminatorLoss(nn.Module):
 
     def forward(self, score_gt, score_synth):
         # with torch.no_grad():
-        loss = torch.max(torch.Tensor([0]),
-                         torch.Tensor([1])+torch.sum(score_synth)) +\
-            torch.max(torch.Tensor([0]),
-                      torch.Tensor([1])-torch.sum(score_gt))
+        one = torch.tensor([1], device=DEVICE, dtype=torch.float)
+        zero = torch.tensor([0], device=DEVICE, dtype=torch.float)
+        loss = torch.max(zero, one+torch.sum(score_synth)) +\
+            torch.max(zero, one - torch.sum(score_gt))
         return loss.squeeze()
 
 
