@@ -28,21 +28,27 @@ def load_models(nb_pers, load_previous_state=True):
 
 class Checkpoints:
     def __init__(self):
-        self.loss_follow = []
-        self.lossEmbGen_follow = []
-        self.lossDisc_follow = []
-        self.losses_follow = []
+        self.losses = {"dsc": [], "cnt": [], "adv": [], "mch": []}
         self.best_loss_EmbGen = 1e10
         self.best_loss_Disc = 1e10
 
-    def addCheckpoint(self, lossEmbGen, lossDisc):
-        lossEmbGen = lossEmbGen.detach()
-        lossDisc = lossDisc.detach()
-        self.loss_follow.append(lossEmbGen+lossDisc)
-        self.lossEmbGen_follow.append(lossEmbGen)
-        self.lossDisc_follow.append(lossDisc)
-        self.losses_follow = [self.loss_follow, self.lossDisc_follow,
-                              self.lossEmbGen_follow]
+    def addCheckpoint(self, model, loss):
+        loss = loss.detach()
+        self.losses[model].append(loss)
+
+    def save(self, model, loss, embedder, generator, discriminator):
+        if model == "disc":
+            if loss < self.best_loss_Disc:
+                print('\n'+'-'*25+"\n| Poids disc sauvegardés |\n"+'-'*25+'\n')
+                self.best_loss_Disc = loss
+                torch.save(discriminator.state_dict(),
+                           PATH_WEIGHTS_DISCRIMINATOR)
+        else:
+            if loss < self.best_loss_EmbGen:
+                print('\n'+'-'*31+"\n| Poids Emb & Gen sauvegardés |\n"+'-'*31+'\n')
+                self.best_loss_Emb = loss
+                torch.save(embedder.state_dict(), PATH_WEIGHTS_EMBEDDER)
+                torch.save(generator.state_dict(), PATH_WEIGHTS_GENERATOR)
 
     def visualize(self, fig, axes,
                   gt_landmarks, synth_im, gt_im, *models,
@@ -53,29 +59,37 @@ class Checkpoints:
         "------------------------"
         # plt.figure('Mon')
         # plt.clf()
+        im_landmarks = gt_landmarks.detach()[0].cpu().permute(1, 2, 0).numpy()
+        im_synth = synth_im.detach()[0].cpu().permute(1, 2, 0).numpy()
+        im_gt = gt_im.detach()[0].cpu().permute(1, 2, 0).numpy()
         axes[0, 0].clear()
-        axes[0, 0].imshow(gt_landmarks.permute(1, 2, 0).cpu().numpy())
+        axes[0, 0].imshow(im_landmarks)
         axes[0, 0].axis("off")
         axes[0, 0].set_title('Landmarks')
 
         axes[0, 1].clear()
-        axes[0, 1].imshow(synth_im.permute(1, 2, 0).cpu().numpy())
+        axes[0, 1].imshow(im_synth)
         axes[0, 1].axis("off")
         axes[0, 1].set_title('Synthesized image')
 
         axes[0, 2].clear()
-        axes[0, 2].imshow(gt_im.permute(1, 2, 0).cpu().numpy())
+        axes[0, 2].imshow(im_gt)
         axes[0, 2].axis("off")
         axes[0, 2].set_title('Ground truth')
 
         axes[1, 0].clear()
-        axes[1, 0].plot(self.loss_follow, label='Total loss')
-        axes[1, 0].set_title('Total loss')
+        axes[1, 0].plot(self.losses["dsc"], label='Disc loss')
+        axes[1, 0].set_title('Disc loss')
 
         axes[1, 1].clear()
-        axes[1, 1].plot(self.lossEmbGen_follow, label='EmbGen loss')
-        axes[1, 1].plot(self.lossDisc_follow, label='Disc loss')
-        axes[1, 1].set_title('EmbGen disc losses')
+        axes[1, 1].plot(self.losses["adv"], label='Adv loss')
+        axes[1, 1].plot(self.losses["mch"], label='Mch loss')
+        axes[1, 1].plot(self.losses["cnt"], label='Cnt loss')
+        axes[1, 1].plot(np.array(self.losses["adv"]) +
+                        np.array(self.losses["mch"]) +
+                        np.array(self.losses["cnt"]), label='EmbGen loss')
+        axes[1, 1].set_title('EmbGen losses')
+        axes[1, 1].legend()
 
         axes[1, 2].clear()
         axes[1, 2].plot(accuracy)
@@ -88,21 +102,18 @@ class Checkpoints:
             for n, p in m.named_parameters():
                 if(p.requires_grad) and ("bias" not in n):
                     layers.append('.'.join(n.split('.')[: -1]))
-                    p.detach()
                     try:
-                        ave_grads.append(p.grad.abs().mean())
+                        gradient = p.grad.cpu().detach()
+                        ave_grads.append(gradient.abs().mean())
+                        max_grads.append(gradient.abs().max())
                     except AttributeError:
-                        # print("No gradient for layer : ", n)
                         ave_grads.append(0)
-                    try:
-                        max_grads.append(p.grad.abs().max())
-                    except AttributeError:
                         max_grads.append(0)
             axes[2, i].clear()
             axes[2, i].bar(np.arange(len(max_grads)), max_grads,
-                           alpha=1, lw=1, color="c")
-            axes[2, i].bar(np.arange(len(max_grads)), ave_grads,
-                           alpha=1, lw=1, color="r")
+                           alpha=0.5, lw=1, color="c")
+            axes[2, i].bar(np.arange(len(ave_grads)), ave_grads,
+                           alpha=0.7, lw=1, color="r")
             axes[2, i].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
             axes[2, i].set_xticks(np.arange(len(layers)))
             axes[2, i].set_xticklabels(layers, rotation="vertical",
@@ -121,18 +132,6 @@ class Checkpoints:
             fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
         fig.canvas.draw_idle()
         fig.canvas.flush_events()
-
-    def save(self, lossEmbGen, lossDisc, embedder, generator, discriminator):
-        if lossDisc < self.best_loss_Disc:
-            print('\n'+'-'*25+"\n| Poids disc sauvegardés |\n"+'-'*25+'\n')
-            self.best_loss_Disc = lossDisc
-            torch.save(discriminator.state_dict(), PATH_WEIGHTS_DISCRIMINATOR)
-
-        if lossEmbGen < self.best_loss_EmbGen:
-            print('\n'+'-'*35+"\n| Poids Emb & Gen sauvegardés |\n"+'-'*35+'\n')
-            self.best_loss_Emb = lossEmbGen
-            torch.save(embedder.state_dict(), PATH_WEIGHTS_EMBEDDER)
-            torch.save(generator.state_dict(), PATH_WEIGHTS_GENERATOR)
 
 
 def plot_grad_flow(fig, axes, *models):
@@ -214,6 +213,7 @@ def get_size(obj, seen=None):
             print("0-D")
 
     if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
-        size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
+        size += sum(get_size(getattr(obj, s), seen)
+                    for s in obj.__slots__ if hasattr(obj, s))
 
     return size
