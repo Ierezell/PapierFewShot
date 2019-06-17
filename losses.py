@@ -27,15 +27,16 @@ Qustion : comment faire avec les scores des batch ? sum ? mean ?
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='sum')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
         loss = 0
-        # with torch.no_grad():
         for ft_gt, ft_synth in zip(features_gt, features_synth):
             loss += self.l1(ft_gt, ft_synth)
         loss /= len(features_synth)
-        # loss *= 10.0
+        loss *= 10.0
+        # print("BOOYA : ", -(torch.sum(score_disc_synth) /
+        #                     score_disc_synth.size(0)), loss)
         return -(torch.sum(score_disc_synth)/score_disc_synth.size(0))+loss
 
 
@@ -45,10 +46,9 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='sum')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, ei, Wi):
-        # with torch.no_grad():
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)
         Wi = Wi.view(BATCH_SIZE, LATENT_SIZE)
         return (self.l1(ei, Wi)/BATCH_SIZE)
@@ -62,7 +62,6 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        # with torch.no_grad():
         one = torch.tensor([1], device=DEVICE, dtype=torch.float)
         zero = torch.tensor([0], device=DEVICE, dtype=torch.float)
         loss = torch.max(zero, one+torch.sum(score_synth)) +\
@@ -100,7 +99,7 @@ class contentLoss(nn.Module):
         #     '18': "relu4",
         #     '25': "relu5",
         # }
-        self.l1 = nn.L1Loss()
+        self.l1 = nn.L1Loss(reduction="sum")
 
     def forward(self, gt, synth):
         # output_gt = {}
@@ -108,7 +107,7 @@ class contentLoss(nn.Module):
         # gtFace = gt.copy()
         # synthFace = synth.copy()
         lossVgg19 = 0
-        # lossVggFace = 0
+        # lossVggFace = 0wwz
         # with torch.no_grad():
         for name, module in self.vgg_layers._modules.items():
             gt = module(gt)
