@@ -20,8 +20,6 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 Qustion : comment faire avec les scores des batch ? sum ? mean ?
 """
 
-#
-
 
 # #########
 #  L_adv  #

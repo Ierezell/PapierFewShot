@@ -1,4 +1,5 @@
 from torch import nn
+import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
 import torch
 from settings import LATENT_SIZE, K_SHOT, BATCH_SIZE
@@ -95,14 +96,6 @@ class ResidualBlockDown(nn.Module):
     def __init__(self, in_channels, out_channels, norm=True, learn=True):
         super(ResidualBlockDown, self).__init__()
         self.norm = norm
-        # self.conv1 = spectral_norm(nn.Conv2d(in_channels, out_channels,
-        #                                      kernel_size=3, padding=1,
-        #                                      bias=False))
-        # self.conv2 = spectral_norm(nn.Conv2d(out_channels, out_channels,
-        #                                      kernel_size=3, padding=1,
-        #                                      bias=False))
-        # self.adaDim = spectral_norm(nn.Conv2d(in_channels,  out_channels,
-        #                                       kernel_size=1, bias=False))
         self.conv1 = spectral_norm(nn.Conv2d(in_channels, out_channels,
                                              kernel_size=3, padding=1,
                                              bias=False))
@@ -116,28 +109,25 @@ class ResidualBlockDown(nn.Module):
         self.avgPool = nn.AvgPool2d(kernel_size=2)
         self.in1 = nn.InstanceNorm2d(out_channels, affine=learn)
         self.in2 = nn.InstanceNorm2d(out_channels, affine=learn)
+        F.instance_norm()
 
     def forward(self, x):
         residual = x
-        # print("Coucou ", residual.requires_grad)
-        # print("KJDS ", x.requires_grad)
         residual = self.avgPool(self.adaDim(residual))
-        # print(residual)
-        # print("Coucou 2", residual.requires_grad)
-        # print("KJDS2 ", x.requires_grad)
         out = self.conv1(x)
-        # print("C1  ", out.requires_grad)
+
         if self.norm:
             out = self.in1(out)
+
         out = self.relu(out)
         out = self.conv2(out)
-        # print("C2  ", out.requires_grad)
+
         if self.norm:
             out = self.in2(out)
+
         out = self.relu(out)
         out = self.avgPool(out)
         out += residual
-        # print("FIN  ", out.requires_grad)
         return out
 
 
@@ -216,11 +206,7 @@ class Embedder(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):  # b, 12, 224, 224
-        # print(x)
-        # print("A  ", x.requires_grad)
         out = self.residual1(x)  # b, 64, 112, 112
-        # print(out)
-        # print("B  ", out.requires_grad)
         out = self.residual2(out)  # b, 128, 56, 56
         out = self.attention(out)  # b, 128, 56, 56
         out = self.residual3(out)  # b, 256, 28, 28
