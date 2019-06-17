@@ -27,7 +27,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 class frameLoader(Dataset):
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(frameLoader, self).__init__()
-        self.face_landmarks = FaceAlignment(LandmarksType._2D, device='cpu')
+        self.face_landmarks = FaceAlignment(
+            LandmarksType._2D, device="cuda")
         self.K_shots = K_shots
         self.root_dir = root_dir
         self.ids = glob.glob(f"{self.root_dir}/*")

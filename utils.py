@@ -62,18 +62,22 @@ class Checkpoints:
         im_landmarks = gt_landmarks.detach()[0].cpu().permute(1, 2, 0).numpy()
         im_synth = synth_im.detach()[0].cpu().permute(1, 2, 0).numpy()
         im_gt = gt_im.detach()[0].cpu().permute(1, 2, 0).numpy()
+        # print("IMAGES : ")
+        # print(im_gt.min(), im_gt.max())
+        # print(im_synth.min(), im_synth.max())
+        # print(im_landmarks.min(), im_landmarks.max())
         axes[0, 0].clear()
-        axes[0, 0].imshow(im_landmarks)
+        axes[0, 0].imshow(im_landmarks/im_landmarks.max())
         axes[0, 0].axis("off")
         axes[0, 0].set_title('Landmarks')
 
         axes[0, 1].clear()
-        axes[0, 1].imshow(im_synth)
+        axes[0, 1].imshow(im_synth/im_synth.max())
         axes[0, 1].axis("off")
         axes[0, 1].set_title('Synthesized image')
 
         axes[0, 2].clear()
-        axes[0, 2].imshow(im_gt)
+        axes[0, 2].imshow(im_gt/im_gt.max())
         axes[0, 2].axis("off")
         axes[0, 2].set_title('Ground truth')
 
@@ -85,9 +89,9 @@ class Checkpoints:
         axes[1, 1].plot(self.losses["adv"], label='Adv loss')
         axes[1, 1].plot(self.losses["mch"], label='Mch loss')
         axes[1, 1].plot(self.losses["cnt"], label='Cnt loss')
-        axes[1, 1].plot(np.array(self.losses["adv"]) +
-                        np.array(self.losses["mch"]) +
-                        np.array(self.losses["cnt"]), label='EmbGen loss')
+        # axes[1, 1].plot(np.array(self.losses["adv"]) +
+        #                 np.array(self.losses["mch"]) +
+        #                 np.array(self.losses["cnt"]), label='EmbGen loss')
         axes[1, 1].set_title('EmbGen losses')
         axes[1, 1].legend()
 
@@ -119,7 +123,7 @@ class Checkpoints:
             axes[2, i].set_xticklabels(layers, rotation="vertical",
                                        fontsize='small')
             axes[2, i].set_xlim(left=0, right=len(ave_grads))
-            axes[2, i].set_ylim(bottom=min(ave_grads), top=max(ave_grads))
+            axes[2, i].set_ylim(bottom=0, top=max(ave_grads)+1)
             # zoom in on the lower gradient regions
             axes[2, i].set_xlabel("Layers")
             axes[2, i].set_ylabel("average gradient")

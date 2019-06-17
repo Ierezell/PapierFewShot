@@ -109,16 +109,19 @@ for i_epoch in range(NB_EPOCHS):
         # print(gt_landmarks.type(), gt_landmarks.requires_grad)
         # print(context.type(), context.requires_grad)
         # print(itemIds.type(), itemIds.requires_grad)
-        embeddings = emb(context)
+        embeddings, paramNorm = emb(context)
         # print("1  ", embeddings.type())
 
-        synth_im = gen(gt_landmarks)
+        synth_im = gen(gt_landmarks, paramNorm)
+        # print("Swaggggg")
+        # print(synth_im.max())
+        # print(gt_im.max())
         # print("2  ", synth_im.type())
 
         score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
                                                                gt_landmarks),
                                                               dim=1), itemIds)
-        # print("3  ", score_synth.type())
+        # print("ALLLLLLLLLLA :  ", score_synth)
 
         score_gt, feature_maps_disc_gt = disc(torch.cat((gt_im, gt_landmarks),
                                                         dim=1), itemIds)
@@ -136,7 +139,7 @@ for i_epoch in range(NB_EPOCHS):
         else:
             lossAdv = advLoss(score_synth, feature_maps_disc_gt,
                               feature_maps_disc_synth)
-            lossCnt = 800*cntLoss(gt_im, synth_im)
+            lossCnt = (1e-4)*cntLoss(gt_im, synth_im)
             lossMch = 80*mchLoss(embeddings, disc.embeddings(itemIds))
             loss = lossAdv + lossCnt + lossMch
             loss.backward()

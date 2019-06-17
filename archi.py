@@ -76,17 +76,20 @@ class ResidualBlock(nn.Module):
                                              bias=False))
 
         self.relu = nn.ReLU()
-        self.in1 = nn.InstanceNorm2d(out_channels, affine=learn)
-        self.in2 = nn.InstanceNorm2d(out_channels, affine=learn)
+        # self.in1 = nn.InstanceNorm2d(out_channels, affine=learn)
+        # self.in2 = nn.InstanceNorm2d(out_channels, affine=learn)
 
-    def forward(self, x):
+    def forward(self, x, w1, b1, w2, b2):
         residual = x
         residual = self.adaDimRes(residual)
         out = self.conv1(x)
-        out = self.in1(out)
+        # out = self.in1(out)
+        out = F.instance_norm(out, weight=w1, bias=b1)
+
         out = self.relu(out)
         out = self.conv2(out)
-        out = self.in2(out)
+        # out = self.in2(out)
+        out = F.instance_norm(out, weight=w2, bias=b2)
         out += residual
         out = self.relu(out)
         return out
@@ -109,7 +112,6 @@ class ResidualBlockDown(nn.Module):
         self.avgPool = nn.AvgPool2d(kernel_size=2)
         self.in1 = nn.InstanceNorm2d(out_channels, affine=learn)
         self.in2 = nn.InstanceNorm2d(out_channels, affine=learn)
-        F.instance_norm()
 
     def forward(self, x):
         residual = x
@@ -134,8 +136,8 @@ class ResidualBlockDown(nn.Module):
 class ResidualBlockUp(nn.Module):
     def __init__(self, in_channels, out_channels, scale=2, learn=True):
         super(ResidualBlockUp, self).__init__()
-        self.in1 = nn.InstanceNorm2d(in_channels, affine=learn)
-        self.in2 = nn.InstanceNorm2d(out_channels, affine=learn)
+        # self.in1 = nn.InstanceNorm2d(in_channels, affine=learn)
+        # self.in2 = nn.InstanceNorm2d(out_channels, affine=learn)
         self.relu = nn.ReLU()
         self.adaDim = spectral_norm(nn.Conv2d(in_channels,  out_channels,
                                               kernel_size=1,  bias=False))
@@ -149,13 +151,13 @@ class ResidualBlockUp(nn.Module):
         self.upsample = nn.Upsample(scale_factor=scale, mode='nearest')
         # 'nearest', 'linear', 'bilinear', 'bicubic' and 'trilinear'
 
-    def forward(self, x):
+    def forward(self, x, w1, b1, w2, b2):
         residual = x
         residual = self.upsample(self.adaDim(residual))
-        out = self.relu(self.in1(x))
+        out = self.relu(F.instance_norm(x, weight=w1, bias=b1))
         out = self.upsample(out)
         out = self.conv1(out)
-        out = self.relu(self.in2(out))
+        out = self.relu(F.instance_norm(out, weight=w2, bias=b2))
         out = self.conv2(out)
         out += residual
         return out
@@ -200,21 +202,28 @@ class Embedder(nn.Module):
         self.residual3 = ResidualBlockDown(128, 256, norm=False, learn=False)
         self.residual4 = ResidualBlockDown(256, 512, norm=False, learn=False)
         self.residual5 = ResidualBlockDown(512, 512, norm=False, learn=False)
-        # self.FcWeights = spectral_norm(nn.Linear(512, 1379))
-        # self.FcBias = spectral_norm(nn.Linear(512, 1379))
+        self.FcWeights = spectral_norm(nn.Linear(512, 1603))
+        self.FcBias = spectral_norm(nn.Linear(512, 1603))
         self.attention = Attention(128)
         self.relu = nn.ReLU()
 
     def forward(self, x):  # b, 12, 224, 224
         out = self.residual1(x)  # b, 64, 112, 112
+        out = self.relu(out)
         out = self.residual2(out)  # b, 128, 56, 56
+        out = self.relu(out)
         out = self.attention(out)  # b, 128, 56, 56
+        out = self.relu(out)
         out = self.residual3(out)  # b, 256, 28, 28
+        out = self.relu(out)
         out = self.residual4(out)  # b, 512, 14, 14
+        out = self.relu(out)
         out = self.residual5(out)  # b, 512, 7, 7
+        out = self.relu(out)
         out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
         out = self.relu(out)
-        return out
+        paramNorm = {"weights": self.FcWeights(out), "bias": self.FcBias(out)}
+        return out, paramNorm
 
 
 # ################
@@ -243,32 +252,89 @@ class Generator(nn.Module):
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
 
-    def forward(self, img):
-        # self.ResBlock_128_1.in1.weight = nn.Parameter(
-        #     paramNorm["weights"].narrow(1, 0*128, 128))
-        # self.ResBlock_128_1.in1.weight = nn.Parameter(
-        #     paramNorm["bias"].narrow(1, 0*128, 128))
-        # self.ResBlock_128_1.in2.weight = nn.Parameter(
-        #     paramNorm["weights"].narrow(1, 1*128, 128))
-        # self.ResBlock_128_1.in2.weight = nn.Parameter(
-        #     paramNorm["bias"].narrow(1, 1*128, 128))
+    def forward(self, img, paramNorm):
+        paramNorm["weights"] = paramNorm["weights"].squeeze()
+        paramNorm["bias"] = paramNorm["bias"].squeeze()
 
         x = self.ResDown1(img)
+        x = self.relu(x)
         x = self.ResDown2(x)
+        x = self.relu(x)
         x = self.ResDown3(x)
+        x = self.relu(x)
         x = self.attentionDown(x)
+        x = self.relu(x)
 
-        x = self.ResBlock_128_1(x)  # 2, 128, 55, 55
-        x = self.ResBlock_128_2(x)  # 2, 128, 55, 55
-        x = self.ResBlock_128_3(x)  # 2, 128, 55, 55
-        x = self.ResBlock_128_4(x)  # 2, 128, 55, 55
+        x = self.ResBlock_128_1(
+            x,
+            w1=paramNorm["weights"].narrow(0, 0*128, 128),
+            b1=paramNorm["bias"].narrow(0, 0*128, 128),
+            w2=paramNorm["weights"].narrow(0, 1*128, 128),
+            b2=paramNorm["bias"].narrow(0, 1*128, 128)
+        )
+        x = self.relu(x)
+        # b, 128, 55, 55
 
-        x = self.ResBlock_128_5(x)  # 2, 128, 5
+        x = self.ResBlock_128_2(
+            x,
+            w1=paramNorm["weights"].narrow(0, 2*128, 128),
+            b1=paramNorm["bias"].narrow(0, 2*128, 128),
+            w2=paramNorm["weights"].narrow(0, 3*128, 128),
+            b2=paramNorm["bias"].narrow(0, 3*128, 128))
+        x = self.relu(x)
+        # b, 128, 55, 55
 
-        x = self.ResUp1(x)  # 2, 64, 109, 109
+        x = self.ResBlock_128_3(
+            x,
+            w1=paramNorm["weights"].narrow(0, 4*128, 128),
+            b1=paramNorm["bias"].narrow(0, 4*128, 128),
+            w2=paramNorm["weights"].narrow(0, 5*128, 128),
+            b2=paramNorm["bias"].narrow(0, 5*128, 128))
+        x = self.relu(x)
+        # b, 128, 55, 55
+
+        x = self.ResBlock_128_4(
+            x,
+            w1=paramNorm["weights"].narrow(0, 6*128, 128),
+            b1=paramNorm["bias"].narrow(0, 6*128, 128),
+            w2=paramNorm["weights"].narrow(0, 7*128, 128),
+            b2=paramNorm["bias"].narrow(0, 7*128, 128))
+        x = self.relu(x)
+        # b, 128, 55, 55
+
+        x = self.ResBlock_128_5(
+            x,
+            w1=paramNorm["weights"].narrow(0, 8*128, 128),
+            b1=paramNorm["bias"].narrow(0, 8*128, 128),
+            w2=paramNorm["weights"].narrow(0, 9*128, 128),
+            b2=paramNorm["bias"].narrow(0, 9*128, 128))
+        x = self.relu(x)
+        # b, 128, 5
+
+        x = self.ResUp1(x,
+                        w1=paramNorm["weights"].narrow(0, 10*128, 128),
+                        b1=paramNorm["bias"].narrow(0, 10*128, 128),
+                        w2=paramNorm["weights"].narrow(0, 11*128, 64),
+                        b2=paramNorm["bias"].narrow(0, 11*128, 64))
+        x = self.relu(x)
+        # b, 64, 109, 109
+
         x = self.attentionUp(x)
-        x = self.ResUp2(x)
-        x = self.ResUp3(x)
+        x = self.relu(x)
+
+        x = self.ResUp2(x,
+                        w1=paramNorm["weights"].narrow(0, 1408+64, 64),
+                        b1=paramNorm["bias"].narrow(0, 1408+64, 64),
+                        w2=paramNorm["weights"].narrow(0, 1408+64+64, 32),
+                        b2=paramNorm["bias"].narrow(0, 1408+64+64, 32))
+        x = self.relu(x)
+
+        x = self.ResUp3(x,
+                        w1=paramNorm["weights"].narrow(0, 1408+64+64+32, 32),
+                        b1=paramNorm["bias"].narrow(0, 1408+64+64+32, 32),
+                        w2=paramNorm["weights"].narrow(0, 1408+64+64+32+32, 3),
+                        b2=paramNorm["bias"].narrow(0, 1408+64+64+32+32, 3))
+        x = self.relu(x)
         return self.tanh(x)
 
 
@@ -292,19 +358,33 @@ class Discriminator(nn.Module):
     def forward(self, x, indexes):  # b, 6, 224, 224
         features_maps = []
         out = self.residual1(x)  # b, 64, 112, 112
+        out = self.relu(out)
         features_maps.append(out)
+
         out = self.residual2(out)  # 2, 128, 56, 56
+        out = self.relu(out)
         features_maps.append(out)
+
         out = self.attention(out)  # 2, 128, 56, 56
+        out = self.relu(out)
         features_maps.append(out)
+
         out = self.residual3(out)  # 2, 256, 28, 28
+        out = self.relu(out)
         features_maps.append(out)
+
         out = self.residual4(out)  # 2, 512, 14, 14
+        out = self.relu(out)
         features_maps.append(out)
+
         out = self.residual5(out)  # 2, 512, 7,7
+        out = self.relu(out)
         features_maps.append(out)
+
         out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
         out = self.relu(out)
+        features_maps.append(out)
+
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
         out = torch.bmm(
@@ -314,40 +394,3 @@ class Discriminator(nn.Module):
         out = out.view(BATCH_SIZE)
         out += b
         return out, features_maps
-
-
-# self.ResBlock_128_2.in1.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 2*128, 128))
-# self.ResBlock_128_2.in1.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 2*128, 128))
-# self.ResBlock_128_2.in2.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 3*128, 128))
-# self.ResBlock_128_2.in2.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 3*128, 128))
-
-# self.ResBlock_128_3.in1.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 4*128, 128))
-# self.ResBlock_128_3.in1.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 4*128, 128))
-# self.ResBlock_128_3.in2.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 5*128, 128))
-# self.ResBlock_128_3.in2.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 5*128, 128))
-
-# self.ResBlock_128_4.in1.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 6*128, 128))
-# self.ResBlock_128_4.in1.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 6*128, 128))
-# self.ResBlock_128_4.in2.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 7*128, 128))
-# self.ResBlock_128_4.in2.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 7*128, 128))
-
-# self.ResBlock_128_5.in1.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 8*128, 128))
-# self.ResBlock_128_5.in1.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 8*128, 128))
-# self.ResBlock_128_5.in2.weight = nn.Parameter(
-#     paramNorm["weights"].narrow(1, 9*128, 128))
-# self.ResBlock_128_5.in2.weight = nn.Parameter(
-#     paramNorm["bias"].narrow(1, 9*128, 128))
