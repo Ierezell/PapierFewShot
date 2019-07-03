@@ -3,13 +3,15 @@ import sys
 
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
-from face_alignment import FaceAlignment, LandmarksType
-from archi import Discriminator, Embedder, Generator
-from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR,
-                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      ROOT_IMAGE)
+from models import Discriminator, Embedder, Generator
+from settings import (PATH_WEIGHTS_DISCRIMINATOR,
+                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR)
+
+import matplotlib.style as mplstyle
+import matplotlib.pyplot as plt
+
+mplstyle.use(['dark_background', 'fast'])
 
 
 def load_models(nb_pers, load_previous_state=True):
@@ -50,22 +52,18 @@ class Checkpoints:
                 torch.save(embedder.state_dict(), PATH_WEIGHTS_EMBEDDER)
                 torch.save(generator.state_dict(), PATH_WEIGHTS_GENERATOR)
 
-    def visualize(self, fig, axes,
+    def visualize(self,
                   gt_landmarks, synth_im, gt_im, *models,
-                  save_fig=False, name='plop'):
+                  save_fig=False, name='plop', show=False):
         "-----------------------"
         # TODO Faire une vraie accuracy
         accuracy = 0.5
         "------------------------"
-        # plt.figure('Mon')
-        # plt.clf()
-        im_landmarks = gt_landmarks.detach()[0].cpu().permute(1, 2, 0).numpy()
-        im_synth = synth_im.detach()[0].cpu().permute(1, 2, 0).numpy()
-        im_gt = gt_im.detach()[0].cpu().permute(1, 2, 0).numpy()
-        # print("IMAGES : ")
-        # print(im_gt.min(), im_gt.max())
-        # print(im_synth.min(), im_synth.max())
-        # print(im_landmarks.min(), im_landmarks.max())
+        fig, axes = plt.subplots(3, 3, figsize=(15, 10), num='Mon')
+        im_landmarks = gt_landmarks[0].detach().cpu().permute(1, 2, 0).numpy()
+        im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
+        im_gt = gt_im[0].detach().cpu().permute(1, 2, 0).numpy()
+
         axes[0, 0].clear()
         axes[0, 0].imshow(im_landmarks/im_landmarks.max())
         axes[0, 0].axis("off")
@@ -89,9 +87,6 @@ class Checkpoints:
         axes[1, 1].plot(self.losses["adv"], label='Adv loss')
         axes[1, 1].plot(self.losses["mch"], label='Mch loss')
         axes[1, 1].plot(self.losses["cnt"], label='Cnt loss')
-        # axes[1, 1].plot(np.array(self.losses["adv"]) +
-        #                 np.array(self.losses["mch"]) +
-        #                 np.array(self.losses["cnt"]), label='EmbGen loss')
         axes[1, 1].set_title('EmbGen losses')
         axes[1, 1].legend()
 
@@ -132,10 +127,11 @@ class Checkpoints:
             axes[2, i].legend([Line2D([0], [0], color="c", lw=4),
                                Line2D([0], [0], color="r", lw=4)],
                               ['max-gradient', 'mean-gradient'])
-        if save_fig:
-            fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
-        fig.canvas.draw_idle()
-        fig.canvas.flush_events()
+        # if save_fig:
+        #     fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
+        # fig.canvas.draw_idle()
+        # fig.canvas.flush_events()
+        return fig
 
 
 def plot_grad_flow(fig, axes, *models):
