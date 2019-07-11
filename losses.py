@@ -85,6 +85,7 @@ class contentLoss(nn.Module):
             '20': "relu4",
             '29': "relu5",
         }
+
         self.layer_name_mapping_vggFace = {
             '1': "relu1_1",
             '6': "relu2_1",
@@ -92,6 +93,7 @@ class contentLoss(nn.Module):
             '18': "relu4_1",
             '25': "relu5_1",
         }
+
         self.l1 = nn.L1Loss(reduction="sum")
 
     def forward(self, gt, synth):
@@ -103,7 +105,9 @@ class contentLoss(nn.Module):
         synthVggFace = synth.clone()
 
         lossVgg19 = 0
+
         lossVggFace = 0
+
         for name, module in self.vgg_layers._modules.items():
             gtVgg19 = module(gtVgg19)
             synthVgg19 = module(synthVgg19)
