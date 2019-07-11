@@ -3,26 +3,67 @@ import sys
 
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
+from torch import nn
 from matplotlib.lines import Line2D
-from face_alignment import FaceAlignment, LandmarksType
-from archi import Discriminator, Embedder, Generator
-from settings import (DEVICE, PATH_WEIGHTS_DISCRIMINATOR,
-                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      ROOT_IMAGE)
+from models import Discriminator, Embedder, Generator
+from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
+                      PATH_WEIGHTS_GENERATOR,
+                      DEVICE)
+
+import matplotlib.style as mplstyle
+import matplotlib.pyplot as plt
+
+mplstyle.use(['dark_background', 'fast'])
 
 
 def load_models(nb_pers, load_previous_state=True):
     embedder = Embedder()
     generator = Generator()
     discriminator = Discriminator(nb_pers)
+
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+    discriminator = discriminator.to(DEVICE)
+
+    embedder = nn.DataParallel(
+        embedder, device_ids=range(torch.cuda.device_count()))
+    generator = nn.DataParallel(
+        generator, device_ids=range(torch.cuda.device_count()))
+    discriminator = nn.DataParallel(
+        discriminator, device_ids=range(torch.cuda.device_count()))
+
     if load_previous_state:
-        embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
-        generator.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR))
-        discriminator.load_state_dict(torch.load(PATH_WEIGHTS_DISCRIMINATOR))
+        embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
+        generator.module.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR))
+        discriminator.module.load_state_dict(
+            torch.load(PATH_WEIGHTS_DISCRIMINATOR))
     # embedder = embedder.to(DEVICE)
     # generator = generator.to(DEVICE)
     # discriminator = discriminator.to(DEVICE)
+    return embedder, generator, discriminator
+
+
+def load_trained_models(nb_pers):
+    embedder = Embedder()
+    generator = Generator()
+    discriminator = Discriminator(nb_pers)
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+
+    embedder.load_state_dict(torch.load(
+        PATH_WEIGHTS_EMBEDDER, map_location="cuda"))
+    generator.load_state_dict(torch.load(
+        PATH_WEIGHTS_GENERATOR, map_location="cuda"))
+    discriminator.load_state_dict(torch.load(
+        PATH_WEIGHTS_DISCRIMINATOR, map_location="cuda"))
+
+    discriminator = discriminator.to(DEVICE)
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+
+    embedder = embedder.eval()
+    generator = generator.eval()
+    discriminator = discriminator.eval()
     return embedder, generator, discriminator
 
 
@@ -41,39 +82,40 @@ class Checkpoints:
             if loss < self.best_loss_Disc:
                 print('\n'+'-'*25+"\n| Poids disc sauvegardés |\n"+'-'*25+'\n')
                 self.best_loss_Disc = loss
-                torch.save(discriminator.state_dict(),
+                torch.save(discriminator.module.state_dict(),
                            PATH_WEIGHTS_DISCRIMINATOR)
         else:
             if loss < self.best_loss_EmbGen:
                 print('\n'+'-'*31+"\n| Poids Emb & Gen sauvegardés |\n"+'-'*31+'\n')
                 self.best_loss_Emb = loss
-                torch.save(embedder.state_dict(), PATH_WEIGHTS_EMBEDDER)
-                torch.save(generator.state_dict(), PATH_WEIGHTS_GENERATOR)
+                torch.save(embedder.module.state_dict(), PATH_WEIGHTS_EMBEDDER)
+                torch.save(generator.module.state_dict(),
+                           PATH_WEIGHTS_GENERATOR)
 
-    def visualize(self, fig, axes,
+    def visualize(self,
                   gt_landmarks, synth_im, gt_im, *models,
-                  save_fig=False, name='plop'):
+                  save_fig=False, name='plop', show=False):
         "-----------------------"
         # TODO Faire une vraie accuracy
         accuracy = 0.5
         "------------------------"
-        # plt.figure('Mon')
-        # plt.clf()
-        im_landmarks = gt_landmarks.detach()[0].cpu().permute(1, 2, 0).numpy()
-        im_synth = synth_im.detach()[0].cpu().permute(1, 2, 0).numpy()
-        im_gt = gt_im.detach()[0].cpu().permute(1, 2, 0).numpy()
+        fig, axes = plt.subplots(3, 3, figsize=(15, 10), num='Mon')
+        im_landmarks = gt_landmarks[0].detach().cpu().permute(1, 2, 0).numpy()
+        im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
+        im_gt = gt_im[0].detach().cpu().permute(1, 2, 0).numpy()
+
         axes[0, 0].clear()
-        axes[0, 0].imshow(im_landmarks)
+        axes[0, 0].imshow(im_landmarks/im_landmarks.max())
         axes[0, 0].axis("off")
         axes[0, 0].set_title('Landmarks')
 
         axes[0, 1].clear()
-        axes[0, 1].imshow(im_synth)
+        axes[0, 1].imshow(im_synth/im_synth.max())
         axes[0, 1].axis("off")
         axes[0, 1].set_title('Synthesized image')
 
         axes[0, 2].clear()
-        axes[0, 2].imshow(im_gt)
+        axes[0, 2].imshow(im_gt/im_gt.max())
         axes[0, 2].axis("off")
         axes[0, 2].set_title('Ground truth')
 
@@ -85,9 +127,6 @@ class Checkpoints:
         axes[1, 1].plot(self.losses["adv"], label='Adv loss')
         axes[1, 1].plot(self.losses["mch"], label='Mch loss')
         axes[1, 1].plot(self.losses["cnt"], label='Cnt loss')
-        axes[1, 1].plot(np.array(self.losses["adv"]) +
-                        np.array(self.losses["mch"]) +
-                        np.array(self.losses["cnt"]), label='EmbGen loss')
         axes[1, 1].set_title('EmbGen losses')
         axes[1, 1].legend()
 
@@ -119,7 +158,7 @@ class Checkpoints:
             axes[2, i].set_xticklabels(layers, rotation="vertical",
                                        fontsize='small')
             axes[2, i].set_xlim(left=0, right=len(ave_grads))
-            axes[2, i].set_ylim(bottom=min(ave_grads), top=max(ave_grads))
+            axes[2, i].set_ylim(bottom=0, top=max(ave_grads)+1)
             # zoom in on the lower gradient regions
             axes[2, i].set_xlabel("Layers")
             axes[2, i].set_ylabel("average gradient")
@@ -128,10 +167,11 @@ class Checkpoints:
             axes[2, i].legend([Line2D([0], [0], color="c", lw=4),
                                Line2D([0], [0], color="r", lw=4)],
                               ['max-gradient', 'mean-gradient'])
-        if save_fig:
-            fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
-        fig.canvas.draw_idle()
-        fig.canvas.flush_events()
+        # if save_fig:
+        #     fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
+        # fig.canvas.draw_idle()
+        # fig.canvas.flush_events()
+        return fig
 
 
 def plot_grad_flow(fig, axes, *models):
