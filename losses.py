@@ -1,7 +1,7 @@
 from torchvision.models.vgg import vgg19
 import torch.nn as nn
 import torch
-from settings import ROOT_WEIGHTS, BATCH_SIZE, LATENT_SIZE, DEVICE
+from settings import BATCH_SIZE, LATENT_SIZE, DEVICE
 """
 
 For the calculation of LCNT, we evaluate L1 loss between activations of
@@ -20,8 +20,6 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 Qustion : comment faire avec les scores des batch ? sum ? mean ?
 """
 
-#
-
 
 # #########
 #  L_adv  #
@@ -29,15 +27,14 @@ Qustion : comment faire avec les scores des batch ? sum ? mean ?
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='sum')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
         loss = 0
-        # with torch.no_grad():
         for ft_gt, ft_synth in zip(features_gt, features_synth):
             loss += self.l1(ft_gt, ft_synth)
         loss /= len(features_synth)
-        # loss *= 10.0
+        loss *= 10.0
         return -(torch.sum(score_disc_synth)/score_disc_synth.size(0))+loss
 
 
@@ -47,13 +44,12 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='sum')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, ei, Wi):
-        # with torch.no_grad():
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)
         Wi = Wi.view(BATCH_SIZE, LATENT_SIZE)
-        return (self.l1(ei, Wi)/BATCH_SIZE)
+        return 80*(self.l1(ei, Wi)/BATCH_SIZE)
 
 
 # #########
@@ -64,7 +60,6 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        # with torch.no_grad():
         one = torch.tensor([1], device=DEVICE, dtype=torch.float)
         zero = torch.tensor([0], device=DEVICE, dtype=torch.float)
         loss = torch.max(zero, one+torch.sum(score_synth)) +\
@@ -81,13 +76,8 @@ class contentLoss(nn.Module):
         self.vgg = vgg19(pretrained=True)
         self.vgg.eval()
         self.vgg_layers = self.vgg.features
+        self.vgg_Face = vgg_face_dag()
 
-        # self.vgg_Face = _Vgg_face()
-        # self.vgg_Face.load_state_dict(
-        #     torch.load(f'{ROOT_WEIGHTS}vgg_face.pth')
-        # )
-
-        # self.vgg_layers_Face = self.vgg_Face.features
         self.layer_name_mapping_vgg19 = {
             '1': "relu1",
             '6': "relu2",
@@ -95,101 +85,103 @@ class contentLoss(nn.Module):
             '20': "relu4",
             '29': "relu5",
         }
-        # self.layer_name_mapping_vggFace = {
-        #     '1': "relu1",
-        #     '6': "relu2",
-        #     '11': "relu3",
-        #     '18': "relu4",
-        #     '25': "relu5",
-        # }
-        self.l1 = nn.L1Loss()
+        self.layer_name_mapping_vggFace = {
+            '1': "relu1_1",
+            '6': "relu2_1",
+            '11': "relu3_1",
+            '18': "relu4_1",
+            '25': "relu5_1",
+        }
+        self.l1 = nn.L1Loss(reduction="sum")
 
     def forward(self, gt, synth):
         # output_gt = {}
         # output_synth = {}
-        # gtFace = gt.copy()
-        # synthFace = synth.copy()
+        gtVgg19 = gt.clone()
+        synthVgg19 = synth.clone()
+        gtVggFace = gt.clone()
+        synthVggFace = synth.clone()
+
         lossVgg19 = 0
-        # lossVggFace = 0
-        # with torch.no_grad():
+        lossVggFace = 0
         for name, module in self.vgg_layers._modules.items():
-            gt = module(gt)
-            synth = module(synth)
+            gtVgg19 = module(gtVgg19)
+            synthVgg19 = module(synthVgg19)
             if name in self.layer_name_mapping_vgg19:
+                lossVgg19 += self.l1(gtVgg19, synthVgg19)
                 # If needed, output can be dictionaries of vgg feature for each
                 # layer :
-
                 # output_gt[self.layer_name_mapping[name]] = gt
                 # output_synth[self.layer_name_mapping[name]] = synth
-                lossVgg19 += self.l1(gt, synth)
 
-        # for name, module in self.vgg_layers_Face._modules.items():
-        #     gtFace = module(gtFace)
-        #     synthFace = module(synthFace)
-        #     if name in self.layer_name_mapping_vgg19:
-        #         lossVggFace += self.l1(gtFace, synth)
-        # return 1e-2*lossVgg19  # + 2e-3*lossVggFace
-        return lossVgg19  # + 2e-3*lossVggFace
+        for name, module in self.vgg_Face.named_children():
+            gtVggFace = module(gtVggFace)
+            synthVggFace = module(synthVggFace)
+            if name in self.layer_name_mapping_vggFace.values():
+                lossVggFace += self.l1(gtVggFace, synthVggFace)
+            if name == "conv5_2":
+                break
+        return (1e-2*lossVgg19 + 2e-3*lossVggFace)/(300*BATCH_SIZE)
 
 
-class _Vgg_face(nn.Module):
+class Vgg_face_dag(nn.Module):
 
     def __init__(self):
-        super(_Vgg_face, self).__init__()
+        super(Vgg_face_dag, self).__init__()
         self.meta = {'mean': [129.186279296875,
                               104.76238250732422,
                               93.59396362304688],
                      'std': [1, 1, 1],
                      'imageSize': [224, 224, 3]}
-        self.conv1_1 = nn.Conv2d(3, 64, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv1_1 = nn.Conv2d(
+            3, 64, kernel_size=[3, 3], stride=(1, 1), padding=(1, 1))
         self.relu1_1 = nn.ReLU(inplace=True)
-        self.conv1_2 = nn.Conv2d(64, 64, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv1_2 = nn.Conv2d(64, 64, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu1_2 = nn.ReLU(inplace=True)
-        self.pool1 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-                                  dilation=1, ceil_mode=False)
-        self.conv2_1 = nn.Conv2d(64, 128, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.pool1 = nn.MaxPool2d(kernel_size=[2, 2], stride=[
+            2, 2], padding=0, dilation=1, ceil_mode=False)
+        self.conv2_1 = nn.Conv2d(64, 128, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu2_1 = nn.ReLU(inplace=True)
-        self.conv2_2 = nn.Conv2d(128, 128, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv2_2 = nn.Conv2d(128, 128, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu2_2 = nn.ReLU(inplace=True)
-        self.pool2 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-                                  dilation=1, ceil_mode=False)
-        self.conv3_1 = nn.Conv2d(128, 256, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.pool2 = nn.MaxPool2d(kernel_size=[2, 2], stride=[
+            2, 2], padding=0, dilation=1, ceil_mode=False)
+        self.conv3_1 = nn.Conv2d(128, 256, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu3_1 = nn.ReLU(inplace=True)
-        self.conv3_2 = nn.Conv2d(256, 256, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv3_2 = nn.Conv2d(256, 256, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu3_2 = nn.ReLU(inplace=True)
-        self.conv3_3 = nn.Conv2d(256, 256, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv3_3 = nn.Conv2d(256, 256, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu3_3 = nn.ReLU(inplace=True)
-        self.pool3 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-                                  dilation=1, ceil_mode=False)
-        self.conv4_1 = nn.Conv2d(256, 512, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.pool3 = nn.MaxPool2d(kernel_size=[2, 2], stride=[
+            2, 2], padding=0, dilation=1, ceil_mode=False)
+        self.conv4_1 = nn.Conv2d(256, 512, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu4_1 = nn.ReLU(inplace=True)
-        self.conv4_2 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv4_2 = nn.Conv2d(512, 512, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu4_2 = nn.ReLU(inplace=True)
-        self.conv4_3 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv4_3 = nn.Conv2d(512, 512, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu4_3 = nn.ReLU(inplace=True)
-        self.pool4 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-                                  dilation=1, ceil_mode=False)
-        self.conv5_1 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.pool4 = nn.MaxPool2d(kernel_size=[2, 2], stride=[
+            2, 2], padding=0, dilation=1, ceil_mode=False)
+        self.conv5_1 = nn.Conv2d(512, 512, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu5_1 = nn.ReLU(inplace=True)
-        self.conv5_2 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv5_2 = nn.Conv2d(512, 512, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu5_2 = nn.ReLU(inplace=True)
-        self.conv5_3 = nn.Conv2d(512, 512, kernel_size=[3, 3], stride=(1, 1),
-                                 padding=(1, 1))
+        self.conv5_3 = nn.Conv2d(512, 512, kernel_size=[
+            3, 3], stride=(1, 1), padding=(1, 1))
         self.relu5_3 = nn.ReLU(inplace=True)
-        self.pool5 = nn.MaxPool2d(kernel_size=[2, 2], stride=[2, 2], padding=0,
-                                  dilation=1, ceil_mode=False)
+        self.pool5 = nn.MaxPool2d(kernel_size=[2, 2], stride=[
+            2, 2], padding=0, dilation=1, ceil_mode=False)
         self.fc6 = nn.Linear(in_features=25088, out_features=4096, bias=True)
         self.relu6 = nn.ReLU(inplace=True)
         self.dropout6 = nn.Dropout(p=0.5)
@@ -239,3 +231,10 @@ class _Vgg_face(nn.Module):
         x37 = self.dropout7(x36)
         x38 = self.fc8(x37)
         return x38
+
+
+def vgg_face_dag(weights_path="./weights/vgg_face_dag.pth"):
+    model = Vgg_face_dag()
+    model.load_state_dict(torch.load(weights_path))
+    model = model.to(DEVICE)
+    return model
