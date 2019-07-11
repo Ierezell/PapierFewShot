@@ -1,33 +1,23 @@
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
-from settings import ROOT_DATASET, BATCH_SIZE, DEVICE, K_SHOT
+from settings import ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT
 import glob
 import torch
 
-import os
-import time
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import datetime
-import itertools
-import glob
-import random
-from PIL import Image
-import torch.nn as nn
+
+from torchvision import transforms
 import torchvision
-from torch.optim import Adam
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.data.dataset import random_split
-from torchvision import models, transforms
-from torch.optim.lr_scheduler import CosineAnnealingLR
 
 
 class frameLoader(Dataset):
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(frameLoader, self).__init__()
-        self.face_landmarks = FaceAlignment(LandmarksType._2D, device='cpu')
+        self.face_landmarks = FaceAlignment(
+            LandmarksType._2D, device="cuda")
         self.K_shots = K_shots
         self.root_dir = root_dir
         self.ids = glob.glob(f"{self.root_dir}/*")
@@ -37,19 +27,7 @@ class frameLoader(Dataset):
         self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
                              for i, name in enumerate(self.ids)}
 
-    def load_random(self, video, total_frame_nb, fusion):
-        frameIndex = np.random.randint(0, total_frame_nb)
-        video.set(cv2.CAP_PROP_POS_FRAMES, frameIndex)
-        _, gt_im = video.read()
-        gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
-
-        landmarks = self.face_landmarks.get_landmarks_from_image(gt_im)
-        landmarks = landmarks[0]
-        if not fusion:
-            image = np.zeros(gt_im.shape, np.float32)
-        else:
-            image = gt_im
-
+    def write_landmarks_on_image(self, image, landmarks):
         # Machoire
         cv2.polylines(image, [np.int32(landmarks[0:17])],
                       isClosed=False, color=(0, 255, 0))
@@ -77,11 +55,81 @@ class frameLoader(Dataset):
         # Bouche interieur
         cv2.polylines(image, [np.int32(landmarks[60:68])],
                       isClosed=True, color=(255, 255, 0))
+        return image
+
+    def load_someone(self, limit=200):
+        userid = np.random.choice(glob.glob(f"{self.root_dir}/*"))
+        context = np.random.choice(glob.glob(f"{userid}/*"))
+        mp4file = np.random.choice(glob.glob(f"{context}/*"))
+        index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
+        video = cv2.VideoCapture(mp4file)
+
+        video_continue = True
+        context_tensors_list = []
+        i = 0
+        while True:
+            video_continue, image = video.read()
+            if not video_continue:
+                break
+            if i > limit:
+                break
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            landmarks = self.face_landmarks.get_landmarks_from_image(image)
+            try:
+                landmarks = landmarks[0]
+                context_tensors_list.append(transforms.ToTensor()(image))
+                i += 1
+            except TypeError:
+                continue
+        video.release()
+        all_frames = torch.cat(context_tensors_list).unsqueeze(0).to(DEVICE)
+        return all_frames, index_user
+
+    def load_random(self, video, total_frame_nb, fusion):
+        badLandmarks = True
+        while badLandmarks:
+            frameIndex = np.random.randint(0, total_frame_nb)
+            video.set(cv2.CAP_PROP_POS_FRAMES, frameIndex)
+            _, gt_im = video.read()
+            gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
+
+            landmarks = self.face_landmarks.get_landmarks_from_image(gt_im)
+            try:
+                landmarks = landmarks[0]
+                badLandmarks = False
+            except TypeError:
+                continue
+
+        if not fusion:
+            image = np.zeros(gt_im.shape, np.float32)
+        else:
+            image = gt_im
+
+        image = self.write_landmarks_on_image(image, landmarks)
 
         if not fusion:
             return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
         else:
             return transforms.ToTensor()(image)
+
+    def get_landmarks_from_webcam(self):
+        cam = cv2.VideoCapture(0)
+        image_ok = False
+        while not image_ok:
+            _, image = cam.read()
+            image = cv2.resize(image, (224, 224))
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            landmarks = self.face_landmarks.get_landmarks_from_image(image)
+            image = np.zeros(image.shape, np.float32)
+            try:
+                landmarks = landmarks[0]
+                self.write_landmarks_on_image(image, landmarks)
+                landmark_tensor = transforms.ToTensor()(image)
+                image_ok = True
+            except TypeError:
+                continue
+        cam.release()
+        return landmark_tensor.unsqueeze(0).to(DEVICE)
 
     def __getitem__(self, index):
         mp4File = self.mp4files[index]
@@ -114,7 +162,7 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
     # size_valid = len(datas) - int(0.8 * len(datas))
     # train_datas, valid_datas = random_split(datas, (size_train, size_valid))
     pin = False if DEVICE.type == 'cpu' else True
-    train_loader = DataLoader(datas, batch_size=BATCH_SIZE, shuffle=True,
+    train_loader = DataLoader(datas, batch_size=LOAD_BATCH_SIZE, shuffle=True,
                               num_workers=workers, pin_memory=pin)
     return train_loader, len(datas.ids)
 
