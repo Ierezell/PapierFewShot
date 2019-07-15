@@ -8,74 +8,109 @@ import torch
 from face_alignment import FaceAlignment, LandmarksType
 from matplotlib import pyplot as plt
 from torchvision import transforms
-from settings import DEVICE
+from settings import (DEVICE, ROOT_DATASET, LEARNING_RATE_RL,
+                      EPS_DECAY, EPS_END, EPS_START)
 from utils import load_trained_models
-
-
-def get_landmarks_from_webcam():
-    face_landmarks = FaceAlignment(LandmarksType._2D, device="cuda")
-    cam = cv2.VideoCapture(0)
-    image_ok = False
-    while not image_ok:
-        _, image = cam.read()
-        image = cv2.resize(image, (224, 224))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        landmarks = face_landmarks.get_landmarks_from_image(image)
-        image = np.zeros(image.shape, np.float32)
-        try:
-            print(landmarks[0][0:17])
-            print(landmarks[0][17:22])
-            landmarks = landmarks[0]
-            # Machoire
-            cv2.polylines(image, [np.int32(landmarks[0:17])],
-                          isClosed=False, color=(0, 255, 0))
-            # Sourcil Gauche
-            cv2.polylines(image, [np.int32(landmarks[17:22])],
-                          isClosed=False, color=(255, 0, 0))
-            # Sourcil droit
-            cv2.polylines(image, [np.int32(landmarks[22:27])],
-                          isClosed=False, color=(255, 0, 0))
-            # Nez arrete
-            cv2.polylines(image, [np.int32(landmarks[27:31])],
-                          isClosed=False, color=(255, 0, 255))
-            # Nez narine
-            cv2.polylines(image, [np.int32(landmarks[31:36])],
-                          isClosed=False, color=(255, 0, 255))
-            # Oeil gauche
-            cv2.polylines(image, [np.int32(landmarks[36:42])],
-                          isClosed=True, color=(0, 0, 255))
-            # oeil droit
-            cv2.polylines(image, [np.int32(landmarks[42:48])],
-                          isClosed=True, color=(0, 0, 255))
-            # Bouche exterieur
-            cv2.polylines(image, [np.int32(landmarks[48:60])],
-                          isClosed=True, color=(255, 255, 0))
-            # Bouche interieur
-            cv2.polylines(image, [np.int32(landmarks[60:68])],
-                          isClosed=True, color=(255, 255, 0))
-
-            landmark_tensor = transforms.ToTensor()(image)
-            image_ok = True
-        except TypeError:
-            continue
-    cam.release()
-    return landmark_tensor.unsqueeze(0).to(DEVICE)
-
-
+from preprocess import frameLoader
+from environement import Environement
+from RlModel import Policy
+from torch.optim import Adam
+from torch import nn
+import random
+import math
 plt.ion()
-fig = plt.figure(num='Mon')
 
-while True:
-    landmarks = get_landmarks_from_webcam()
-    im_landmarks = landmarks[0].detach().cpu().permute(1, 2, 0).numpy()
-    plt.imshow(im_landmarks / im_landmarks.max())
-    fig.canvas.draw()
-    fig.canvas.flush_events()
+environement = Environement()
+torch.cuda.empty_cache()
+environement.new_person()
+torch.cuda.empty_cache()
+policy = Policy()
+policy = policy.to(DEVICE)
+torch.cuda.empty_cache()
+print("Nombre de paramètres police: ",
+      f"{sum([np.prod(p.size()) if p.requires_grad else 0 for p in policy.parameters()]):,}")
+
+optimizer = Adam(policy.parameters(), lr=LEARNING_RATE_RL)
 
 
-# print("torch version : ", torch.__version__)
-# print("Device : ", DEVICE)
-# # torch.autograd.set_detect_anomaly(True)
+# ################################################
 
-# embeddings, paramWeights, paramBias = emb(context)
-# synth_im = gen(gt_landmarks,  paramWeights, paramBias)
+# ################################################
+# ################################################
+# ################################################
+# ################################################
+# ################################################
+# ################################################
+# ################################################
+
+
+iteration = 0
+done = False
+criterion = nn.MSELoss()
+while not done:
+    print("k")
+    state = environement.synth_im
+    # print(state.size())
+    probas = policy(state)
+    # Choose action
+    sample = random.random()
+    eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+        math.exp(-1. * iteration / EPS_DECAY)
+    iteration += 1
+    if sample > eps_threshold:
+        action_index = torch.argmax(probas)
+    else:
+        action_index = torch.randint(low=0, high=policy.action_space,
+                                     size=(1,), dtype=torch.int)
+    # Apply action
+    # action_index = torch.tensor([32])
+    print(action_index)
+    new_state, reward, done = environement.step(action_index)
+    state = new_state
+    # policy.replay_memory.append((state, action_index, reward, new_state, done))
+    # minibatch = random.sample(policy.replay_memory,
+    #   min(len(policy.replay_memory), 8))
+
+    # # unpack minibatch
+    # state_batch = torch.cat(tuple(d[0] for d in minibatch))
+    # action_batch = torch.cat(tuple(d[1] for d in minibatch))
+    # reward_batch = torch.cat(tuple(d[2] for d in minibatch))
+    # state_1_batch = torch.cat(tuple(d[3] for d in minibatch))
+
+    # if torch.cuda.is_available():  # put on GPU if CUDA is available
+    #     state_batch = state_batch.cuda()
+    #     action_batch = action_batch.cuda()
+    #     reward_batch = reward_batch.cuda()
+    #     state_1_batch = state_1_batch.cuda()
+
+    # # get output for the next state
+    # output_1_batch = policy(state_1_batch)
+
+    # # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
+    # y_batch = torch.cat(
+    #     tuple(reward_batch[i] if minibatch[i][4]
+    #           else reward_batch[i]+policy.gamma*torch.max(output_1_batch[i])
+    #           for i in range(len(minibatch))
+    #           )
+    # )
+
+    # # extract Q-value
+    # q_value = torch.sum(policy(state_batch) * action_batch, dim=1)
+
+    # # PyTorch accumulates gradients by default,
+    # # so they need to be reset in each pass
+    # optimizer.zero_grad()
+
+    # # returns a new Tensor, detached from the current graph,
+    # # the result will never require gradient
+    # y_batch = y_batch.detach()
+
+    # # calculate loss
+    # loss = criterion(q_value, y_batch)
+
+    # # do backward pass
+    # loss.backward()
+    # optimizer.step()
+
+    # # set state to be state_1
+    # state = new_state

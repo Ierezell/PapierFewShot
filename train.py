@@ -14,10 +14,8 @@ from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
 from utils import Checkpoints, load_models
 from torch import nn
 
-from settings import LOAD_BATCH_SIZE, BATCH_SIZE
 
-train_loader, nb_pers, datas = get_data_loader(
-    K_shots=K_SHOT, workers=NB_WORKERS)
+train_loader, nb_pers = get_data_loader(K_shots=K_SHOT, workers=NB_WORKERS)
 
 emb, gen, disc = load_models(nb_pers, load_previous_state=LOAD_PREVIOUS)
 
@@ -67,15 +65,14 @@ for i_epoch in range(NB_EPOCHS):
         optimizerGen.zero_grad()
 
         gt_im, gt_landmarks, context, itemIds = batch
-        print(gt_landmarks.size())
         gt_im = gt_im.to(DEVICE)
         gt_landmarks = gt_landmarks.to(DEVICE)
         context = context.to(DEVICE)
         itemIds = itemIds.to(DEVICE)
 
-        embeddings, paramWeights, paramBias = emb(context)
+        embeddings, paramWeights, paramBias, layersUp = emb(context)
 
-        synth_im = gen(gt_landmarks,  paramWeights, paramBias)
+        synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
 
         score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
                                                                gt_landmarks),
@@ -120,8 +117,8 @@ for i_epoch in range(NB_EPOCHS):
                               global_step=i_batch+len(train_loader)*i_epoch)
 
         if i_batch % PRINT_EVERY == 0:
-            fig = check.visualize(gt_landmarks, synth_im,
-                                  gt_im, emb, gen, disc, show=False)
+            # fig = check.visualize(gt_landmarks, synth_im,
+            #                       gt_im, emb, gen, disc, show=False)
             images_to_grid = torch.cat((gt_landmarks, synth_im,
                                         gt_im, context),
                                        dim=1).view(-1, 3, 224, 224)
@@ -131,6 +128,6 @@ for i_epoch in range(NB_EPOCHS):
             )
             writer.add_image('images', grid,
                              global_step=i_batch + len(train_loader) * i_epoch)
-            writer.add_figure('Resumé', fig, close=False,
-                              global_step=i_batch+len(train_loader)*i_epoch)
+            # writer.add_figure('Resumé', fig, close=False,
+            #                   global_step=i_batch+len(train_loader)*i_epoch)
 writer.close()

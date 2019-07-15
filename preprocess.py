@@ -26,6 +26,7 @@ class frameLoader(Dataset):
 
         self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
                              for i, name in enumerate(self.ids)}
+        torch.cuda.empty_cache()
 
     def write_landmarks_on_image(self, image, landmarks):
         # Machoire
@@ -77,12 +78,14 @@ class frameLoader(Dataset):
             landmarks = self.face_landmarks.get_landmarks_from_image(image)
             try:
                 landmarks = landmarks[0]
+                image = self.write_landmarks_on_image(image, landmarks)
                 context_tensors_list.append(transforms.ToTensor()(image))
                 i += 1
             except TypeError:
                 continue
         video.release()
         all_frames = torch.cat(context_tensors_list).unsqueeze(0).to(DEVICE)
+        torch.cuda.empty_cache()
         return all_frames, index_user
 
     def load_random(self, video, total_frame_nb, fusion):
@@ -106,7 +109,7 @@ class frameLoader(Dataset):
             image = gt_im
 
         image = self.write_landmarks_on_image(image, landmarks)
-
+        torch.cuda.empty_cache()
         if not fusion:
             return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
         else:
@@ -129,6 +132,7 @@ class frameLoader(Dataset):
             except TypeError:
                 continue
         cam.release()
+        torch.cuda.empty_cache()
         return landmark_tensor.unsqueeze(0).to(DEVICE)
 
     def __getitem__(self, index):

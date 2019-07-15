@@ -1,11 +1,13 @@
 
+from torchvision import transforms
 import numpy as np
 
-from settings import ROOT_DATASET
+from settings import ROOT_DATASET, BATCH_SIZE, DEVICE
 from utils import load_trained_models
 from preprocess import frameLoader
 import torch
 from collections import deque
+import matplotlib.pyplot as plt
 
 
 class Environement:
@@ -84,27 +86,63 @@ class Environement:
         (self.embedder,
          self.generator,
          self.discriminator) = load_trained_models(len(self.frameloader.ids))
-
         self.landmarks_done = deque(maxlen=10000)
-        self.context = None
-        self.user_id = None
+        self.contexts = None
+        self.user_ids = None
         self.embeddings = None
         self.paramWeights = None
         self.paramBias = None
+        self.layersUp = None
         self.iterations = 0
         self.episodes = 0
         self.max_iter = 2000000
+        self.fig, self.axes = plt.subplots(2, 2)
+        torch.cuda.empty_cache()
 
     def new_person(self):
-        self.context, self.user_id = self.frameloader.load_someone(limit=2000)
+        # self.contexts = torch.tensor(np.zeros(BATCH_SIZE, dtype=np.float),
+        #                              dtype=torch.float, device="cuda")
+        # self.user_ids = torch.tensor(np.zeros(BATCH_SIZE, dtype=np.float),
+        #                              dtype=torch.float, device="cuda")
+        # for b in range(BATCH_SIZE):
+        #     context, user_id = self.frameloader.load_someone(limit=2000)
+        #     print(context.size())
+        #     print(self.contexts.size())
+
+        #     self.contexts = torch.cat((self.contexts, context), dim=0)
+        #     self.user_ids = torch.cat((self.user_ids, user_id), dim=0)
+        input("going to load someone")
+        self.contexts, self.user_ids = self.frameloader.load_someone(limit=20)
+
         (self.embeddings,
          self.paramWeights,
-         self.paramBias) = self.emb(self.context)
+         self.paramBias,
+         self.layersUp) = self.embedder(self.contexts)
+
         self.iterations = 0
         self.episodes += 1
+        self.synth_im = self.contexts.narrow(1, 0, 3)
+
+        self.axes[0, 0].clear()
+        synth_im = self.synth_im[0].cpu().permute(1, 2, 0).numpy()
+        self.axes[0, 0].imshow(synth_im/synth_im.max())
+        self.axes[0, 0].axis("off")
+        self.axes[0, 0].set_title('State')
+
+        self.axes[1, 0].clear()
+        synth_im = self.synth_im[0].cpu().permute(1, 2, 0).numpy()
+        self.axes[1, 0].imshow(synth_im/synth_im.max())
+        self.axes[1, 0].axis("off")
+        self.axes[1, 0].set_title('Ref')
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+        torch.cuda.empty_cache()
 
     def step(self, action):
         self.iterations += 1
+        done = False
         if self.iterations > self.max_iter:
             done = True
         point_nb = action % 68
@@ -120,30 +158,59 @@ class Environement:
             self.landmarks[point_nb][1] -= 5
 
         reward = self.get_reward()
-        return self.landmarks, reward, done
+        return self.synth_im, reward, done
 
     def get_reward(self):
-        self.landmarks_img = self.frameloader.write_landmarks_on_image(
-            np.zeros((224, 224), dtype=np.float32), self.landmarks)
+        landmarks_img = self.frameloader.write_landmarks_on_image(
+            np.zeros((224, 224, 3), dtype=np.float32), self.landmarks)
 
-        self.synth_im = self.generator(self.landmarks_img)
+        self.landmarks_img = transforms.ToTensor()(landmarks_img)
+        self.landmarks_img = self.landmarks_img.unsqueeze(0).to(DEVICE)
 
-        score_disc = self.discriminator(torch.cat((self.synth_im,
-                                                   self.landmarks_img), dim=1),
-                                        self.user_id)
+        self.synth_im = self.generator(self.landmarks_img, self.paramWeights,
+                                       self.paramBias, self.layersUp)
+
+        self.axes[0, 1].clear()
+        self.axes[0, 1].imshow(landmarks_img/landmarks_img.max())
+        self.axes[0, 1].axis("off")
+        self.axes[0, 1].set_title('Landmarks (latent space)')
+
+        print(self.synth_im.size())
+        synth_im = self.synth_im[0].cpu().permute(1, 2, 0).numpy()
+        self.axes[0, 0].clear()
+        self.axes[0, 0].imshow(synth_im / synth_im.max())
+        self.axes[0, 0].axis("off")
+        self.axes[0, 0].set_title('State')
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        score_disc, _ = self.discriminator(torch.cat((self.synth_im,
+                                                      self.landmarks_img), dim=1),
+                                           self.user_ids)
 
         if self.landmarks in self.landmarks_done:
             score_redoing = -100
         else:
             score_redoing = 0
             self.landmarks_done.append(self.landmarks)
-        return score_disc/10 + score_redoing
+
+        for point in range(0, 68):
+            if (self.landmarks[point][0] < 0 or
+                self.landmarks[point][0] > 224 or
+                self.landmarks[point][1] < 0 or
+                    self.landmarks[point][1] > 224):
+                score_outside = -50
+                break
+        else:
+            score_outside = 0
+
+        return score_disc/10 + score_redoing + score_outside
 
     def reset(self):
         self.landmarks = self.begining_landmarks.copy()
         self.landmarks_done = deque(maxlen=1000)
-        self.context = None
-        self.user_id = None
+        self.contexts = None
+        self.user_ids = None
         self.embeddings = None
         self.paramWeights = None
         self.paramBias = None
