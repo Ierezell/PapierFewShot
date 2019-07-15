@@ -60,8 +60,10 @@ part of the generator.
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
-        assert(in_channels == out_channels)
-        self.conv1 = spectral_norm(nn.Conv2d(out_channels, out_channels,
+        self.adaDim = spectral_norm(nn.Conv2d(in_channels,  out_channels,
+                                              kernel_size=1, padding=0,
+                                              bias=False))
+        self.conv1 = spectral_norm(nn.Conv2d(in_channels, out_channels,
                                              kernel_size=1, padding=0,
                                              bias=False))
 
@@ -79,30 +81,43 @@ class ResidualBlock(nn.Module):
 
         self.relu = nn.ReLU()
 
-    def forward(self, x, w1, b1, w2, b2, w3, b3, w4, b4):
-        residual = x
+    def forward(self, x, w1=None, b1=None, w2=None, b2=None, w3=None, b3=None,
+                w4=None, b4=None):
+        residual = self.relu(self.adaDim(x))
 
         out = F.instance_norm(x)
-        out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w1 is not None and b1 is not None:
+            # print("Plop : ", out.size(),
+            #       w1.unsqueeze(-1).unsqueeze(-1).expand_as(out).size())
+            out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv1(x)
 
         out = F.instance_norm(out)
-        out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w2 is not None and b2 is not None:
+            # print("Plop : ", out.size(),
+            #       w2.unsqueeze(-1).unsqueeze(-1).expand_as(out).size())
+            out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv2(out)
 
         out = F.instance_norm(out)
-        out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w3 is not None and b3 is not None:
+            # print("Plop : ", out.size(),
+            #       w3.unsqueeze(-1).unsqueeze(-1).expand_as(out).size())
+            out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv3(out)
 
         out = F.instance_norm(out)
-        out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w4 is not None and b4 is not None:
+            # print("Plop : ", out.size(),
+            #       w4.unsqueeze(-1).unsqueeze(-1).expand_as(out).size())
+            out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv4(out)
 
@@ -147,12 +162,16 @@ class ResidualBlockDown(nn.Module):
         if hasattr(self, "adaDim"):
             fill_to_out_channels = self.adaDim(residual)
             residual = torch.cat((residual, fill_to_out_channels), dim=1)
-        out = self.relu(x)
+        out = F.instance_norm(x)
+        out = self.relu(out)
         out = self.conv1(out)
+        out = F.instance_norm(out)
         out = self.relu(out)
         out = self.conv2(out)
+        out = F.instance_norm(out)
         out = self.relu(out)
         out = self.conv3(out)
+        out = F.instance_norm(out)
         out = self.relu(out)
         out = self.avgPool(out)
         out = self.conv4(out)
@@ -190,32 +209,37 @@ class ResidualBlockUp(nn.Module):
 
         self.relu = nn.ReLU()
 
-    def forward(self, x, w1, b1, w2, b2, w3, b3, w4, b4):
+    def forward(self, x, w1=None, b1=None, w2=None, b2=None, w3=None, b3=None,
+                w4=None, b4=None):
         residual = x
         residual = self.upsample(self.adaDim(residual))
 
         out = F.instance_norm(x)
-        out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w1 is not None and b1 is not None:
+            out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv1(out)
 
         out = F.instance_norm(out)
-        out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w2 is not None and b2 is not None:
+            out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.upsample(out)
         out = self.conv2(out)
 
         out = F.instance_norm(out)
-        out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w3 is not None and b3 is not None:
+            out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv3(out)
 
         out = F.instance_norm(out)
-        out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        if w4 is not None and b4 is not None:
+            out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
         out = self.relu(out)
         out = self.conv4(out)
         out += residual

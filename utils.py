@@ -1,11 +1,8 @@
-import inspect
-import sys
-
 import numpy as np
 import torch
 from torch import nn
 from matplotlib.lines import Line2D
-from models import Discriminator, Embedder, Generator
+from bigmodels import Discriminator, Embedder, Generator
 from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
                       PATH_WEIGHTS_GENERATOR,
                       DEVICE)
@@ -49,17 +46,14 @@ def load_trained_models(nb_pers):
     discriminator = Discriminator(nb_pers)
     embedder = embedder.to(DEVICE)
     generator = generator.to(DEVICE)
-
-    embedder.load_state_dict(torch.load(
-        PATH_WEIGHTS_EMBEDDER, map_location="cuda"))
-    generator.load_state_dict(torch.load(
-        PATH_WEIGHTS_GENERATOR, map_location="cuda"))
-    discriminator.load_state_dict(torch.load(
-        PATH_WEIGHTS_DISCRIMINATOR, map_location="cuda"))
-
     discriminator = discriminator.to(DEVICE)
-    embedder = embedder.to(DEVICE)
-    generator = generator.to(DEVICE)
+
+    # embedder.load_state_dict(torch.load(
+    #     PATH_WEIGHTS_EMBEDDER, map_location="cuda"))
+    # generator.load_state_dict(torch.load(
+    #     PATH_WEIGHTS_GENERATOR, map_location="cuda"))
+    # discriminator.load_state_dict(torch.load(
+    #     PATH_WEIGHTS_DISCRIMINATOR, map_location="cuda"))
 
     embedder = embedder.eval()
     generator = generator.eval()
@@ -80,13 +74,17 @@ class Checkpoints:
     def save(self, model, loss, embedder, generator, discriminator):
         if model == "disc":
             if loss < self.best_loss_Disc:
-                print('\n'+'-'*25+"\n| Poids disc sauvegardés |\n"+'-'*25+'\n')
+                print('\n' + '-' * 25)
+                print("| Poids disc sauvegardés |\n")
+                print('-'*25)
                 self.best_loss_Disc = loss
                 torch.save(discriminator.module.state_dict(),
                            PATH_WEIGHTS_DISCRIMINATOR)
         else:
             if loss < self.best_loss_EmbGen:
-                print('\n'+'-'*31+"\n| Poids Emb & Gen sauvegardés |\n"+'-'*31+'\n')
+                print('\n' + '-'*31)
+                print("| Poids Emb & Gen sauvegardés |")
+                print('-'*31)
                 self.best_loss_Emb = loss
                 torch.save(embedder.module.state_dict(), PATH_WEIGHTS_EMBEDDER)
                 torch.save(generator.module.state_dict(),
@@ -223,37 +221,3 @@ def plot_grad_flow(fig, axes, *models):
     fig.clf()
     fig.canvas.draw()
     fig.canvas.flush_events()
-
-
-def get_size(obj, seen=None):
-    """Recursively finds size of objects in bytes"""
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if hasattr(obj, '__dict__'):
-        for cls in obj.__class__.__mro__:
-            if '__dict__' in cls.__dict__:
-                d = cls.__dict__['__dict__']
-                if inspect.isgetsetdescriptor(d) or inspect.ismemberdescriptor(d):
-                    size += get_size(obj.__dict__, seen)
-                break
-    if isinstance(obj, dict):
-        size += sum((get_size(v, seen) for v in obj.values()))
-        size += sum((get_size(k, seen) for k in obj.keys()))
-    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-        try:
-            size += sum((get_size(i, seen) for i in obj))
-        except TypeError:
-            print("0-D")
-
-    if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
-        size += sum(get_size(getattr(obj, s), seen)
-                    for s in obj.__slots__ if hasattr(obj, s))
-
-    return size
