@@ -15,9 +15,6 @@ We sum these losses with the weights equal to
 LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
                      i=1          k         k           1
 
-
-
-Qustion : comment faire avec les scores des batch ? sum ? mean ?
 """
 
 
@@ -239,6 +236,6 @@ class Vgg_face_dag(nn.Module):
 
 def vgg_face_dag(weights_path="./weights/vgg_face_dag.pth"):
     model = Vgg_face_dag()
-    model.load_state_dict(torch.load(weights_path))
     model = model.to(DEVICE)
+    model.load_state_dict(torch.load(weights_path))
     return model
