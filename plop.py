@@ -9,7 +9,7 @@ from face_alignment import FaceAlignment, LandmarksType
 from matplotlib import pyplot as plt
 from torchvision import transforms
 from settings import (DEVICE, ROOT_DATASET, LEARNING_RATE_RL,
-                      EPS_DECAY, EPS_END, EPS_START)
+                      EPS_DECAY, EPS_END, EPS_START, BATCH_SIZE_RL)
 from utils import load_trained_models
 from preprocess import frameLoader
 from environement import Environement
@@ -73,7 +73,7 @@ while not done:
                                  new_state.detach().cpu(),
                                  done))
     minibatch = random.sample(policy.replay_memory,
-                              min(len(policy.replay_memory), 8))
+                              min(len(policy.replay_memory), BATCH_SIZE_RL))
     # print(minibatch)
 
     # unpack minibatch
