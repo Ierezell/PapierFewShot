@@ -1,4 +1,4 @@
-from settings import LATENT_SIZE, K_SHOT, BATCH_SIZE
+from settings import LATENT_SIZE, BATCH_SIZE
 from layers import ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
 from torch.nn.utils import spectral_norm
 from torch import nn
@@ -76,6 +76,7 @@ class Generator(nn.Module):
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, img,  paramWeights, paramBias):
         x = self.ResDown1(img)
@@ -194,7 +195,7 @@ class Generator(nn.Module):
                         b4=paramBias.narrow(-1, o_r2+32+32//2, 32//4),
                         )
         # print("Taille poids et bias ", o_r2+32+32//2+32//4)
-        x = self.tanh(x)
+        x = self.sigmoid(x)
         return x
 
 

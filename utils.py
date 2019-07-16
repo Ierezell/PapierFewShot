@@ -2,10 +2,16 @@ import numpy as np
 import torch
 from torch import nn
 from matplotlib.lines import Line2D
-from bigmodels import Discriminator, Embedder, Generator
+from models import Discriminator, Embedder, Generator
+
+from bigmodels import Discriminator as BigDiscriminator
+from bigmodels import Embedder as BigEmbedder
+from bigmodels import Generator as BigGenerator
+
 from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
-                      PATH_WEIGHTS_GENERATOR,
-                      DEVICE)
+                      PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_BIG_DISCRIMINATOR,
+                      PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
+                      DEVICE, MODEL, LOAD_PREVIOUS)
 
 import matplotlib.style as mplstyle
 import matplotlib.pyplot as plt
@@ -13,7 +19,7 @@ import matplotlib.pyplot as plt
 mplstyle.use(['dark_background', 'fast'])
 
 
-def load_models(nb_pers, load_previous_state=True):
+def load_small_models(nb_pers, load_previous_state=LOAD_PREVIOUS):
     embedder = Embedder()
     generator = Generator()
     discriminator = Discriminator(nb_pers)
@@ -40,7 +46,35 @@ def load_models(nb_pers, load_previous_state=True):
     return embedder, generator, discriminator
 
 
-def load_trained_models(nb_pers):
+def load_big_models(nb_pers, load_previous_state=LOAD_PREVIOUS):
+    embedder = BigEmbedder()
+    generator = BigGenerator()
+    discriminator = BigDiscriminator(nb_pers)
+
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+    discriminator = discriminator.to(DEVICE)
+
+    embedder = nn.DataParallel(
+        embedder, device_ids=range(torch.cuda.device_count()))
+    generator = nn.DataParallel(
+        generator, device_ids=range(torch.cuda.device_count()))
+    discriminator = nn.DataParallel(
+        discriminator, device_ids=range(torch.cuda.device_count()))
+
+    if load_previous_state:
+        embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_BIG_EMBEDDER))
+        generator.module.load_state_dict(
+            torch.load(PATH_WEIGHTS_BIG_GENERATOR))
+        discriminator.module.load_state_dict(
+            torch.load(PATH_WEIGHTS_BIG_DISCRIMINATOR))
+    # embedder = embedder.to(DEVICE)
+    # generator = generator.to(DEVICE)
+    # discriminator = discriminator.to(DEVICE)
+    return embedder, generator, discriminator
+
+
+def load_small_trained_models(nb_pers):
     embedder = Embedder()
     generator = Generator()
     discriminator = Discriminator(nb_pers)
@@ -48,17 +82,52 @@ def load_trained_models(nb_pers):
     generator = generator.to(DEVICE)
     discriminator = discriminator.to(DEVICE)
 
-    # embedder.load_state_dict(torch.load(
-    #     PATH_WEIGHTS_EMBEDDER, map_location="cuda"))
-    # generator.load_state_dict(torch.load(
-    #     PATH_WEIGHTS_GENERATOR, map_location="cuda"))
-    # discriminator.load_state_dict(torch.load(
-    #     PATH_WEIGHTS_DISCRIMINATOR, map_location="cuda"))
+    embedder.load_state_dict(torch.load(
+        PATH_WEIGHTS_EMBEDDER, map_location="cuda"))
+    generator.load_state_dict(torch.load(
+        PATH_WEIGHTS_GENERATOR, map_location="cuda"))
+    discriminator.load_state_dict(torch.load(
+        PATH_WEIGHTS_DISCRIMINATOR, map_location="cuda"))
 
     embedder = embedder.eval()
     generator = generator.eval()
     discriminator = discriminator.eval()
     return embedder, generator, discriminator
+
+
+def load_big_trained_models(nb_pers):
+    embedder = BigEmbedder()
+    generator = BigGenerator()
+    discriminator = BigDiscriminator(nb_pers)
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+    discriminator = discriminator.to(DEVICE)
+
+    embedder.load_state_dict(torch.load(
+        PATH_WEIGHTS_BIG_EMBEDDER, map_location="cuda"))
+    generator.load_state_dict(torch.load(
+        PATH_WEIGHTS_BIG_GENERATOR, map_location="cuda"))
+    discriminator.load_state_dict(torch.load(
+        PATH_WEIGHTS_BIG_DISCRIMINATOR, map_location="cuda"))
+
+    embedder = embedder.eval()
+    generator = generator.eval()
+    discriminator = discriminator.eval()
+    return embedder, generator, discriminator
+
+
+def load_trained_models(nb_pers, model=MODEL):
+    if model == "small":
+        return load_small_trained_models(nb_pers)
+    elif model == "big":
+        return load_big_trained_models(nb_pers)
+
+
+def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,  model=MODEL):
+    if model == "small":
+        return load_small_models(nb_pers, load_previous_state)
+    elif model == "big":
+        return load_big_models(nb_pers, load_previous_state)
 
 
 class Checkpoints:
@@ -78,20 +147,30 @@ class Checkpoints:
                 print("| Poids disc sauvegardés |\n")
                 print('-'*25)
                 self.best_loss_Disc = loss
-                torch.save(discriminator.module.state_dict(),
-                           PATH_WEIGHTS_DISCRIMINATOR)
+                if MODEL == 'small':
+                    torch.save(discriminator.module.state_dict(),
+                               PATH_WEIGHTS_DISCRIMINATOR)
+                elif MODEL == "big":
+                    torch.save(discriminator.module.state_dict(),
+                               PATH_WEIGHTS_BIG_DISCRIMINATOR)
         else:
             if loss < self.best_loss_EmbGen:
                 print('\n' + '-'*31)
                 print("| Poids Emb & Gen sauvegardés |")
                 print('-'*31)
                 self.best_loss_Emb = loss
-                torch.save(embedder.module.state_dict(), PATH_WEIGHTS_EMBEDDER)
-                torch.save(generator.module.state_dict(),
-                           PATH_WEIGHTS_GENERATOR)
+                if MODEL == 'small':
+                    torch.save(embedder.module.state_dict(),
+                               PATH_WEIGHTS_EMBEDDER)
+                    torch.save(generator.module.state_dict(),
+                               PATH_WEIGHTS_GENERATOR)
+                elif MODEL == "big":
+                    torch.save(embedder.module.state_dict(),
+                               PATH_WEIGHTS_BIG_EMBEDDER)
+                    torch.save(generator.module.state_dict(),
+                               PATH_WEIGHTS_BIG_GENERATOR)
 
-    def visualize(self,
-                  gt_landmarks, synth_im, gt_im, *models,
+    def visualize(self, gt_landmarks, synth_im, gt_im, *models,
                   save_fig=False, name='plop', show=False):
         "-----------------------"
         # TODO Faire une vraie accuracy
