@@ -9,15 +9,14 @@ from torch.utils.tensorboard import SummaryWriter
 from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, LOAD_PREVIOUS, NB_EPOCHS, NB_WORKERS,
-                      PRINT_EVERY)
+                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, MODEL)
 from utils import Checkpoints, load_models
 from torch import nn
 
 
-train_loader, nb_pers = get_data_loader(K_shots=K_SHOT, workers=NB_WORKERS)
+train_loader, nb_pers = get_data_loader()
 
-emb, gen, disc = load_models(nb_pers, load_previous_state=LOAD_PREVIOUS)
+emb, gen, disc = load_models(nb_pers)
 
 print("Nombre de paramètres Emb: ",
       f"{sum([np.prod(p.size()) for p in emb.parameters()]):,}")
@@ -65,14 +64,19 @@ for i_epoch in range(NB_EPOCHS):
         optimizerGen.zero_grad()
 
         gt_im, gt_landmarks, context, itemIds = batch
+
         gt_im = gt_im.to(DEVICE)
         gt_landmarks = gt_landmarks.to(DEVICE)
         context = context.to(DEVICE)
         itemIds = itemIds.to(DEVICE)
 
-        embeddings, paramWeights, paramBias, layersUp = emb(context)
+        if MODEL == "big":
+            embeddings, paramWeights, paramBias, layersUp = emb(context)
+            synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
 
-        synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+        elif MODEL == "small":
+            embeddings, paramWeights, paramBias = emb(context)
+            synth_im = gen(gt_landmarks,  paramWeights, paramBias)
 
         score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
                                                                gt_landmarks),

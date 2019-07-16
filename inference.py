@@ -2,11 +2,11 @@
 
 import torch
 from matplotlib import pyplot as plt
-from settings import ROOT_DATASET
 from utils import load_trained_models
 from preprocess import frameLoader
+from settings import MODEL
 
-frameloader = frameLoader(ROOT_DATASET, 0)
+frameloader = frameLoader()
 
 emb, gen, disc = load_trained_models(len(frameloader.ids))
 
@@ -19,11 +19,17 @@ print(context.size(1)/3, "  Frames Loaded")
 plt.ion()
 
 with torch.no_grad():
-    embeddings, paramWeights, paramBias = emb(context)
+    if MODEL == "small":
+        embeddings, paramWeights, paramBias = emb(context)
+    elif MODEL == "big":
+        embeddings, paramWeights, paramBias, layersUp = emb(context)
 
     while True:
         landmarks = frameloader.get_landmarks_from_webcam()
-        synth_im = gen(landmarks, paramWeights, paramBias)
+        if MODEL == "small":
+            synth_im = gen(landmarks, paramWeights, paramBias)
+        elif MODEL == "big":
+            synth_im = gen(landmarks, paramWeights, paramBias, layersUp)
         score_synth, _ = disc(torch.cat((synth_im, landmarks), dim=1), user_id)
 
         im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()

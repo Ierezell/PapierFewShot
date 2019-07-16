@@ -2,7 +2,7 @@
 from torchvision import transforms
 import numpy as np
 
-from settings import ROOT_DATASET, BATCH_SIZE, DEVICE
+from settings import BATCH_SIZE, DEVICE, MODEL
 from utils import load_trained_models
 from preprocess import frameLoader
 import torch
@@ -81,7 +81,7 @@ class Environement:
                                    [105., 159.],
                                    [100., 159.]]
         self.landmarks = self.begining_landmarks.copy()
-        self.frameloader = frameLoader(ROOT_DATASET, 0)
+        self.frameloader = frameLoader()
 
         (self.embedder,
          self.generator,
@@ -111,13 +111,17 @@ class Environement:
 
         #     self.contexts = torch.cat((self.contexts, context), dim=0)
         #     self.user_ids = torch.cat((self.user_ids, user_id), dim=0)
-        input("going to load someone")
+        # input("going to load someone")
         self.contexts, self.user_ids = self.frameloader.load_someone(limit=20)
-
-        (self.embeddings,
-         self.paramWeights,
-         self.paramBias,
-         self.layersUp) = self.embedder(self.contexts)
+        if MODEL == "big":
+            (self.embeddings,
+             self.paramWeights,
+             self.paramBias,
+             self.layersUp) = self.embedder(self.contexts)
+        elif MODEL == "small":
+            (self.embeddings,
+             self.paramWeights,
+             self.paramBias) = self.embedder(self.contexts)
 
         self.iterations = 0
         self.episodes += 1
@@ -166,17 +170,21 @@ class Environement:
 
         self.landmarks_img = transforms.ToTensor()(landmarks_img)
         self.landmarks_img = self.landmarks_img.unsqueeze(0).to(DEVICE)
-
-        self.synth_im = self.generator(self.landmarks_img, self.paramWeights,
-                                       self.paramBias, self.layersUp)
+        if MODEL == "big":
+            self.synth_im = self.generator(self.landmarks_img,
+                                           self.paramWeights,
+                                           self.paramBias, self.layersUp)
+        elif MODEL == "small":
+            self.synth_im = self.generator(self.landmarks_img,
+                                           self.paramWeights,
+                                           self.paramBias)
 
         self.axes[0, 1].clear()
         self.axes[0, 1].imshow(landmarks_img/landmarks_img.max())
         self.axes[0, 1].axis("off")
         self.axes[0, 1].set_title('Landmarks (latent space)')
 
-        print(self.synth_im.size())
-        synth_im = self.synth_im[0].cpu().permute(1, 2, 0).numpy()
+        synth_im = self.synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
         self.axes[0, 0].clear()
         self.axes[0, 0].imshow(synth_im / synth_im.max())
         self.axes[0, 0].axis("off")
