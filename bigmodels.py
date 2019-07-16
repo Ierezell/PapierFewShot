@@ -136,6 +136,7 @@ class Generator(nn.Module):
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, img, paramWeights, paramBias, layersUp):
         """
@@ -308,7 +309,7 @@ class Generator(nn.Module):
         x = self.relu(x)
         outRu6 = outRu5 + 64 + 64//4 + 64//4 + 64//4
         x = self.Res7(x)
-        x = self.tanh(x)
+        x = self.sigmoid(x)
         # print("PARAMMMMMM  : ", outRu6)
         return x
 
