@@ -1,0 +1,6 @@
+weights/BigGenerator.pt filter=lfs diff=lfs merge=lfs -text
+weights/Discriminator.pt filter=lfs diff=lfs merge=lfs -text
+weights/Embedder.pt filter=lfs diff=lfs merge=lfs -text
+weights/Generator.pt filter=lfs diff=lfs merge=lfs -text
+weights/BigDiscriminator.pt filter=lfs diff=lfs merge=lfs -text
+weights/BigEmbedder.pt filter=lfs diff=lfs merge=lfs -text

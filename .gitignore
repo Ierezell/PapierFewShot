@@ -6,8 +6,9 @@ vox2_test_mp4.zip
 dataset
 dataset/*
 
-weights
-weights/*
+# weights
+# weights/*
+weights/vgg_face_dag.pth
 
 runs
 runs/*
