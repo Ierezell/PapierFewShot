@@ -4,3 +4,14 @@ weights/Embedder.pt filter=lfs diff=lfs merge=lfs -text
 weights/Generator.pt filter=lfs diff=lfs merge=lfs -text
 weights/BigDiscriminator.pt filter=lfs diff=lfs merge=lfs -text
 weights/BigEmbedder.pt filter=lfs diff=lfs merge=lfs -text
+
+weights_helios/Generator.pt filter=lfs diff=lfs merge=lfs -text
+weights_helios/BigDiscriminator.pt filter=lfs diff=lfs merge=lfs -text
+weights_helios/BigEmbedder.pt filter=lfs diff=lfs merge=lfs -text
+weights_helios/BigGenerator.pt filter=lfs diff=lfs merge=lfs -text
+weights_helios/Discriminator.pt filter=lfs diff=lfs merge=lfs -text
+weights_helios/Embedder.pt filter=lfs diff=lfs merge=lfs -text
+
+weights_beluga/BigDiscriminator.pt filter=lfs diff=lfs merge=lfs -text
+weights_beluga/BigEmbedder.pt filter=lfs diff=lfs merge=lfs -text
+weights_beluga/BigGenerator.pt filter=lfs diff=lfs merge=lfs -text
