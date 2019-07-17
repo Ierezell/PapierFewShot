@@ -1,3 +1,6 @@
+import shutil
+import os
+import glob
 import numpy as np
 import torch
 from torch import nn
@@ -11,7 +14,7 @@ from bigmodels import Generator as BigGenerator
 from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_BIG_DISCRIMINATOR,
                       PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
-                      DEVICE, MODEL, LOAD_PREVIOUS)
+                      DEVICE, MODEL, LOAD_PREVIOUS, LOAD_EMBEDDINGS)
 
 import matplotlib.style as mplstyle
 import matplotlib.pyplot as plt
@@ -19,7 +22,8 @@ import matplotlib.pyplot as plt
 mplstyle.use(['dark_background', 'fast'])
 
 
-def load_small_models(nb_pers, load_previous_state=LOAD_PREVIOUS):
+def load_small_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
+                      load_embeddings=LOAD_EMBEDDINGS):
     embedder = Embedder()
     generator = Generator()
     discriminator = Discriminator(nb_pers)
@@ -38,15 +42,18 @@ def load_small_models(nb_pers, load_previous_state=LOAD_PREVIOUS):
     if load_previous_state:
         embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
         generator.module.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR))
-        discriminator.module.load_state_dict(
-            torch.load(PATH_WEIGHTS_DISCRIMINATOR))
-    # embedder = embedder.to(DEVICE)
-    # generator = generator.to(DEVICE)
-    # discriminator = discriminator.to(DEVICE)
+        state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR)
+        if load_embeddings:
+            discriminator.load_state_dict(state_dict_discriminator)
+        else:
+            state_dict_discriminator.pop("embeddings.weight")
+            discriminator.load_state_dict(state_dict_discriminator,
+                                          strict=False)
     return embedder, generator, discriminator
 
 
-def load_big_models(nb_pers, load_previous_state=LOAD_PREVIOUS):
+def load_big_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
+                    load_embeddings=LOAD_EMBEDDINGS):
     embedder = BigEmbedder()
     generator = BigGenerator()
     discriminator = BigDiscriminator(nb_pers)
@@ -66,68 +73,22 @@ def load_big_models(nb_pers, load_previous_state=LOAD_PREVIOUS):
         embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_BIG_EMBEDDER))
         generator.module.load_state_dict(
             torch.load(PATH_WEIGHTS_BIG_GENERATOR))
-        discriminator.module.load_state_dict(
-            torch.load(PATH_WEIGHTS_BIG_DISCRIMINATOR))
-    # embedder = embedder.to(DEVICE)
-    # generator = generator.to(DEVICE)
-    # discriminator = discriminator.to(DEVICE)
+        state_dict_discriminator = torch.load(PATH_WEIGHTS_BIG_DISCRIMINATOR)
+        if load_embeddings:
+            discriminator.load_state_dict(state_dict_discriminator)
+        else:
+            state_dict_discriminator.pop("embeddings.weight")
+            discriminator.load_state_dict(state_dict_discriminator,
+                                          strict=False)
     return embedder, generator, discriminator
 
 
-def load_small_trained_models(nb_pers):
-    embedder = Embedder()
-    generator = Generator()
-    discriminator = Discriminator(nb_pers)
-    embedder = embedder.to(DEVICE)
-    generator = generator.to(DEVICE)
-    discriminator = discriminator.to(DEVICE)
-
-    embedder.load_state_dict(torch.load(
-        PATH_WEIGHTS_EMBEDDER, map_location="cuda"))
-    generator.load_state_dict(torch.load(
-        PATH_WEIGHTS_GENERATOR, map_location="cuda"))
-    discriminator.load_state_dict(torch.load(
-        PATH_WEIGHTS_DISCRIMINATOR, map_location="cuda"))
-
-    embedder = embedder.eval()
-    generator = generator.eval()
-    discriminator = discriminator.eval()
-    return embedder, generator, discriminator
-
-
-def load_big_trained_models(nb_pers):
-    embedder = BigEmbedder()
-    generator = BigGenerator()
-    discriminator = BigDiscriminator(nb_pers)
-    embedder = embedder.to(DEVICE)
-    generator = generator.to(DEVICE)
-    discriminator = discriminator.to(DEVICE)
-
-    embedder.load_state_dict(torch.load(
-        PATH_WEIGHTS_BIG_EMBEDDER, map_location="cuda"))
-    generator.load_state_dict(torch.load(
-        PATH_WEIGHTS_BIG_GENERATOR, map_location="cuda"))
-    discriminator.load_state_dict(torch.load(
-        PATH_WEIGHTS_BIG_DISCRIMINATOR, map_location="cuda"))
-
-    embedder = embedder.eval()
-    generator = generator.eval()
-    discriminator = discriminator.eval()
-    return embedder, generator, discriminator
-
-
-def load_trained_models(nb_pers, model=MODEL):
+def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
+                load_embeddings=LOAD_EMBEDDINGS, model=MODEL):
     if model == "small":
-        return load_small_trained_models(nb_pers)
+        return load_small_models(nb_pers, load_previous_state, load_embeddings)
     elif model == "big":
-        return load_big_trained_models(nb_pers)
-
-
-def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,  model=MODEL):
-    if model == "small":
-        return load_small_models(nb_pers, load_previous_state)
-    elif model == "big":
-        return load_big_models(nb_pers, load_previous_state)
+        return load_big_models(nb_pers, load_previous_state, load_embeddings)
 
 
 class Checkpoints:
@@ -300,3 +261,19 @@ def plot_grad_flow(fig, axes, *models):
     fig.clf()
     fig.canvas.draw()
     fig.canvas.flush_events()
+
+
+def make_light_dataset(path_dataset, new_path):
+    for folder in glob.glob(f"{new_path}/*"):
+        shutil.rmtree(folder)
+
+    for folder in glob.glob(f"{path_dataset}/*"):
+        os.mkdir(f"{new_path}/{folder.split('/')[-1]}")
+
+        for context in glob.glob(f"{folder}/*"):
+            # print(context)
+            nb_files = len(glob.glob(f"{context}/*"))
+            if nb_files == 1:
+                dest = f"{new_path}/{'/'.join(context.split('/')[-2:])}"
+                shutil.copytree(context, dest)
+                break
