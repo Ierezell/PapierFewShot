@@ -2,8 +2,8 @@
 from torchvision import transforms
 import numpy as np
 
-from settings import BATCH_SIZE, DEVICE, MODEL
-from utils import load_trained_models
+from settings import DEVICE, MODEL
+from utils import load_models
 from preprocess import frameLoader
 import torch
 from collections import deque
@@ -85,7 +85,7 @@ class Environement:
 
         (self.embedder,
          self.generator,
-         self.discriminator) = load_trained_models(len(self.frameloader.ids))
+         self.discriminator) = load_models(len(self.frameloader.ids))
         self.landmarks_done = deque(maxlen=10000)
         self.contexts = None
         self.user_ids = None

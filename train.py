@@ -7,9 +7,10 @@ from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
-from preprocess import get_data_loader
+from preprocess import get_data_loader, frameLoader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, MODEL)
+                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, MODEL,
+                      LOAD_EMBEDDINGS)
 from utils import Checkpoints, load_models
 from torch import nn
 
@@ -56,6 +57,7 @@ print("torch version : ", torch.__version__)
 print("Device : ", DEVICE)
 writer = SummaryWriter()
 # torch.autograd.set_detect_anomaly(True)
+
 for i_epoch in range(NB_EPOCHS):
     for i_batch, batch in enumerate(train_loader):
 
@@ -64,6 +66,7 @@ for i_epoch in range(NB_EPOCHS):
         optimizerGen.zero_grad()
 
         gt_im, gt_landmarks, context, itemIds = batch
+        # print(gt_im.max(), gt_im.min())
 
         gt_im = gt_im.to(DEVICE)
         gt_landmarks = gt_landmarks.to(DEVICE)
