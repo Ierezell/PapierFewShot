@@ -1,23 +1,17 @@
 vox2_test_mp4.zip
 
-.vscode
-.vscode/*
-
-dataset
-dataset/*
-
-# weights
-# weights/*
 weights/vgg_face_dag.pth
 
-runs
-runs/*
+.vscode/
 
-runs_beluga
-runs_beluga/*
+dataset/
 
-runs_helios
-runs_helios/*
+CustomDataset/
 
-__pycache__/*
-__pycache__
+runs/
+
+runs_beluga/
+
+runs_helios/
+
+__pycache__/

@@ -1,17 +1,9 @@
 
-
-import glob
-
-import cv2
 import numpy as np
 import torch
-from face_alignment import FaceAlignment, LandmarksType
 from matplotlib import pyplot as plt
-from torchvision import transforms
-from settings import (DEVICE, ROOT_DATASET, LEARNING_RATE_RL,
+from settings import (DEVICE, LEARNING_RATE_RL,
                       EPS_DECAY, EPS_END, EPS_START, BATCH_SIZE_RL)
-from utils import load_trained_models
-from preprocess import frameLoader
 from environement import Environement
 from RlModel import Policy
 from torch.optim import Adam
