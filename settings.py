@@ -4,10 +4,9 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
 MODEL = "small"
 
-ROOT_WEIGHTS = './weights/'
+ROOT_WEIGHTS = './weights_beluga/'
 ROOT_IMAGE = './images/'
-# ROOT_DATASET = './dataset/mp4/'
-ROOT_DATASET = './CustomDataset/'
+ROOT_DATASET = './dataset/mp4/'
 
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
@@ -27,10 +26,10 @@ LEARNING_RATE_DISC = 2e-4
 LATENT_SIZE = 512
 K_SHOT = 8
 
-LOAD_EMBEDDINGS = True
+LOAD_EMBEDDINGS = False
 
 PRINT_EVERY = 50
-LOAD_PREVIOUS = False
+LOAD_PREVIOUS = True
 NB_WORKERS = 0
 
 ###############

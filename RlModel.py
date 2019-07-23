@@ -27,7 +27,7 @@ class Policy(nn.Module):
         self.relu = nn.ReLU()
         self.gamma = GAMMA
         self.steps_done = 0
-        self.replay_memory = deque(maxlen=10000)
+        # self.replay_memory = deque(maxlen=10000)
         torch.cuda.empty_cache()
 
     def forward(self, image):

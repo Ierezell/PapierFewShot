@@ -22,8 +22,7 @@ import matplotlib.pyplot as plt
 mplstyle.use(['dark_background', 'fast'])
 
 
-def load_small_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
-                      load_embeddings=LOAD_EMBEDDINGS):
+def load_small_models(nb_pers, load_previous_state, load_embeddings):
     embedder = Embedder()
     generator = Generator()
     discriminator = Discriminator(nb_pers)
@@ -44,23 +43,22 @@ def load_small_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
         generator.module.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR))
         state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR)
         if load_embeddings:
-            discriminator.load_state_dict(state_dict_discriminator)
+            discriminator.module.load_state_dict(state_dict_discriminator)
         else:
             state_dict_discriminator.pop("embeddings.weight")
-            discriminator.load_state_dict(state_dict_discriminator,
-                                          strict=False)
+            discriminator.module.load_state_dict(state_dict_discriminator,
+                                                 strict=False)
     return embedder, generator, discriminator
 
 
-def load_big_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
-                    load_embeddings=LOAD_EMBEDDINGS):
+def load_big_models(nb_pers, load_previous_state, load_embeddings):
     embedder = BigEmbedder()
     generator = BigGenerator()
     discriminator = BigDiscriminator(nb_pers)
 
-    embedder = embedder.to(DEVICE)
-    generator = generator.to(DEVICE)
-    discriminator = discriminator.to(DEVICE)
+    # embedder = embedder.to(DEVICE)
+    # generator = generator.to(DEVICE)
+    # discriminator = discriminator.to(DEVICE)
 
     embedder = nn.DataParallel(
         embedder, device_ids=range(torch.cuda.device_count()))
@@ -75,11 +73,11 @@ def load_big_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
             torch.load(PATH_WEIGHTS_BIG_GENERATOR))
         state_dict_discriminator = torch.load(PATH_WEIGHTS_BIG_DISCRIMINATOR)
         if load_embeddings:
-            discriminator.load_state_dict(state_dict_discriminator)
+            discriminator.module.load_state_dict(state_dict_discriminator)
         else:
             state_dict_discriminator.pop("embeddings.weight")
-            discriminator.load_state_dict(state_dict_discriminator,
-                                          strict=False)
+            discriminator.module.load_state_dict(state_dict_discriminator,
+                                                 strict=False)
     return embedder, generator, discriminator
 
 
