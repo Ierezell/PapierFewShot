@@ -1,9 +1,9 @@
 vox2_test_mp4.zip
 
 */vgg_face_dag.pth
-weights/vgg_face_dag.pth
-weights_beluga/vgg_face_dag.pth
-weights_helios/vgg_face_dag.pth
+# weights/vgg_face_dag.pth
+# weights_beluga/vgg_face_dag.pth
+# weights_helios/vgg_face_dag.pth
 
 .vscode/
 
