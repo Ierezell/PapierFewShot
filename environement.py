@@ -2,12 +2,13 @@
 from torchvision import transforms
 import numpy as np
 
-from settings import DEVICE, MODEL
+from settings import DEVICE, MODEL, PRINT_EVERY
 from utils import load_models
 from preprocess import frameLoader
 import torch
 from collections import deque
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
 
 class Environement:
@@ -86,6 +87,10 @@ class Environement:
         (self.embedder,
          self.generator,
          self.discriminator) = load_models(len(self.frameloader.ids))
+        self.embedder = self.embedder.eval()
+        self.generator = self.generator.eval()
+        self.discriminator = self.discriminator.eval()
+
         self.landmarks_done = deque(maxlen=10000)
         self.contexts = None
         self.user_ids = None
@@ -97,21 +102,15 @@ class Environement:
         self.episodes = 0
         self.max_iter = 2000000
         self.fig, self.axes = plt.subplots(2, 2)
+
+        self.writer = SummaryWriter()
+
         torch.cuda.empty_cache()
 
     def new_person(self):
-        # self.contexts = torch.tensor(np.zeros(BATCH_SIZE, dtype=np.float),
-        #                              dtype=torch.float, device="cuda")
-        # self.user_ids = torch.tensor(np.zeros(BATCH_SIZE, dtype=np.float),
-        #                              dtype=torch.float, device="cuda")
-        # for b in range(BATCH_SIZE):
-        #     context, user_id = self.frameloader.load_someone(limit=2000)
-        #     print(context.size())
-        #     print(self.contexts.size())
+        self.landmarks = self.begining_landmarks.copy()
+        self.landmarks_done = deque(maxlen=1000)
 
-        #     self.contexts = torch.cat((self.contexts, context), dim=0)
-        #     self.user_ids = torch.cat((self.user_ids, user_id), dim=0)
-        # input("going to load someone")
         self.contexts, self.user_ids = self.frameloader.load_someone(limit=20)
         if MODEL == "big":
             (self.embeddings,
@@ -162,6 +161,12 @@ class Environement:
             self.landmarks[point_nb][1] -= 5
 
         reward = self.get_reward()
+        self.writer.add_scalar("reward", reward,
+                               global_step=self.iterations*self.episodes)
+
+        if self.iterations % PRINT_EVERY == 0:
+            self.writer.add_figure("Fig", self.fig,
+                                   global_step=self.iterations*self.episodes)
         return self.synth_im, reward, done
 
     def get_reward(self):
@@ -193,9 +198,9 @@ class Environement:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
         score_disc, _ = self.discriminator(torch.cat((self.synth_im,
-                                                      self.landmarks_img), dim=1),
+                                                      self.landmarks_img),
+                                                     dim=1),
                                            self.user_ids)
-
         if self.landmarks in self.landmarks_done:
             score_redoing = -100
         else:
@@ -211,7 +216,11 @@ class Environement:
                 break
         else:
             score_outside = 0
-
+        print("score_disc : ", score_disc)
+        print("score_redoing : ", score_redoing)
+        print("score_outside : ", score_outside)
+        print("Score Tot : ", score_disc/10 + score_redoing + score_outside)
+        print("\n")
         return score_disc/10 + score_redoing + score_outside
 
     def reset(self):
@@ -222,5 +231,12 @@ class Environement:
         self.embeddings = None
         self.paramWeights = None
         self.paramBias = None
+        self.layersUp = None
         self.iterations = 0
         self.episodes = 0
+        self.writer = SummaryWriter()
+        torch.cuda.empty_cache()
+
+    def finish(self):
+        self.writer.close()
+        torch.cuda.empty_cache()
