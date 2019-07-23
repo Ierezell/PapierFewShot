@@ -2,13 +2,13 @@
 
 import torch
 from matplotlib import pyplot as plt
-from utils import load_trained_models
+from utils import load_models
 from preprocess import frameLoader
 from settings import MODEL
 
 frameloader = frameLoader()
 
-emb, gen, disc = load_trained_models(len(frameloader.ids))
+emb, gen, disc = load_models(len(frameloader.ids))
 
 context, user_id = frameloader.load_someone(limit=2000)
 

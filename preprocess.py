@@ -120,6 +120,7 @@ class frameLoader(Dataset):
         image_ok = False
         while not image_ok:
             _, image = cam.read()
+            image = cv2.flip(image, 1)
             image = cv2.resize(image, (224, 224))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             landmarks = self.face_landmarks.get_landmarks_from_image(image)
