@@ -1,7 +1,11 @@
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
+<<<<<<< HEAD
 from settings import (ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT,
                       DEVICE_LANDMARKS, NB_WORKERS)
+=======
+from settings import ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
 import glob
 import torch
 
@@ -18,7 +22,11 @@ class frameLoader(Dataset):
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(frameLoader, self).__init__()
         self.face_landmarks = FaceAlignment(
+<<<<<<< HEAD
             LandmarksType._2D, device=DEVICE_LANDMARKS)
+=======
+            LandmarksType._2D, device="cuda")
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
         self.K_shots = K_shots
         self.root_dir = root_dir
         self.ids = glob.glob(f"{self.root_dir}/*")
@@ -155,14 +163,21 @@ class frameLoader(Dataset):
 
         context_tensors = torch.cat(context_tensors_list)
         video.release()
+<<<<<<< HEAD
         torch.cuda.empty_cache()
+=======
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
         return gt_im_tensor, gt_landmarks, context_tensors, itemId
 
     def __len__(self):
         return len(self.mp4files)
 
 
+<<<<<<< HEAD
 def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=NB_WORKERS):
+=======
+def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
     datas = frameLoader(root_dir=root_dir, K_shots=K_shots)
     # print(len(datas))
     # size_train = int(0.8 * len(datas))
@@ -171,7 +186,10 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=NB_WORKERS):
     pin = False if DEVICE.type == 'cpu' else True
     train_loader = DataLoader(datas, batch_size=LOAD_BATCH_SIZE, shuffle=True,
                               num_workers=workers, pin_memory=pin)
+<<<<<<< HEAD
     torch.cuda.empty_cache()
+=======
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
     return train_loader, len(datas.ids)
 
 
