@@ -5,22 +5,22 @@ from matplotlib import pyplot as plt
 from settings import (DEVICE, LEARNING_RATE_RL, NB_EPOCHS,
                       EPS_DECAY, EPS_END, EPS_START, BATCH_SIZE_RL)
 from environement import Environement
-from RlModel import Policy
 from torch.optim import Adam
 from torch import nn
 import random
 import math
+from utils import CheckpointsRl, load_rl_model
 plt.ion()
-
+check = CheckpointsRl()
 environement = Environement()
 torch.cuda.empty_cache()
 environement.new_person()
 torch.cuda.empty_cache()
-policy = Policy()
-policy = policy.to(DEVICE)
+policy = load_rl_model(load_previous_state=False)
 torch.cuda.empty_cache()
-print("Nombre de paramètres police: ",
-      f"{sum([np.prod(p.size()) if p.requires_grad else 0 for p in policy.parameters()]):,}")
+nombre_param = sum([np.prod(p.size()) if p.requires_grad else 0
+                    for p in policy.parameters()])
+print("Nombre de paramètres police: ", f"{nombre_param:,}")
 
 optimizer = Adam(policy.parameters(), lr=LEARNING_RATE_RL)
 
@@ -57,7 +57,8 @@ for i in range(NB_EPOCHS):
             # print("e : ", action_index)
         else:
             action_index = torch.randint(low=0, high=policy.action_space,
-                                         size=(1,), dtype=torch.int, device="cuda")
+                                         size=(1,), dtype=torch.int,
+                                         device="cuda")
             # print("p : ", action_index)
         # Apply action
         # action_index = torch.tensor([32])
@@ -87,13 +88,13 @@ for i in range(NB_EPOCHS):
         # # get output for the next state
         output_new_state_batch = policy(new_state_batch)
 
-        # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
-        # y_batch = torch.cat(
-        #     [reward_batch[i] if minibatch[i][4]
-        #      else reward_batch[i]+policy.gamma*torch.max(output_new_state_batch[i])
-        #      for i in range(len(minibatch))
-        #      ]
-        # )
+# set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
+# y_batch = torch.cat(
+#     [reward_batch[i] if minibatch[i][4]
+#      else reward_batch[i]+policy.gamma*torch.max(output_new_state_batch[i])
+#      for i in range(len(minibatch))
+#      ]
+# )
         listReward = []
         for i in range(len(minibatch)):
             if minibatch[i][4]:
@@ -119,11 +120,13 @@ for i in range(NB_EPOCHS):
 
         # returns a new Tensor, detached from the current graph,
         # the result will never require gradient
-        y_batch = y_batch.detach()
+        # y_batch = y_batch.detach()
 
         # calculate loss
         # print("LKJDSLK :: ", q_value.size(), y_batch.size())
         loss = criterion(q_value, y_batch)
+        check.addCheckpoint("loss", loss)
+        check.save(loss, policy)
         environement.writer.add_scalar("loss", loss,
                                        global_step=environement.iterations *
                                        environement.episodes)

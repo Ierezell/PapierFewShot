@@ -215,6 +215,7 @@ class Discriminator(nn.Module):
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
         self.relu = nn.ReLU()
+        self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
 
     def forward(self, x, indexes):  # b, 6, 224, 224
         features_maps = []
@@ -244,14 +245,16 @@ class Discriminator(nn.Module):
 
         out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
         out = self.relu(out)
+        final_out = self.fc(out)
         features_maps.append(out)
 
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
-        out = torch.bmm(
+
+        condition = torch.bmm(
             self.embeddings(indexes).view(-1, 1, LATENT_SIZE),
             (out+w0).view(BATCH_SIZE, LATENT_SIZE, 1)
         )
-        out = out.view(BATCH_SIZE)
-        out += b
+        final_out += condition.view(final_out.size())
+        final_out += b
         return out, features_maps
