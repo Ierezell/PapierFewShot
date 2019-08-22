@@ -307,9 +307,15 @@ class Generator(nn.Module):
             w4=paramWeights.narrow(-1, outRu5+64+64//4+64//4, 64//4),
             b4=paramBias.narrow(-1, outRu5 + 64 + 64//4 + 64//4, 64//4))
         x = self.relu(x)
+<<<<<<< HEAD
         x = self.Res7(x)
         x = self.sigmoid(x)
         # outRu6 = outRu5 + 64 + 64//4 + 64//4 + 64//4
+=======
+        outRu6 = outRu5 + 64 + 64//4 + 64//4 + 64//4
+        x = self.Res7(x)
+        x = self.sigmoid(x)
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
         # print("PARAMMMMMM  : ", outRu6)
         return x
 
