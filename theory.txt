@@ -1,0 +1,9 @@
+Creer un reseau qui prend en entree ce quon veut
+(ex image + emotion) c'est la politique.
+
+Il sort les valeurs des etats que l'on veut
+=> 68 valeurs * 2/4 direction (valeurs continues)
+Plus simple de discretiser au debut
+
+Ensite on le fait jouer un petit moment dans lenv
+On ramasse des state reward.
