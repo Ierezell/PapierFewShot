@@ -1,8 +1,12 @@
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
 <<<<<<< HEAD
+<<<<<<< HEAD
 from settings import (ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT,
                       DEVICE_LANDMARKS, NB_WORKERS)
+=======
+from settings import ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
 =======
 from settings import ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT
 >>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
@@ -23,7 +27,11 @@ class frameLoader(Dataset):
         super(frameLoader, self).__init__()
         self.face_landmarks = FaceAlignment(
 <<<<<<< HEAD
+<<<<<<< HEAD
             LandmarksType._2D, device=DEVICE_LANDMARKS)
+=======
+            LandmarksType._2D, device="cuda")
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
 =======
             LandmarksType._2D, device="cuda")
 >>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
@@ -144,6 +152,7 @@ class frameLoader(Dataset):
         cam.release()
         torch.cuda.empty_cache()
         return landmark_tensor.unsqueeze(0).to(DEVICE)
+<<<<<<< HEAD
 
     def __getitem__(self, index):
         mp4File = self.mp4files[index]
@@ -151,6 +160,15 @@ class frameLoader(Dataset):
         video = cv2.VideoCapture(mp4File)
         total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
+=======
+
+    def __getitem__(self, index):
+        mp4File = self.mp4files[index]
+        itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+        video = cv2.VideoCapture(mp4File)
+        total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
         gt_im_tensor, gt_landmarks = self.load_random(video,
                                                       total_frame_nb,
                                                       fusion=False)
@@ -164,7 +182,10 @@ class frameLoader(Dataset):
         context_tensors = torch.cat(context_tensors_list)
         video.release()
 <<<<<<< HEAD
+<<<<<<< HEAD
         torch.cuda.empty_cache()
+=======
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
 =======
 >>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
         return gt_im_tensor, gt_landmarks, context_tensors, itemId
@@ -174,7 +195,11 @@ class frameLoader(Dataset):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=NB_WORKERS):
+=======
+def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
 =======
 def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
 >>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
@@ -187,7 +212,10 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
     train_loader = DataLoader(datas, batch_size=LOAD_BATCH_SIZE, shuffle=True,
                               num_workers=workers, pin_memory=pin)
 <<<<<<< HEAD
+<<<<<<< HEAD
     torch.cuda.empty_cache()
+=======
+>>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
 =======
 >>>>>>> d23d6bbcfb8c1d6a94c0b9fc5cb92bb806ed1a86
     return train_loader, len(datas.ids)
