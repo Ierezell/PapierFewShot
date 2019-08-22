@@ -6,6 +6,8 @@ from collections import deque
 import numpy as np
 import torch
 
+# TODO LSTM dans la politique
+
 
 class Policy(nn.Module):
     def __init__(self):
@@ -17,8 +19,11 @@ class Policy(nn.Module):
         self.repres_image = self.repres_image.eval()
         for name, param in self.repres_image.named_parameters():
             param.requires_grad = False
-        print("Nombre de paramètres vggface: ",
-              f"{sum([np.prod(p.size()) if p.requires_grad else 0 for p in self.repres_image.parameters()]):,}")
+
+        grad_param_vgg = sum([np.prod(p.size()) if p.requires_grad else 0
+                              for p in self.repres_image.parameters()])
+        print("Nombre de paramètres vggface: ", f"{grad_param_vgg:,}")
+
         self.l1 = nn.Linear(self.state_space, 512, bias=False)
         self.l2 = nn.Linear(512, self.action_space, bias=False)
 
@@ -27,7 +32,8 @@ class Policy(nn.Module):
         self.relu = nn.ReLU()
         self.gamma = GAMMA
         self.steps_done = 0
-        # self.replay_memory = deque(maxlen=10000)
+
+        self.replay_memory = deque(maxlen=10000)
         torch.cuda.empty_cache()
 
     def forward(self, image):

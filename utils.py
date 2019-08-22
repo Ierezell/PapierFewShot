@@ -11,10 +11,13 @@ from bigmodels import Discriminator as BigDiscriminator
 from bigmodels import Embedder as BigEmbedder
 from bigmodels import Generator as BigGenerator
 
+from RlModel import Policy
+
 from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_BIG_DISCRIMINATOR,
                       PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
-                      DEVICE, MODEL, LOAD_PREVIOUS, LOAD_EMBEDDINGS)
+                      DEVICE, MODEL, LOAD_PREVIOUS, LOAD_EMBEDDINGS,
+                      PATH_WEIGHTS_POLICY)
 
 import matplotlib.style as mplstyle
 import matplotlib.pyplot as plt
@@ -56,9 +59,9 @@ def load_big_models(nb_pers, load_previous_state, load_embeddings):
     generator = BigGenerator()
     discriminator = BigDiscriminator(nb_pers)
 
-    # embedder = embedder.to(DEVICE)
-    # generator = generator.to(DEVICE)
-    # discriminator = discriminator.to(DEVICE)
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+    discriminator = discriminator.to(DEVICE)
 
     embedder = nn.DataParallel(
         embedder, device_ids=range(torch.cuda.device_count()))
@@ -89,7 +92,16 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
         return load_big_models(nb_pers, load_previous_state, load_embeddings)
 
 
-class Checkpoints:
+def load_rl_model(load_previous_state=LOAD_PREVIOUS):
+    policy = Policy()
+    policy = policy.to(DEVICE)
+
+    if load_previous_state:
+        policy.load_state_dict(torch.load(PATH_WEIGHTS_POLICY))
+    return policy
+
+
+class CheckpointsFewShots:
     def __init__(self):
         self.losses = {"dsc": [], "cnt": [], "adv": [], "mch": []}
         self.best_loss_EmbGen = 1e10
@@ -103,7 +115,7 @@ class Checkpoints:
         if model == "disc":
             if loss < self.best_loss_Disc:
                 print('\n' + '-' * 25)
-                print("| Poids disc sauvegardés |\n")
+                print("| Poids disc sauvegardés |")
                 print('-'*25)
                 self.best_loss_Disc = loss
                 if MODEL == 'small':
@@ -129,85 +141,104 @@ class Checkpoints:
                     torch.save(generator.module.state_dict(),
                                PATH_WEIGHTS_BIG_GENERATOR)
 
-    def visualize(self, gt_landmarks, synth_im, gt_im, *models,
-                  save_fig=False, name='plop', show=False):
-        "-----------------------"
-        # TODO Faire une vraie accuracy
-        accuracy = 0.5
-        "------------------------"
-        fig, axes = plt.subplots(3, 3, figsize=(15, 10), num='Mon')
-        im_landmarks = gt_landmarks[0].detach().cpu().permute(1, 2, 0).numpy()
-        im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
-        im_gt = gt_im[0].detach().cpu().permute(1, 2, 0).numpy()
 
-        axes[0, 0].clear()
-        axes[0, 0].imshow(im_landmarks/im_landmarks.max())
-        axes[0, 0].axis("off")
-        axes[0, 0].set_title('Landmarks')
+class CheckpointsRl:
+    def __init__(self):
+        self.losses = {"loss": []}
+        self.best_loss = 1e10
 
-        axes[0, 1].clear()
-        axes[0, 1].imshow(im_synth/im_synth.max())
-        axes[0, 1].axis("off")
-        axes[0, 1].set_title('Synthesized image')
+    def addCheckpoint(self, model, loss):
+        loss = loss.detach()
+        self.losses[model].append(loss)
 
-        axes[0, 2].clear()
-        axes[0, 2].imshow(im_gt/im_gt.max())
-        axes[0, 2].axis("off")
-        axes[0, 2].set_title('Ground truth')
+    def save(self, loss, policy):
+        if loss < self.best_loss:
+            print('\n' + '-'*25)
+            print("| Poids sauvegardés |")
+            print('-'*25)
+            self.best_loss = loss
+            torch.save(policy.state_dict(),  PATH_WEIGHTS_POLICY)
 
-        axes[1, 0].clear()
-        axes[1, 0].plot(self.losses["dsc"], label='Disc loss')
-        axes[1, 0].set_title('Disc loss')
 
-        axes[1, 1].clear()
-        axes[1, 1].plot(self.losses["adv"], label='Adv loss')
-        axes[1, 1].plot(self.losses["mch"], label='Mch loss')
-        axes[1, 1].plot(self.losses["cnt"], label='Cnt loss')
-        axes[1, 1].set_title('EmbGen losses')
-        axes[1, 1].legend()
+def visualize(self, gt_landmarks, synth_im, gt_im, *models,
+              save_fig=False, name='plop', show=False):
+    "-----------------------"
+    # TODO Faire une vraie accuracy
+    accuracy = 0.5
+    "------------------------"
+    fig, axes = plt.subplots(3, 3, figsize=(15, 10), num='Mon')
+    im_landmarks = gt_landmarks[0].detach().cpu().permute(1, 2, 0).numpy()
+    im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
+    im_gt = gt_im[0].detach().cpu().permute(1, 2, 0).numpy()
 
-        axes[1, 2].clear()
-        axes[1, 2].plot(accuracy)
-        axes[1, 2].set_title('Accuracy')
+    axes[0, 0].clear()
+    axes[0, 0].imshow(im_landmarks/im_landmarks.max())
+    axes[0, 0].axis("off")
+    axes[0, 0].set_title('Landmarks')
 
-        for i, m in enumerate(models):
-            ave_grads = []
-            max_grads = []
-            layers = []
-            for n, p in m.named_parameters():
-                if(p.requires_grad) and ("bias" not in n):
-                    layers.append('.'.join(n.split('.')[: -1]))
-                    try:
-                        gradient = p.grad.cpu().detach()
-                        ave_grads.append(gradient.abs().mean())
-                        max_grads.append(gradient.abs().max())
-                    except AttributeError:
-                        ave_grads.append(0)
-                        max_grads.append(0)
-            axes[2, i].clear()
-            axes[2, i].bar(np.arange(len(max_grads)), max_grads,
-                           alpha=0.5, lw=1, color="c")
-            axes[2, i].bar(np.arange(len(ave_grads)), ave_grads,
-                           alpha=0.7, lw=1, color="r")
-            axes[2, i].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
-            axes[2, i].set_xticks(np.arange(len(layers)))
-            axes[2, i].set_xticklabels(layers, rotation="vertical",
-                                       fontsize='small')
-            axes[2, i].set_xlim(left=0, right=len(ave_grads))
-            axes[2, i].set_ylim(bottom=0, top=max(ave_grads)+1)
-            # zoom in on the lower gradient regions
-            axes[2, i].set_xlabel("Layers")
-            axes[2, i].set_ylabel("average gradient")
-            axes[2, i].set_title(f"{m.__class__.__name__} gradient flow")
-            axes[2, i].grid(True)
-            axes[2, i].legend([Line2D([0], [0], color="c", lw=4),
-                               Line2D([0], [0], color="r", lw=4)],
-                              ['max-gradient', 'mean-gradient'])
-        # if save_fig:
-        #     fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
-        # fig.canvas.draw_idle()
-        # fig.canvas.flush_events()
-        return fig
+    axes[0, 1].clear()
+    axes[0, 1].imshow(im_synth/im_synth.max())
+    axes[0, 1].axis("off")
+    axes[0, 1].set_title('Synthesized image')
+
+    axes[0, 2].clear()
+    axes[0, 2].imshow(im_gt/im_gt.max())
+    axes[0, 2].axis("off")
+    axes[0, 2].set_title('Ground truth')
+
+    axes[1, 0].clear()
+    axes[1, 0].plot(self.losses["dsc"], label='Disc loss')
+    axes[1, 0].set_title('Disc loss')
+
+    axes[1, 1].clear()
+    axes[1, 1].plot(self.losses["adv"], label='Adv loss')
+    axes[1, 1].plot(self.losses["mch"], label='Mch loss')
+    axes[1, 1].plot(self.losses["cnt"], label='Cnt loss')
+    axes[1, 1].set_title('EmbGen losses')
+    axes[1, 1].legend()
+
+    axes[1, 2].clear()
+    axes[1, 2].plot(accuracy)
+    axes[1, 2].set_title('Accuracy')
+
+    for i, m in enumerate(models):
+        ave_grads = []
+        max_grads = []
+        layers = []
+        for n, p in m.named_parameters():
+            if(p.requires_grad) and ("bias" not in n):
+                layers.append('.'.join(n.split('.')[: -1]))
+                try:
+                    gradient = p.grad.cpu().detach()
+                    ave_grads.append(gradient.abs().mean())
+                    max_grads.append(gradient.abs().max())
+                except AttributeError:
+                    ave_grads.append(0)
+                    max_grads.append(0)
+        axes[2, i].clear()
+        axes[2, i].bar(np.arange(len(max_grads)), max_grads,
+                       alpha=0.5, lw=1, color="c")
+        axes[2, i].bar(np.arange(len(ave_grads)), ave_grads,
+                       alpha=0.7, lw=1, color="r")
+        axes[2, i].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
+        axes[2, i].set_xticks(np.arange(len(layers)))
+        axes[2, i].set_xticklabels(layers, rotation="vertical",
+                                   fontsize='small')
+        axes[2, i].set_xlim(left=0, right=len(ave_grads))
+        axes[2, i].set_ylim(bottom=0, top=max(ave_grads)+1)
+        # zoom in on the lower gradient regions
+        axes[2, i].set_xlabel("Layers")
+        axes[2, i].set_ylabel("average gradient")
+        axes[2, i].set_title(f"{m.__class__.__name__} gradient flow")
+        axes[2, i].grid(True)
+        axes[2, i].legend([Line2D([0], [0], color="c", lw=4),
+                           Line2D([0], [0], color="r", lw=4)],
+                          ['max-gradient', 'mean-gradient'])
+    # if save_fig:
+    #     fig.savefig(f"{ROOT_IMAGE}{name}.png", dpi=fig.dpi)
+    # fig.canvas.draw_idle()
+    # fig.canvas.flush_events()
+    return fig
 
 
 def plot_grad_flow(fig, axes, *models):

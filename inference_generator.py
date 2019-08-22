@@ -1,5 +1,3 @@
-
-
 import torch
 from matplotlib import pyplot as plt
 from utils import load_models

@@ -6,6 +6,8 @@ weights/
 weights_beluga/
 weights_helios/
 
+vox2_test_mp4.zip
+
 dataset/
 
 CustomDataset/
@@ -13,4 +15,3 @@ CustomDataset/
 runs/
 runs_beluga/
 runs_helios/
-

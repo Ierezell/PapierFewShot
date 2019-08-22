@@ -1,6 +1,8 @@
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
-from settings import ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT
+
+from settings import (ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT,
+                      DEVICE_LANDMARKS, NB_WORKERS)
 import glob
 import torch
 import platform
@@ -17,7 +19,8 @@ class frameLoader(Dataset):
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(frameLoader, self).__init__()
         self.face_landmarks = FaceAlignment(
-            LandmarksType._2D, device="cuda")
+            LandmarksType._2D, device=DEVICE_LANDMARKS)
+
         self.K_shots = K_shots
         self.root_dir = root_dir
         self.ids = glob.glob(f"{self.root_dir}/*")
@@ -165,13 +168,15 @@ class frameLoader(Dataset):
 
         context_tensors = torch.cat(context_tensors_list)
         video.release()
+
+        torch.cuda.empty_cache()
         return gt_im_tensor, gt_landmarks, context_tensors, itemId
 
     def __len__(self):
         return len(self.mp4files)
 
 
-def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
+def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=NB_WORKERS):
     datas = frameLoader(root_dir=root_dir, K_shots=K_shots)
     # print(len(datas))
     # size_train = int(0.8 * len(datas))
@@ -180,6 +185,8 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=0):
     pin = False if DEVICE.type == 'cpu' else True
     train_loader = DataLoader(datas, batch_size=LOAD_BATCH_SIZE, shuffle=True,
                               num_workers=workers, pin_memory=pin)
+
+    torch.cuda.empty_cache()
     return train_loader, len(datas.ids)
 
 

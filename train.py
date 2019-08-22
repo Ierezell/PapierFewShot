@@ -11,7 +11,7 @@ from preprocess import get_data_loader, frameLoader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, MODEL,
                       LOAD_EMBEDDINGS)
-from utils import Checkpoints, load_models
+from utils import CheckpointsFewShots, load_models
 from torch import nn
 
 
@@ -45,7 +45,7 @@ cntLoss = nn.DataParallel(cntLoss, device_ids=range(torch.cuda.device_count()))
 dscLoss = nn.DataParallel(dscLoss, device_ids=range(torch.cuda.device_count()))
 
 
-check = Checkpoints()
+check = CheckpointsFewShots()
 optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
 optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
 optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
