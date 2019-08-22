@@ -1,12 +1,15 @@
 import torch
-
+import platform
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
-MODEL = "small"
+MODEL = "big"
 
-ROOT_WEIGHTS = './weights_beluga/'
+ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
-ROOT_DATASET = './dataset/mp4/'
+if platform.system()=="Windows":
+    ROOT_DATASET = '.\dataset\mp4' # window
+else :
+    ROOT_DATASET = './dataset/mp4' # mac & linux
 
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
@@ -27,9 +30,9 @@ LATENT_SIZE = 512
 K_SHOT = 8
 
 LOAD_EMBEDDINGS = False
+LOAD_PREVIOUS = False
 
 PRINT_EVERY = 50
-LOAD_PREVIOUS = True
 NB_WORKERS = 0
 
 ###############
