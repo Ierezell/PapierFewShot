@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 torch>=1.1.0
 torchvision>=0.3.0
 face-alignment>=1.0.0
 numpy>=1.16.4
 opencv-python>=4.1.0.25
 matplotlib>=3.1.0
+=======
+torch==1.1.0
+torchvision==0.3.0
+face-alignment==1.0.0
+numpy==1.16.4
+opencv-python==4.1.0.25
+matplotlib==3.1.0
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8

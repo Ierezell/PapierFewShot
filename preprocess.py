@@ -5,8 +5,13 @@ from settings import (ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT,
                       DEVICE_LANDMARKS, NB_WORKERS)
 import glob
 import torch
+<<<<<<< HEAD
 import platform
 
+=======
+
+
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,11 +32,15 @@ class frameLoader(Dataset):
         self.contexts = glob.glob(f"{self.root_dir}/*/*")
         self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
 
+<<<<<<< HEAD
         if platform.system()=="Windows":
             self.id_to_tensor = {name.split("\\")[-1]: torch.tensor(i).view(1)
                              for i, name in enumerate(self.ids)}
         else:
             self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
+=======
+        self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
                              for i, name in enumerate(self.ids)}
         torch.cuda.empty_cache()
 
@@ -69,10 +78,14 @@ class frameLoader(Dataset):
         userid = np.random.choice(glob.glob(f"{self.root_dir}/*"))
         context = np.random.choice(glob.glob(f"{userid}/*"))
         mp4file = np.random.choice(glob.glob(f"{context}/*"))
+<<<<<<< HEAD
         if platform.system()=="Windows":
             index_user = self.id_to_tensor[mp4file.split("\\")[-3]].to(DEVICE)
         else:
             index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
+=======
+        index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
         video = cv2.VideoCapture(mp4file)
 
         video_continue = True
@@ -145,6 +158,7 @@ class frameLoader(Dataset):
         cam.release()
         torch.cuda.empty_cache()
         return landmark_tensor.unsqueeze(0).to(DEVICE)
+<<<<<<< HEAD
 
     def __getitem__(self, index):
         mp4File = self.mp4files[index]
@@ -160,6 +174,19 @@ class frameLoader(Dataset):
                                                       total_frame_nb,
                                                       fusion=False)
 
+=======
+
+    def __getitem__(self, index):
+        mp4File = self.mp4files[index]
+        itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+        video = cv2.VideoCapture(mp4File)
+        total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        gt_im_tensor, gt_landmarks = self.load_random(video,
+                                                      total_frame_nb,
+                                                      fusion=False)
+
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
         context_tensors_list = []
         for _ in range(self.K_shots):
             context_frame = self.load_random(video, total_frame_nb,

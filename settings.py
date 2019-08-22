@@ -2,6 +2,7 @@ import torch
 import platform
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+<<<<<<< HEAD
 NB_EPOCHS = 40
 MODEL = "big"
 
@@ -13,6 +14,13 @@ if platform.system()=="Windows":
 else :
     ROOT_DATASET = './dataset/mp4' # mac & linux
 =======
+=======
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+NB_EPOCHS = 40
+MODEL = "big"
+
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 # Weights
 ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
@@ -21,6 +29,9 @@ ROOT_DATASET = './dataset/mp4/'
 # ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
 
 # Save
+<<<<<<< HEAD
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
+=======
 >>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
@@ -48,12 +59,15 @@ LATENT_SIZE = 512
 K_SHOT = 8
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 LOAD_EMBEDDINGS = False
 LOAD_PREVIOUS = False
 
 PRINT_EVERY = 50
 NB_WORKERS = 0
 =======
+=======
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 # Load parameters
 LOAD_EMBEDDINGS = True
 LOAD_PREVIOUS = True
@@ -63,6 +77,9 @@ NB_WORKERS = 3
 
 
 PRINT_EVERY = 100
+<<<<<<< HEAD
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
+=======
 >>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
 ###############

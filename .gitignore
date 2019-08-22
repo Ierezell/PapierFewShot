@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 .vscode/
 __pycache__/
+=======
+__pycache__/
+.vscode/
+>>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 nohup.out
 
 weights/
