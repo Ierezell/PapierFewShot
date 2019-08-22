@@ -1,11 +1,12 @@
-vox2_test_mp4.zip
-
-# */vgg_face_dag.pth
-# weights/vgg_face_dag.pth
-# weights_beluga/vgg_face_dag.pth
-# weights_helios/vgg_face_dag.pth
-
+__pycache__/
 .vscode/
+nohup.out
+
+weights/
+weights_beluga/
+weights_helios/
+
+vox2_test_mp4.zip
 
 dataset/
 
@@ -16,5 +17,3 @@ runs/
 runs_beluga/
 
 runs_helios/
-
-__pycache__/
