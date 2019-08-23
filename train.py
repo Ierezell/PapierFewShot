@@ -3,17 +3,19 @@
 import numpy as np
 import torch
 import torchvision
+from torch import nn
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
-from preprocess import get_data_loader, frameLoader
+from preprocess import frameLoader, get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, MODEL,
-                      LOAD_EMBEDDINGS)
+                      LEARNING_RATE_GEN, LOAD_EMBEDDINGS, MODEL, NB_EPOCHS,
+                      PRINT_EVERY, LOAD_BATCH_SIZE)
 from utils import CheckpointsFewShots, load_models
-from torch import nn
 
+print("torch version : ", torch.__version__)
+print("Device : ", DEVICE)
 
 train_loader, nb_pers = get_data_loader()
 
@@ -53,8 +55,6 @@ optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
 # ##########
 # Training #
 # ##########
-print("torch version : ", torch.__version__)
-print("Device : ", DEVICE)
 writer = SummaryWriter()
 # torch.autograd.set_detect_anomaly(True)
 
@@ -130,11 +130,12 @@ for i_epoch in range(NB_EPOCHS):
                                         gt_im, context),
                                        dim=1).view(-1, 3, 224, 224)
             grid = torchvision.utils.make_grid(
-                images_to_grid, padding=4, nrow=3 + K_SHOT, normalize=True,
-                scale_each=True
+                images_to_grid, padding=4, nrow=3 + K_SHOT,
+                normalize=True, scale_each=True
             )
             writer.add_image('images', grid,
                              global_step=i_batch + len(train_loader) * i_epoch)
             # writer.add_figure('Resumé', fig, close=False,
             #                   global_step=i_batch+len(train_loader)*i_epoch)
+
 writer.close()

@@ -2,10 +2,6 @@ import torch
 import platform
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-<<<<<<< HEAD
-=======
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
 NB_EPOCHS = 40
 MODEL = "big"
@@ -13,21 +9,15 @@ MODEL = "big"
 # Weights
 ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
-<<<<<<< HEAD
-if platform.system()=="Windows":
-    ROOT_DATASET = '.\dataset\mp4' # window
-else :
-    ROOT_DATASET = './dataset/mp4' # mac & linux
+if platform.system() == "Windows":
+    ROOT_DATASET = '.\dataset\mp4'  # window
+else:
+    ROOT_DATASET = './dataset/mp4'  # mac & linux
 
 # ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
 # ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-=======
-ROOT_DATASET = './dataset/mp4/'
-# ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
-# ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
 # Save
 
@@ -56,16 +46,11 @@ LATENT_SIZE = 512
 K_SHOT = 8
 
 # Load parameters
-<<<<<<< HEAD
-LOAD_EMBEDDINGS = False
-LOAD_PREVIOUS = False
-=======
 LOAD_EMBEDDINGS = True
 LOAD_PREVIOUS = True
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
-DEVICE_LANDMARKS = "cpu"  # Or "cuda"
-NB_WORKERS = 3
+DEVICE_LANDMARKS = "cuda"  # cuda or cpu
+NB_WORKERS = 0
 
 
 PRINT_EVERY = 100

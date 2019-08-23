@@ -3,6 +3,7 @@ __pycache__/
 nohup.out
 
 weights/
+weights/*
 weights_beluga/
 weights_helios/
 

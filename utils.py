@@ -87,14 +87,19 @@ def load_big_models(nb_pers, load_previous_state, load_embeddings):
 def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
                 load_embeddings=LOAD_EMBEDDINGS, model=MODEL):
     if model == "small":
+        print("Loaded Small Models")
         return load_small_models(nb_pers, load_previous_state, load_embeddings)
     elif model == "big":
+        print("Loaded Big Models")
         return load_big_models(nb_pers, load_previous_state, load_embeddings)
 
 
-def load_rl_model(load_previous_state=LOAD_PREVIOUS):
+# def load_rl_model(load_previous_state=LOAD_PREVIOUS):
+def load_rl_model(load_previous_state=False):
     policy = Policy()
     policy = policy.to(DEVICE)
+    policy = nn.DataParallel(
+        policy, device_ids=range(torch.cuda.device_count()))
 
     if load_previous_state:
         policy.load_state_dict(torch.load(PATH_WEIGHTS_POLICY))
@@ -157,7 +162,7 @@ class CheckpointsRl:
             print("| Poids sauvegardés |")
             print('-'*25)
             self.best_loss = loss
-            torch.save(policy.state_dict(),  PATH_WEIGHTS_POLICY)
+            torch.save(policy.module.state_dict(),  PATH_WEIGHTS_POLICY)
 
 
 def visualize(self, gt_landmarks, synth_im, gt_im, *models,
