@@ -2,37 +2,24 @@ import torch
 import platform
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-<<<<<<< HEAD
+
 NB_EPOCHS = 40
 MODEL = "big"
 
-<<<<<<< HEAD
+# Weights
 ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
 if platform.system()=="Windows":
     ROOT_DATASET = '.\dataset\mp4' # window
 else :
     ROOT_DATASET = './dataset/mp4' # mac & linux
-=======
-=======
+
+# ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
+# ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-NB_EPOCHS = 40
-MODEL = "big"
-
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
-# Weights
-ROOT_WEIGHTS = './weights/'
-ROOT_IMAGE = './images/'
-ROOT_DATASET = './dataset/mp4/'
-# ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
-# ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
-
 # Save
-<<<<<<< HEAD
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
-=======
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
@@ -58,29 +45,15 @@ LEARNING_RATE_DISC = 2e-4
 LATENT_SIZE = 512
 K_SHOT = 8
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+# Load parameters
 LOAD_EMBEDDINGS = False
 LOAD_PREVIOUS = False
-
-PRINT_EVERY = 50
-NB_WORKERS = 0
-=======
-=======
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
-# Load parameters
-LOAD_EMBEDDINGS = True
-LOAD_PREVIOUS = True
 
 DEVICE_LANDMARKS = "cpu"  # Or "cuda"
 NB_WORKERS = 3
 
 
 PRINT_EVERY = 100
-<<<<<<< HEAD
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
-=======
->>>>>>> a353fa4a5f7e11fccfe1c06d8f190cc7c482fce8
 
 ###############
 # RL SETTINGS #
