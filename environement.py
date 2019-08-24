@@ -197,6 +197,9 @@ class Environement:
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+        print("self.synth_im", self.synth_im.size())
+        print("self.landmarks_img", self.landmarks_img.size())
+        print(" self.user_ids", self.user_ids.size())
         score_disc, _ = self.discriminator(torch.cat((self.synth_im,
                                                       self.landmarks_img),
                                                      dim=1),

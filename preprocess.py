@@ -5,7 +5,7 @@ from settings import (ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT,
                       DEVICE_LANDMARKS, NB_WORKERS)
 import glob
 import torch
-
+import platform
 
 import cv2
 import matplotlib.pyplot as plt
@@ -27,8 +27,12 @@ class frameLoader(Dataset):
         self.contexts = glob.glob(f"{self.root_dir}/*/*")
         self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
 
-        self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
-                             for i, name in enumerate(self.ids)}
+        if platform.system() == "Windows":
+            self.id_to_tensor = {name.split("\\")[-1]: torch.tensor(i).view(1)
+                                 for i, name in enumerate(self.ids)}
+        else:
+            self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
+                                 for i, name in enumerate(self.ids)}
         torch.cuda.empty_cache()
 
     def write_landmarks_on_image(self, image, landmarks):
@@ -65,7 +69,10 @@ class frameLoader(Dataset):
         userid = np.random.choice(glob.glob(f"{self.root_dir}/*"))
         context = np.random.choice(glob.glob(f"{userid}/*"))
         mp4file = np.random.choice(glob.glob(f"{context}/*"))
-        index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
+        if platform.system() == "Windows":
+            index_user = self.id_to_tensor[mp4file.split("\\")[-3]].to(DEVICE)
+        else:
+            index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
         video = cv2.VideoCapture(mp4file)
 
         video_continue = True
@@ -141,7 +148,11 @@ class frameLoader(Dataset):
 
     def __getitem__(self, index):
         mp4File = self.mp4files[index]
-        itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+        if platform.system() == "Windows":
+            itemId = self.id_to_tensor[mp4File.split("\\")[-3]]
+        else:
+            itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+
         video = cv2.VideoCapture(mp4File)
         total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -165,7 +176,7 @@ class frameLoader(Dataset):
         return len(self.mp4files)
 
 
-def get_data_loader(root_dir=ROOT_DATASET, K_shots=8, workers=NB_WORKERS):
+def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS):
     datas = frameLoader(root_dir=root_dir, K_shots=K_shots)
     # print(len(datas))
     # size_train = int(0.8 * len(datas))

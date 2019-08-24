@@ -1,17 +1,19 @@
-__pycache__/
 .vscode/
+__pycache__/
 nohup.out
 
 weights/
+weights/*
 weights_beluga/
 weights_helios/
-
-vox2_test_mp4.zip
-
-dataset/
-
-CustomDataset/
 
 runs/
 runs_beluga/
 runs_helios/
+
+dataset/
+CustomDataset/
+
+vox2_test_mp4.zip
+
+

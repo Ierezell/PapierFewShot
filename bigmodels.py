@@ -12,7 +12,23 @@ import numpy as np
 
 
 class Embedder(nn.Module):
+    """Class for the embedding network
+
+    Arguments:
+        None
+
+    Returns:
+        Create the model of the network (used then in utils.py -> load_models )
+    """
+
     def __init__(self):
+        """
+        Initialise the layers
+        Layers created for the BIG artchitecture (more layers with wider fields)
+        All are residuals with spectral norm
+        Attention is present on two different size 
+        fully connected are used to grow the 1*512 to the size of the generator
+        """
         super(Embedder, self).__init__()
         self.residual1 = ResidualBlockDown(3, 64)
         self.residual2 = ResidualBlockDown(64, 128)
@@ -28,6 +44,15 @@ class Embedder(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):  # b, 12, 224, 224
+        """Forward pass : 
+
+        The network should take a BATCH picture as input of size (B*3)*W*H
+        It takes the pictures ONE by ONE to compute their latent representation
+        and then take the mean of all this representation to get the batch one.
+        Returns:
+            Tensor -- Size 1*512 corresponding to the latent 
+                                        representation of this BATCH of image
+        """
         temp = torch.tensor(np.zeros(LATENT_SIZE, dtype=np.float),
                             dtype=torch.float, device="cuda")
         layerUp1 = torch.tensor(np.zeros((64, 112, 112), dtype=np.float),
@@ -97,7 +122,20 @@ class Embedder(nn.Module):
 #    Generator   #
 # ################
 class Generator(nn.Module):
+    """
+    Class for the BigGenerator : It takes ONE landmark image and output a
+    synthetic face, helped with layers and coeficient from the embedder.
+
+    Returns:
+        Create the model of the network (used then in utils.py -> load_models )
+    """
+
     def __init__(self):
+        """
+        Layers created for the BIG artchitecture (more layers with wider fields)
+        All are residuals with spectral norm
+        Attention is present on three different size (down constant and up) 
+        """
         super(Generator, self).__init__()
         # Down
         self.ResDown1 = ResidualBlockDown(3, 32)
@@ -142,6 +180,13 @@ class Generator(nn.Module):
         """
         Res block : in out out out
         Res block up : in out//4 out//4 out//4
+        LayersUp are corresponding to the same size layer down of the embedder
+
+        weights and biases are given by the embedder to ponderate the instance
+        norm of the constant and upsampling parts.
+        It's given in an hard coded bad manner. 
+        (could be done with loops and be more scalable...
+        but I will do it later, it's easier to debug this way)
         """
         layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6 = layersUp
         x = self.ResDown1(img)
@@ -318,7 +363,33 @@ class Generator(nn.Module):
 #     Discriminator    #
 # ######################
 class Discriminator(nn.Module):
+    """
+    Class for the BigDiscriminator
+    Architecture is almost the same as the embedder.
+
+    Arguments:
+        num_persons {int} -- The number of persons in the dataset. It's used to
+        create the embeddings for each persons. Could be disabled in settings.py
+        with the LOAD_EMBEDDINGS parameter to False.
+
+    Returns:
+        Create the model of the network (used then in utils.py -> load_models )
+    """
+
     def __init__(self, num_persons, fine_tunning=False):
+        """[summary]
+
+        Arguments:
+        num_persons {int} -- The number of persons in the dataset. It's used to
+        create the embeddings for each persons. Could be disabled in settings.py
+        with the LOAD_EMBEDDINGS parameter to False.
+
+        Keyword Arguments:
+            fine_tunning {bool} -- will be used after... still not implemented 
+            (default: {False})
+            Will be used to prevent the loading of embeddings to fintune only on
+            one unknown person (variables are differents).
+        """
         super(Discriminator, self).__init__()
         self.residual1 = ResidualBlockDown(6, 64)
         self.residual2 = ResidualBlockDown(64, 128)
@@ -383,6 +454,12 @@ class Discriminator(nn.Module):
 
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
+        print("out", out.size())
+        print("b", b.size())
+        print("w0", w0.size())
+        print("self.embeddings(indexes)", self.embeddings(indexes).size())
+        print("self.embeddings(indexes).view(-1, 1, LATENT_SIZE)", 
+        self.embeddings(indexes).view(-1, 1, LATENT_SIZE).size())
         out = torch.bmm(
             self.embeddings(indexes).view(-1, 1, LATENT_SIZE),
             (out+w0).view(BATCH_SIZE, LATENT_SIZE, 1)
