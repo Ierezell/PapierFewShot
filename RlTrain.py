@@ -57,7 +57,8 @@ for i in range(NB_EPOCHS):
             # print("e : ", action_index)
         else:
             action_index = torch.randint(low=0, high=policy.action_space,
-                                         size=(1,), dtype=torch.int, device="cuda")
+                                         size=(1,), dtype=torch.int,
+                                         device="cuda")
             # print("p : ", action_index)
         # Apply action
         # action_index = torch.tensor([32])
