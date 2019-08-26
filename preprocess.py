@@ -147,19 +147,25 @@ class frameLoader(Dataset):
         return landmark_tensor.unsqueeze(0).to(DEVICE)
 
     def __getitem__(self, index):
-        mp4File = self.mp4files[index]
-        if platform.system() == "Windows":
-            itemId = self.id_to_tensor[mp4File.split("\\")[-3]]
-        else:
-            itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+        badVideo = True
+        while badVideo:
+            try:
+                mp4File = self.mp4files[np.random.randint(0,
+                                                          len(self.mp4files))]
+                if platform.system() == "Windows":
+                    itemId = self.id_to_tensor[mp4File.split("\\")[-3]]
+                else:
+                    itemId = self.id_to_tensor[mp4File.split('/')[-3]]
 
-        video = cv2.VideoCapture(mp4File)
-        total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+                video = cv2.VideoCapture(mp4File)
+                total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        gt_im_tensor, gt_landmarks = self.load_random(video,
-                                                      total_frame_nb,
-                                                      fusion=False)
-
+                gt_im_tensor, gt_landmarks = self.load_random(video,
+                                                              total_frame_nb,
+                                                              fusion=False)
+                badVideo = False
+            except ValueError:
+                continue
         context_tensors_list = []
         for _ in range(self.K_shots):
             context_frame = self.load_random(video, total_frame_nb,
