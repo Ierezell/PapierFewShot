@@ -4,7 +4,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 NB_EPOCHS = 40
-MODEL = "small"
+MODEL = "big"
 
 # Weights
 ROOT_WEIGHTS = './weights/'
@@ -45,8 +45,8 @@ LATENT_SIZE = 512
 K_SHOT = 2
 
 # Load parameters
-LOAD_EMBEDDINGS = True
-LOAD_PREVIOUS = True
+LOAD_EMBEDDINGS = False
+LOAD_PREVIOUS = False
 LOAD_PREVIOUS_RL = False
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
