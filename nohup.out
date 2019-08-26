@@ -20331,3 +20331,336 @@ I0715 13:34:34.821568 140110750279424 _internal.py:122] ::ffff:127.0.0.1 - - [15
 I0715 13:34:34.904167 140110750279424 _internal.py:122] ::ffff:127.0.0.1 - - [15/Jul/2019 13:34:34] "GET /data/plugin/images/tags HTTP/1.1" 200 -
 I0715 13:34:34.907252 140110750279424 _internal.py:122] ::ffff:127.0.0.1 - - [15/Jul/2019 13:34:34] "GET /data/plugin/images/images?run=Beluga%2FJul15_09-54-54_blg4608.int.ets1.calculquebec.ca&sample=0&tag=images HTTP/1.1" 200 -
 TensorBoard caught SIGTERM; exiting...
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 1.14.0a20190614 at http://ArchPierre:6006/ (Press CTRL+C to quit)
+I0824 20:43:50.282475 139842927195904 _internal.py:122] ::1 - - [24/Aug/2019 20:43:50] "GET /data/environment HTTP/1.1" 200 -
+I0824 20:43:50.289052 139843174819584 _internal.py:122] ::1 - - [24/Aug/2019 20:43:50] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0824 20:43:50.295666 139842910410496 _internal.py:122] ::1 - - [24/Aug/2019 20:43:50] "GET /data/experiments HTTP/1.1" 200 -
+W0824 20:44:04.651438 139842918803200 core_plugin.py:172] Unable to get first event timestamp for run Helios/Jul09_13-09-20_gpu-k80-02: No event timestamp could be found
+I0824 20:44:20.261394 139842927195904 _internal.py:122] ::1 - - [24/Aug/2019 20:44:20] "GET /data/experiments HTTP/1.1" 200 -
+I0824 20:44:20.272605 139843174819584 _internal.py:122] ::1 - - [24/Aug/2019 20:44:20] "GET /data/environment HTTP/1.1" 200 -
+I0824 20:44:20.283968 139842910410496 _internal.py:122] ::1 - - [24/Aug/2019 20:44:20] "GET /data/plugins_listing HTTP/1.1" 200 -
+W0824 20:44:35.880872 139842918803200 core_plugin.py:172] Unable to get first event timestamp for run Helios/Jul10_09-35-53_gpu-k80-01: No event timestamp could be found
+E0824 20:44:38.475309 139843183998720 plugin_event_multiplexer.py:220] Unable to reload accumulator 'Helios/Jul13_23-54-35_gpu-k80-06': [Errno 2] No such file or directory: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0'
+W0824 20:44:38.476928 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul16_10-40-43_gpu-k80-01'
+W0824 20:44:38.477196 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul17_09-33-13_gpu-k80-03'
+W0824 20:44:38.477316 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul15_09-47-33_gpu-k80-02'
+W0824 20:44:38.477710 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul16_23-30-37_gpu-k80-03'
+W0824 20:44:38.477800 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul15_21-33-47_gpu-k80-04'
+W0824 20:44:38.477879 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul15_13-48-48_gpu-k80-05'
+I0824 20:44:38.480365 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.482218 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.484251 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.485646 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.487457 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.488905 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.490545 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.491755 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.534539 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.536193 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.541666 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.543346 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.546600 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.547984 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+I0824 20:44:38.595883 139842918803200 _internal.py:122] ::1 - - [24/Aug/2019 20:44:38] "GET /data/runs HTTP/1.1" 500 -
+E0824 20:44:38.600426 139842918803200 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 89, in Load
+    for event in self._LoadInternal():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 113, in _LoadInternal
+    for event in self._loader.Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 94, in Load
+    for record in super(EventFileLoader, self).Load():
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/event_file_loader.py", line 71, in Load
+    self._reader.GetNext()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 237, in GetNext
+    self.read()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/compat/tensorflow_stub/pywrap_tensorflow.py", line 189, in read
+    '{} does not point to valid Events file'.format(self.filename))
+tensorboard.compat.tensorflow_stub.errors.NotFoundError: b'/mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06/events.out.tfevents.1563076475.gpu-k80-06.70025.0' does not point to valid Events file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 175, in _serve_runs
+    run_names.sort(key=get_first_event_timestamp)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/core/core_plugin.py", line 169, in get_first_event_timestamp
+    return self._multiplexer.FirstEventTimestamp(run_name)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 300, in FirstEventTimestamp
+    return accumulator.FirstEventTimestamp()
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 227, in FirstEventTimestamp
+    event = next(self._generator.Load())
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/directory_watcher.py", line 94, in Load
+    'Directory %s has been permanently deleted' % self._directory)
+tensorboard.backend.event_processing.directory_watcher.DirectoryDeletedError: Directory /mnt/Documents/Projets/PapierFewShot/runs_helios/Jul13_23-54-35_gpu-k80-06 has been permanently deleted
+W0824 20:44:43.493700 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul10_09-35-53_gpu-k80-01'
+W0824 20:44:43.494197 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul09_13-09-20_gpu-k80-02'
+W0824 20:44:43.494521 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul13_23-54-35_gpu-k80-06'
+TensorBoard caught SIGTERM; exiting...

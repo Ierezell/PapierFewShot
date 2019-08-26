@@ -10,7 +10,6 @@ from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from environement import Environement
-from RlModel import Policy
 from utils import CheckpointsRl, load_rl_model
 from settings import (BATCH_SIZE, DEVICE, EPS_DECAY, EPS_END, EPS_START,
                       LEARNING_RATE_RL, NB_EPOCHS)
@@ -24,8 +23,9 @@ environement.new_person()
 policy = load_rl_model()
 policy = policy.to(DEVICE)
 # torch.cuda.empty_cache()
-print("Nombre de paramètres police: ",
-      f"{sum([np.prod(p.size()) if p.requires_grad else 0 for p in policy.parameters()]):,}")
+paramPol = sum([np.prod(p.size()) if p.requires_grad else 0
+                for p in policy.parameters()])
+print("Nombre de paramètres police: ", f"{paramPol:,}")
 
 optimizer = Adam(policy.parameters(), lr=LEARNING_RATE_RL)
 criterion = nn.MSELoss()
@@ -93,7 +93,7 @@ for i in range(NB_EPOCHS):
         # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
         # y_batch = torch.cat(
         #     [reward_batch[i] if minibatch[i][4]
-        #      else reward_batch[i]+policy.gamma*torch.max(output_new_state_batch[i])
+        #       else reward_batch[i]+policy.gamma*torch.max(out_state_batch[i])
         #      for i in range(len(minibatch))
         #      ]
         # )
@@ -113,7 +113,7 @@ for i in range(NB_EPOCHS):
 
         # extract Q-value
         # print(policy(state_batch).size())
-        # print("yoyoyo : ", policy(state_batch).t().size(), action_batch.size())
+        # print("yoy : ", policy(state_batch).t().size(), action_batch.size())
         q_value = torch.sum(policy(state_batch).t() * action_batch, dim=0)
 
         # PyTorch accumulates gradients by default,

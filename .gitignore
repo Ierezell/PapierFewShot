@@ -23,5 +23,5 @@ dataset/
 CustomDataset/
 
 vox2_test_mp4.zip
-
-
+weights_helios
+weights_beluga
