@@ -42,7 +42,7 @@ LEARNING_RATE_DISC = 2e-4
 
 # Misc Size
 LATENT_SIZE = 512
-K_SHOT = 2
+K_SHOT = 8
 
 # Load parameters
 LOAD_EMBEDDINGS = False
