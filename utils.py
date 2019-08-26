@@ -17,7 +17,7 @@ from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_BIG_DISCRIMINATOR,
                       PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
                       DEVICE, MODEL, LOAD_PREVIOUS, LOAD_EMBEDDINGS,
-                      PATH_WEIGHTS_POLICY)
+                      LOAD_PREVIOUS_RL, PATH_WEIGHTS_POLICY)
 
 import matplotlib.style as mplstyle
 import matplotlib.pyplot as plt
@@ -94,8 +94,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
         return load_big_models(nb_pers, load_previous_state, load_embeddings)
 
 
-# def load_rl_model(load_previous_state=LOAD_PREVIOUS):
-def load_rl_model(load_previous_state=False):
+def load_rl_model(load_previous_state=LOAD_PREVIOUS_RL):
     policy = Policy()
     policy = policy.to(DEVICE)
     policy = nn.DataParallel(
@@ -149,7 +148,7 @@ class CheckpointsFewShots:
 
 class CheckpointsRl:
     def __init__(self):
-        self.losses = {"loss": []}
+        self.losses = {"Rl": []}
         self.best_loss = 1e10
 
     def addCheckpoint(self, model, loss):
@@ -158,9 +157,9 @@ class CheckpointsRl:
 
     def save(self, loss, policy):
         if loss < self.best_loss:
-            print('\n' + '-'*25)
+            print('\n' + '-'*20)
             print("| Poids sauvegardés |")
-            print('-'*25)
+            print('-'*20)
             self.best_loss = loss
             torch.save(policy.module.state_dict(),  PATH_WEIGHTS_POLICY)
 

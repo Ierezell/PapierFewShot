@@ -18,12 +18,12 @@ from settings import (BATCH_SIZE, DEVICE, EPS_DECAY, EPS_END, EPS_START,
 plt.ion()
 
 environement = Environement()
-torch.cuda.empty_cache()
+# torch.cuda.empty_cache()
 environement.new_person()
-torch.cuda.empty_cache()
+# torch.cuda.empty_cache()
 policy = load_rl_model()
 policy = policy.to(DEVICE)
-torch.cuda.empty_cache()
+# torch.cuda.empty_cache()
 print("Nombre de paramètres police: ",
       f"{sum([np.prod(p.size()) if p.requires_grad else 0 for p in policy.parameters()]):,}")
 
@@ -38,10 +38,11 @@ for i in range(NB_EPOCHS):
     environement.new_person()
     done = False
     while not done:
-        # print("k")
-        state = environement.synth_im
-        # print(state.size())
+        state = environement.synth_im.detach()
+        print("k")
+        # print("State : ", state.size())
         probas = policy(state)
+        # print("probas : ", probas.size())
         # Choose action
         sample = random.random()
         eps_threshold = EPS_END + (EPS_START - EPS_END) * \
@@ -59,6 +60,8 @@ for i in range(NB_EPOCHS):
         # Apply action
         # action_index = torch.tensor([32])
         new_state, reward, done = environement.step(action_index)
+        # print("new_state : ", new_state.size())
+        # print("reward : ", reward.size())
         policy.module.replay_memory.append((state.detach().cpu(),
                                             action_index.detach().cpu(),
                                             reward.detach().cpu(),
@@ -71,7 +74,7 @@ for i in range(NB_EPOCHS):
 
         # unpack minibatch
         state_batch = torch.cat([d[0] for d in minibatch])
-        print("State batch : ", state_batch.size())
+        # print("State batch : ", state_batch.size())
         # print([d[1] for d in minibatch])
         action_batch = torch.cat([d[1] for d in minibatch])
         reward_batch = torch.cat([d[2] for d in minibatch])
@@ -83,7 +86,9 @@ for i in range(NB_EPOCHS):
         new_state_batch = new_state_batch.to(DEVICE)
 
         # # get output for the next state
+        # print("new_state_batch : ", new_state_batch.size())
         output_new_state_batch = policy(new_state_batch)
+        # print("output_new_state_batch : ", output_new_state_batch.size())
 
         # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
         # y_batch = torch.cat(
@@ -104,12 +109,12 @@ for i in range(NB_EPOCHS):
             listReward.append(rwd)
 
         y_batch = torch.cat(listReward)
-        # print("LISTOUILLE : ", y_batch, y_batch.size())
+        # print("y_batch : ", y_batch, y_batch.size())
 
         # extract Q-value
         # print(policy(state_batch).size())
-        q_value = torch.sum(policy(state_batch).t() *
-                            action_batch, dim=0)
+        # print("yoyoyo : ", policy(state_batch).t().size(), action_batch.size())
+        q_value = torch.sum(policy(state_batch).t() * action_batch, dim=0)
 
         # PyTorch accumulates gradients by default,
         # so they need to be reset in each pass
@@ -120,19 +125,18 @@ for i in range(NB_EPOCHS):
         y_batch = y_batch.detach()
 
         # calculate loss
-        print("YOLOOOOO : ", q_value.size(), y_batch.size())
+        # print("YOLOOOOO : ", q_value.size(), y_batch.size())
         loss = criterion(q_value, y_batch)
-        environement.writer.add_scalar("loss", loss,
-                                       global_step=environement.iterations *
-                                       environement.episodes)
-
         # do backward pass
         loss.backward()
         optimizer.step()
 
         # set state to be state_1
-        state = new_state
-        print(loss)
+        state = state.detach()
+        # print(loss)
+        environement.writer.add_scalar("loss", loss,
+                                       global_step=environement.iterations *
+                                       environement.episodes)
         check.addCheckpoint("Rl", torch.sum(loss, dim=-1))
         check.save(torch.sum(loss, dim=-1), policy)
 
