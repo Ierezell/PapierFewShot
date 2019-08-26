@@ -237,5 +237,6 @@ class Vgg_face_dag(nn.Module):
 def vgg_face_dag(weights_path="./weights/vgg_face_dag.pth"):
     model = Vgg_face_dag()
     model = model.to(DEVICE)
-    model.load_state_dict(torch.load(weights_path))
+    model = nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
+    model.module.load_state_dict(torch.load(weights_path))
     return model

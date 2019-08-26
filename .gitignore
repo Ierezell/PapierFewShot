@@ -4,6 +4,14 @@ nohup.out
 
 weights/
 weights/*
+weights/BigDiscriminator.pt
+weights/BigEmbedder.pt
+weights/BigGenerator.pt
+weights/Discriminator.pt
+weights/Embedder.pt
+weights/Generator.pt
+weights/vgg_face_dag.pth
+
 weights_beluga/
 weights_helios/
 

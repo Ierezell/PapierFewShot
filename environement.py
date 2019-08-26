@@ -105,7 +105,7 @@ class Environement:
 
         self.writer = SummaryWriter()
 
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
 
     def new_person(self):
         self.landmarks = self.begining_landmarks.copy()
@@ -141,7 +141,7 @@ class Environement:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
 
     def step(self, action):
         self.iterations += 1
@@ -197,9 +197,9 @@ class Environement:
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-        print("self.synth_im", self.synth_im.size())
-        print("self.landmarks_img", self.landmarks_img.size())
-        print(" self.user_ids", self.user_ids.size())
+        # print("self.synth_im", self.synth_im.size())
+        # print("self.landmarks_img", self.landmarks_img.size())
+        # print(" self.user_ids", self.user_ids.size())
         score_disc, _ = self.discriminator(torch.cat((self.synth_im,
                                                       self.landmarks_img),
                                                      dim=1),
@@ -219,11 +219,11 @@ class Environement:
                 break
         else:
             score_outside = 0
-        print("score_disc : ", score_disc)
-        print("score_redoing : ", score_redoing)
-        print("score_outside : ", score_outside)
-        print("Score Tot : ", score_disc/10 + score_redoing + score_outside)
-        print("\n")
+        # print("score_disc : ", score_disc)
+        # print("score_redoing : ", score_redoing)
+        # print("score_outside : ", score_outside)
+        # print("Score Tot : ", score_disc/10 + score_redoing + score_outside)
+        # print("\n")
         return score_disc/10 + score_redoing + score_outside
 
     def reset(self):
@@ -238,8 +238,8 @@ class Environement:
         self.iterations = 0
         self.episodes = 0
         self.writer = SummaryWriter()
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
 
     def finish(self):
         self.writer.close()
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
