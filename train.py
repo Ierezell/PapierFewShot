@@ -8,10 +8,9 @@ from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
-from preprocess import frameLoader, get_data_loader
+from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, LOAD_EMBEDDINGS, MODEL, NB_EPOCHS,
-                      PRINT_EVERY, LOAD_BATCH_SIZE)
+                      LEARNING_RATE_GEN, MODEL, NB_EPOCHS, PRINT_EVERY)
 from utils import CheckpointsFewShots, load_models
 
 print("torch version : ", torch.__version__)

@@ -50,11 +50,11 @@ class Policy(nn.Module):
         # print("prev_img_repr : ", self.prev_img_repr)
 
         tensor_img_repr = torch.cat(list(self.prev_img_repr)).unsqueeze(dim=0)
-        # tensor_img_repr = torch.nn.utils.rnn.pack_sequence(self.prev_img_repr)
+        # tensor_img_repr=torch.nn.utils.rnn.pack_sequence(self.prev_img_repr)
         # print("tensor_img_repr : ", tensor_img_repr.size())
 
         out_rnn, (hidden, cells) = self.rnn(tensor_img_repr)
-        # out_rnn, len_out_rnn = torch.nn.utils.rnn.pad_packed_sequence(out_rnn)
+        # out_rnn,len_out_rnn=torch.nn.utils.rnn.pad_packed_sequence(out_rnn)
         # out_rnn = out_rnn.view(1, 512)
         # print("len_out_rnn : ", len_out_rnn)
         # print("out_rnn : ", out_rnn.size())
