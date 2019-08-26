@@ -59,6 +59,7 @@ writer = SummaryWriter()
 # torch.autograd.set_detect_anomaly(True)
 
 for i_epoch in range(NB_EPOCHS):
+    print("Epoch ! Epoch ! Epooooooch !!")
     for i_batch, batch in enumerate(train_loader):
 
         optimizerEmb.zero_grad()

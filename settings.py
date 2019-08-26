@@ -31,7 +31,7 @@ PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator.pt'
 
 
 # Batch
-nb_batch_per_gpu = 1
+nb_batch_per_gpu = 2
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
 BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
 
@@ -46,8 +46,8 @@ LATENT_SIZE = 512
 K_SHOT = 8
 
 # Load parameters
-LOAD_EMBEDDINGS = False
-LOAD_PREVIOUS = False
+LOAD_EMBEDDINGS = True
+LOAD_PREVIOUS = True
 LOAD_PREVIOUS_RL = False
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
