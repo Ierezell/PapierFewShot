@@ -190,7 +190,8 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS):
     # train_datas, valid_datas = random_split(datas, (size_train, size_valid))
     pin = False if DEVICE.type == 'cpu' else True
     train_loader = DataLoader(datas, batch_size=LOAD_BATCH_SIZE, shuffle=True,
-                              num_workers=workers, pin_memory=pin)
+                              num_workers=workers, pin_memory=pin,
+                              drop_last=True)
 
     torch.cuda.empty_cache()
     return train_loader, len(datas.ids)
