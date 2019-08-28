@@ -461,11 +461,19 @@ class Discriminator(nn.Module):
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
 
+        print("out : ", out.size())
+        print("final_out : ", final_out.size())
+        print("w0 : ", w0.size())
+        print("b : ", b.size())
+        print("self.embeddings(indexes) : ", self.embeddings(indexes).size())
+
         condition = torch.bmm(
             self.embeddings(indexes).view(-1, 1, LATENT_SIZE),
             (out+w0).view(BATCH_SIZE, LATENT_SIZE, 1)
         )
         final_out += condition.view(final_out.size())
-        final_out = final_out.squeeze()
+        print("final_out : ", final_out.size())
+        final_out = final_out.view(b.size())
+        print("final_outvv : ", final_out.size())
         final_out += b
         return final_out, features_maps

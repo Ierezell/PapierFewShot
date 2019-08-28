@@ -71,9 +71,10 @@ class contentLoss(nn.Module):
     def __init__(self):
         super(contentLoss, self).__init__()
         self.vgg = vgg19(pretrained=True)
-        self.vgg.eval()
+        for p in self.vgg.parameters():
+            p.requires_grad = False
         self.vgg_layers = self.vgg.features
-        self.vgg_Face = vgg_face_dag()
+        self.vgg_Face = vgg_face_dag(freeze=True)
 
         self.layer_name_mapping_vgg19 = {
             '1': "relu1",
@@ -234,8 +235,11 @@ class Vgg_face_dag(nn.Module):
         return x38
 
 
-def vgg_face_dag(weights_path="./weights/vgg_face_dag.pth"):
+def vgg_face_dag(freeze=True, weights_path="./weights/vgg_face_dag.pth"):
     model = Vgg_face_dag()
+    if freeze:
+        for p in model.parameters():
+            p.requires_grad = False
     model = model.to(DEVICE)
     model.load_state_dict(torch.load(weights_path))
     return model

@@ -20,14 +20,15 @@ train_loader, nb_pers = get_data_loader()
 
 emb, gen, disc = load_models(nb_pers)
 
-print("Nombre de paramètres Emb: ",
-      f"{sum([np.prod(p.size()) for p in emb.parameters()]):,}")
-
-print("Nombre de paramètres Gen: ",
-      f"{sum([np.prod(p.size()) for p in gen.parameters()]):,}")
-
-print("Nombre de paramètres Disc: ",
-      f"{sum([np.prod(p.size()) for p in disc.parameters()]):,}")
+trainParamEmb = sum([np.prod(p.size()) if p.requires_grad else 0
+                     for p in emb.parameters()])
+trainParamGen = sum([np.prod(p.size()) if p.requires_grad else 0
+                     for p in gen.parameters()])
+trainParamDisc = sum([np.prod(p.size()) if p.requires_grad else 0
+                      for p in disc.parameters()])
+print("Nombre de paramètres Emb: ", f"{trainParamEmb:,}")
+print("Nombre de paramètres Gen: ", f"{trainParamGen:,}")
+print("Nombre de paramètres Disc: ", f"{trainParamDisc:,}")
 
 
 advLoss = adverserialLoss()
@@ -45,6 +46,18 @@ mchLoss = nn.DataParallel(mchLoss, device_ids=range(torch.cuda.device_count()))
 cntLoss = nn.DataParallel(cntLoss, device_ids=range(torch.cuda.device_count()))
 dscLoss = nn.DataParallel(dscLoss, device_ids=range(torch.cuda.device_count()))
 
+trainParamCnt = sum([np.prod(p.size()) if p.requires_grad else 0
+                     for p in cntLoss.parameters()])
+trainParamAdv = sum([np.prod(p.size()) if p.requires_grad else 0
+                     for p in advLoss.parameters()])
+trainParamDsc = sum([np.prod(p.size()) if p.requires_grad else 0
+                     for p in dscLoss.parameters()])
+trainParamMch = sum([np.prod(p.size()) if p.requires_grad else 0
+                     for p in mchLoss.parameters()])
+print("Nombre de paramètres Cnt: ", f"{trainParamCnt:,}")
+print("Nombre de paramètres Adv: ", f"{trainParamAdv:,}")
+print("Nombre de paramètres Dsc: ", f"{trainParamDsc:,}")
+print("Nombre de paramètres Mch: ", f"{trainParamMch:,}")
 
 check = CheckpointsFewShots()
 optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
