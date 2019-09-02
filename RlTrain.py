@@ -36,10 +36,13 @@ iteration = 0
 for i in range(NB_EPOCHS):
     print("NEW ONE ! ")
     environement.new_person()
+    torch.cuda.empty_cache()
     done = False
+    compteur = 0
     while not done:
         state = environement.synth_im.detach()
-        print("k")
+        print(f"comp : {compteur}")
+        compteur += 1
         # print("State : ", state.size())
         probas = policy(state)
         # print("probas : ", probas.size())
@@ -137,7 +140,7 @@ for i in range(NB_EPOCHS):
         environement.writer.add_scalar("loss", loss,
                                        global_step=environement.iterations *
                                        environement.episodes)
-        check.addCheckpoint("Rl", torch.sum(loss, dim=-1))
-        check.save(torch.sum(loss, dim=-1), policy)
+        # check.addCheckpoint("Rl", torch.sum(loss, dim=-1))
+        # check.save(torch.sum(loss, dim=-1), policy)
 
 writer.close()

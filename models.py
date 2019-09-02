@@ -256,6 +256,6 @@ class Discriminator(nn.Module):
             (out+w0).view(BATCH_SIZE, LATENT_SIZE, 1)
         )
         final_out += condition.view(final_out.size())
-        final_out = final_out.squeeze()
+        final_out = final_out.view(b.size())
         final_out += b
         return final_out, features_maps

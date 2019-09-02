@@ -263,9 +263,9 @@ class Generator(nn.Module):
         x = self.relu(x)
         outR5 = outR4
 
-        x = torch.cat((x, layerUp6), dim=1)
-        x = self.ResAda1(x)
-        x = self.relu(x)
+        # x = torch.cat((x, layerUp6), dim=1)
+        # x = self.ResAda1(x)
+        # x = self.relu(x)
         x = self.ResUp1(x,
                         w1=paramWeights.narrow(-1, outR5, 512),
                         b1=paramBias.narrow(-1, outR5, 512),
@@ -278,9 +278,9 @@ class Generator(nn.Module):
         x = self.relu(x)
         outRu1 = outR5 + 512 + 512 + 512 + 512
 
-        x = torch.cat((x, layerUp5), dim=1)
-        x = self.ResAda2(x)
-        x = self.relu(x)
+        # x = torch.cat((x, layerUp5), dim=1)
+        # x = self.ResAda2(x)
+        # x = self.relu(x)
         x = self.Res2(
             x,
             w1=paramWeights.narrow(-1, outRu1, 512),
@@ -294,9 +294,9 @@ class Generator(nn.Module):
         x = self.relu(x)
         outRu2 = outRu1 + 512 + 512//4 + 512//4 + 512//4
 
-        x = torch.cat((x, layerUp4), dim=1)
-        x = self.ResAda3(x)
-        x = self.relu(x)
+        # x = torch.cat((x, layerUp4), dim=1)
+        # x = self.ResAda3(x)
+        # x = self.relu(x)
         x = self.ResUp3(
             x,
             w1=paramWeights.narrow(-1, outRu2, 256),
@@ -310,9 +310,9 @@ class Generator(nn.Module):
         x = self.relu(x)
         outRu3 = outRu2 + 256 + 256//4 + 256//4 + 256//4
 
-        x = torch.cat((x, layerUp3), dim=1)
-        x = self.ResAda4(x)
-        x = self.relu(x)
+        # x = torch.cat((x, layerUp3), dim=1)
+        # x = self.ResAda4(x)
+        # x = self.relu(x)
         x = self.ResUp4(x,
                         w1=paramWeights.narrow(-1, outRu3, 128),
                         b1=paramBias.narrow(-1, outRu3, 128),
@@ -461,19 +461,19 @@ class Discriminator(nn.Module):
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
 
-        print("out : ", out.size())
-        print("final_out : ", final_out.size())
-        print("w0 : ", w0.size())
-        print("b : ", b.size())
-        print("self.embeddings(indexes) : ", self.embeddings(indexes).size())
+        # print("out : ", out.size())
+        # print("final_out : ", final_out.size())
+        # print("w0 : ", w0.size())
+        # print("b : ", b.size())
+        # print("self.embeddings(indexes) : ", self.embeddings(indexes).size())
 
         condition = torch.bmm(
             self.embeddings(indexes).view(-1, 1, LATENT_SIZE),
             (out+w0).view(BATCH_SIZE, LATENT_SIZE, 1)
         )
         final_out += condition.view(final_out.size())
-        print("final_out : ", final_out.size())
+        # print("final_out : ", final_out.size())
         final_out = final_out.view(b.size())
-        print("final_outvv : ", final_out.size())
+        # print("final_outvv : ", final_out.size())
         final_out += b
         return final_out, features_maps

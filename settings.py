@@ -4,13 +4,14 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 NB_EPOCHS = 40
-MODEL = "big"
+MODEL = "small"
 
 # Weights
 ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
 if platform.system() == "Windows":
-    ROOT_DATASET = '.\\dataset\\mp4'  # window
+    # ROOT_DATASET = '.\\dataset\\mp4'  # window
+    ROOT_DATASET = '.\\one_person_dataset\\mp4'  # window
 else:
     ROOT_DATASET = './dataset/mp4'  # mac & linux
     # ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
@@ -20,29 +21,29 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Save
 
-PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
-PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
-PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator.pt'
+PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder11.pt'
+PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator11.pt'
+PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator11.pt'
 
-PATH_WEIGHTS_BIG_EMBEDDER = ROOT_WEIGHTS+'BigEmbedder.pt'
-PATH_WEIGHTS_BIG_GENERATOR = ROOT_WEIGHTS+'BigGenerator.pt'
-PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator.pt'
+PATH_WEIGHTS_BIG_EMBEDDER = ROOT_WEIGHTS+'BigEmbedder11.pt'
+PATH_WEIGHTS_BIG_GENERATOR = ROOT_WEIGHTS+'BigGenerator11.pt'
+PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator11.pt'
 
 
 # Batch
-nb_batch_per_gpu = 2
+nb_batch_per_gpu = 1
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
 BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
 
 # LR
 
-LEARNING_RATE_EMB = 5e-5
-LEARNING_RATE_GEN = 5e-5
-LEARNING_RATE_DISC = 2e-4
+LEARNING_RATE_EMB = 5e-6
+LEARNING_RATE_GEN = 5e-6
+LEARNING_RATE_DISC = 1e-5
 
 # Misc Size
 LATENT_SIZE = 512
-K_SHOT = 2
+K_SHOT = 8
 
 # Load parameters
 LOAD_EMBEDDINGS = False

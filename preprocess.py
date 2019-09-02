@@ -85,7 +85,8 @@ class frameLoader(Dataset):
             if i > limit:
                 break
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            landmarks = self.face_landmarks.get_landmarks_from_image(image)
+            with torch.no_grad():
+                landmarks = self.face_landmarks.get_landmarks_from_image(image)
             try:
                 landmarks = landmarks[0]
                 image = self.write_landmarks_on_image(image, landmarks)
@@ -126,24 +127,25 @@ class frameLoader(Dataset):
             return transforms.ToTensor()(image)
 
     def get_landmarks_from_webcam(self):
-        cam = cv2.VideoCapture(0)
-        image_ok = False
-        while not image_ok:
-            _, image = cam.read()
-            image = cv2.flip(image, 1)
-            image = cv2.resize(image, (224, 224))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            landmarks = self.face_landmarks.get_landmarks_from_image(image)
-            image = np.zeros(image.shape, np.float32)
-            try:
-                landmarks = landmarks[0]
-                self.write_landmarks_on_image(image, landmarks)
-                landmark_tensor = transforms.ToTensor()(image)
-                image_ok = True
-            except TypeError:
-                continue
-        cam.release()
-        torch.cuda.empty_cache()
+        with torch.no_grad():
+            cam = cv2.VideoCapture(0)
+            image_ok = False
+            while not image_ok:
+                _, image = cam.read()
+                image = cv2.flip(image, 1)
+                image = cv2.resize(image, (224, 224))
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                landmarks = self.face_landmarks.get_landmarks_from_image(image)
+                image = np.zeros(image.shape, np.float32)
+                try:
+                    landmarks = landmarks[0]
+                    self.write_landmarks_on_image(image, landmarks)
+                    landmark_tensor = transforms.ToTensor()(image)
+                    image_ok = True
+                except TypeError:
+                    continue
+            cam.release()
+            torch.cuda.empty_cache()
         return landmark_tensor.unsqueeze(0).to(DEVICE)
 
     def __getitem__(self, index):
