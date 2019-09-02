@@ -14,6 +14,7 @@ if platform.system() == "Windows":
     ROOT_DATASET = '.\\one_person_dataset\\mp4'  # window
 else:
     ROOT_DATASET = './dataset/mp4'  # mac & linux
+    # ROOT_DATASET = './one_person_dataset/mp4'  # mac & linux
     # ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
     # ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
 
@@ -46,8 +47,8 @@ LATENT_SIZE = 512
 K_SHOT = 8
 
 # Load parameters
-LOAD_EMBEDDINGS = False
-LOAD_PREVIOUS = False
+LOAD_EMBEDDINGS = True
+LOAD_PREVIOUS = True
 LOAD_PREVIOUS_RL = False
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu

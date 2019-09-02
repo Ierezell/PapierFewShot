@@ -339,6 +339,8 @@ class Generator(nn.Module):
             w4=paramWeights.narrow(-1, outRu4 + 128+128//4+128//4, 128//4),
             b4=paramBias.narrow(-1, outRu4 + 128 + 128//4 + 128//4, 128//4))
         x = self.relu(x)
+        x = self.attentionUp(x)
+        x = self.relu(x)
         outRu5 = outRu4 + 128 + 128//4 + 128//4 + 128//4
         # x = torch.cat((x, layerUp1), dim=1)
         # x = self.ResAda6(x)

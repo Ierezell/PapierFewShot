@@ -11,6 +11,8 @@ from collections import deque
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
+MAX_DEQUE = 10
+
 
 class Environement:
     def __init__(self):
@@ -92,7 +94,11 @@ class Environement:
         self.generator = self.generator.eval()
         self.discriminator = self.discriminator.eval()
 
+<<<<<<< HEAD
         self.landmarks_done = deque(maxlen=10)
+=======
+        self.landmarks_done = deque(maxlen=MAX_DEQUE)
+>>>>>>> 6c602f903fed48f10f9c205bb091bdbba8c63425
         self.contexts = None
         self.user_ids = None
         self.embeddings = None
@@ -101,15 +107,24 @@ class Environement:
         self.layersUp = None
         self.iterations = 0
         self.episodes = 0
+<<<<<<< HEAD
         self.max_iter = 20
+=======
+        self.max_iter = 50
+>>>>>>> 6c602f903fed48f10f9c205bb091bdbba8c63425
         self.fig, self.axes = plt.subplots(2, 2)
 
         self.writer = SummaryWriter()
 
     def new_person(self):
+<<<<<<< HEAD
         torch.cuda.empty_cache()
         self.landmarks = copy.deepcopy(self.begining_landmarks)
         self.landmarks_done = deque(maxlen=10)
+=======
+        self.landmarks = self.begining_landmarks.copy()
+        self.landmarks_done = deque(maxlen=MAX_DEQUE)
+>>>>>>> 6c602f903fed48f10f9c205bb091bdbba8c63425
 
         self.contexts, self.user_ids = self.frameloader.load_someone(limit=20)
         if MODEL == "big":
@@ -143,8 +158,7 @@ class Environement:
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-
-        # torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
 
     def step(self, action):
         self.iterations += 1
