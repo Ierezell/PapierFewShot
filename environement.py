@@ -10,6 +10,8 @@ from collections import deque
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
+MAX_DEQUE = 10
+
 
 class Environement:
     def __init__(self):
@@ -91,7 +93,7 @@ class Environement:
         self.generator = self.generator.eval()
         self.discriminator = self.discriminator.eval()
 
-        self.landmarks_done = deque(maxlen=10000)
+        self.landmarks_done = deque(maxlen=MAX_DEQUE)
         self.contexts = None
         self.user_ids = None
         self.embeddings = None
@@ -100,7 +102,7 @@ class Environement:
         self.layersUp = None
         self.iterations = 0
         self.episodes = 0
-        self.max_iter = 2000000
+        self.max_iter = 50
         self.fig, self.axes = plt.subplots(2, 2)
 
         self.writer = SummaryWriter()
@@ -109,7 +111,7 @@ class Environement:
 
     def new_person(self):
         self.landmarks = self.begining_landmarks.copy()
-        self.landmarks_done = deque(maxlen=1000)
+        self.landmarks_done = deque(maxlen=MAX_DEQUE)
 
         self.contexts, self.user_ids = self.frameloader.load_someone(limit=20)
         if MODEL == "big":
@@ -140,8 +142,7 @@ class Environement:
 
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-
-        # torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
 
     def step(self, action):
         self.iterations += 1

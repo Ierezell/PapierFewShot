@@ -20664,3 +20664,414 @@ W0824 20:44:43.493700 139843183998720 plugin_event_multiplexer.py:244] Deleting 
 W0824 20:44:43.494197 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul09_13-09-20_gpu-k80-02'
 W0824 20:44:43.494521 139843183998720 plugin_event_multiplexer.py:244] Deleting accumulator 'Helios/Jul13_23-54-35_gpu-k80-06'
 TensorBoard caught SIGTERM; exiting...
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 1.14.0a20190614 at http://ArchPierre:6006/ (Press CTRL+C to quit)
+I0828 08:26:45.686147 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:26:45] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:26:45.704596 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:26:45] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:26:45.705869 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:26:45] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:27:15.742194 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:27:15] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:27:15.753775 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:27:15] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:27:15.790378 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:27:15] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:27:45.881516 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:27:45] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:27:45.927792 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:27:45] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:27:45.968646 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:27:45] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:28:15.859699 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:28:15] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:28:15.895102 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:28:15] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:28:15.927791 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:28:15] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:28:45.694200 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:28:45] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:28:45.723045 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:28:45] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:28:45.758259 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:28:45] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:29:15.675317 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:15] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:29:15.693917 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:15] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:29:15.741092 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:15] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:29:27.474772 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:27] "GET / HTTP/1.1" 200 -
+I0828 08:29:28.360432 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:28] "GET /font-roboto/oMMgfZMQthOryQo9n22dcuvvDin1pK8aKteLpeZ5c0A.woff2 HTTP/1.1" 200 -
+I0828 08:29:28.929317 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:28] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:29:28.946186 140219843188480 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:28] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:29:28.969692 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:28] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:29:29.315216 140219843188480 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:29] "GET /font-roboto/RxZJdnzeo3R5zSexge8UUZBw1xU1rKptJj_0jans920.woff2 HTTP/1.1" 200 -
+I0828 08:29:29.361200 140219466639104 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:29] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:29:29.367650 140219843188480 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:29] "GET /font-roboto/d-6IYplOFocCacKzxwXSOJBw1xU1rKptJj_0jans920.woff2 HTTP/1.1" 200 -
+I0828 08:29:29.385533 140219475031808 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:29] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:29:29.396901 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:29] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:29:29.498737 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:29] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+W0828 08:29:30.179747 140219826403072 core_plugin.py:172] Unable to get first event timestamp for run Beluga/Jul25_14-13-24_blg5203.int.ets1.calculquebec.ca: No event timestamp could be found
+W0828 08:29:42.601563 140219834795776 core_plugin.py:172] Unable to get first event timestamp for run Helios/Aug27_00-06-25_gpu-k80-03: No event timestamp could be found
+I0828 08:29:42.617626 140219834795776 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:42] "GET /data/runs HTTP/1.1" 200 -
+W0828 08:29:42.644230 140219826403072 core_plugin.py:172] Unable to get first event timestamp for run Helios/Aug27_00-06-25_gpu-k80-03: No event timestamp could be found
+I0828 08:29:42.660279 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:42] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:29:42.698724 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:42] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:29:42.788464 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:42] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:29:42.928453 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:42] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 08:29:48.122117 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:48] "GET /data/plugin/images/tags HTTP/1.1" 200 -
+I0828 08:29:48.143999 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:48] "GET /data/plugin/images/images?run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&sample=0&tag=images HTTP/1.1" 200 -
+I0828 08:29:48.195935 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:48] "GET /data/plugin/images/individualImage?ts=1566994794.3313506&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&tag=images&sample=0&index=0 HTTP/1.1" 200 -
+I0828 08:29:59.312983 140219851581184 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:29:59.313589 140219475031808 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:29:59.313755 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:29:59.314856 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:29:59.363113 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:29:59.418354 140219826403072 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 08:29:59.419107 140219877684992 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:29:59] "GET /data/plugin/scalars/scalars?tag=LossTot&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+E0828 08:30:03.258522 140219961841408 directory_watcher.py:239] File /mnt/Documents/Projets/PapierFewShot/runs_beluga/Aug27_22-46-36_blg5107.int.ets1.calculquebec.ca/.events.out.tfevents.1566960396.blg5107.int.ets1.calculquebec.ca.302961.0.wYF5oI created after file /mnt/Documents/Projets/PapierFewShot/runs_beluga/Aug27_22-46-36_blg5107.int.ets1.calculquebec.ca/events.out.tfevents.1566960396.blg5107.int.ets1.calculquebec.ca.302961.0 even though it's lexicographically earlier
+TensorBoard caught SIGTERM; exiting...
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 1.14.0a20190614 at http://ArchPierre:6006/ (Press CTRL+C to quit)
+I0828 08:30:08.783584 140414668572416 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:08] "GET / HTTP/1.1" 200 -
+I0828 08:30:09.130207 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:09] "GET /font-roboto/oMMgfZMQthOryQo9n22dcuvvDin1pK8aKteLpeZ5c0A.woff2 HTTP/1.1" 200 -
+I0828 08:30:10.117293 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:30:10.151550 140414510147328 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:30:10.151893 140414668572416 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:30:10.485571 140414668572416 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /font-roboto/RxZJdnzeo3R5zSexge8UUZBw1xU1rKptJj_0jans920.woff2 HTTP/1.1" 200 -
+I0828 08:30:10.503753 140414510147328 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:30:10.511010 140414510147328 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /font-roboto/d-6IYplOFocCacKzxwXSOJBw1xU1rKptJj_0jans920.woff2 HTTP/1.1" 200 -
+I0828 08:30:10.516860 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:30:10.667639 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:30:10.678730 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:30:40.518624 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:30:40.537020 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:30:40.576992 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:30:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:31:10.666104 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:31:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:31:10.666699 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:31:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:31:10.699123 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:31:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:31:40.591381 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:31:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:31:40.597419 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:31:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:31:40.623003 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:31:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:32:10.552039 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:32:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:32:10.576336 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:32:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:32:10.606355 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:32:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+W0828 08:32:37.706090 140414518540032 core_plugin.py:172] Unable to get first event timestamp for run Helios/Aug25_12-47-07_gpu-k80-05: No event timestamp could be found
+I0828 08:32:40.497961 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:32:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:32:40.503824 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:32:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:32:40.521106 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:32:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+W0828 08:32:49.255622 140414518540032 core_plugin.py:172] Unable to get first event timestamp for run Helios/Aug26_10-13-32_gpu-k80-03: No event timestamp could be found
+W0828 08:33:00.794039 140414518540032 core_plugin.py:172] Unable to get first event timestamp for run Helios/Aug27_00-06-25_gpu-k80-03: No event timestamp could be found
+I0828 08:33:00.810160 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:00] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:00.847737 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:00] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:00.899883 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:00] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:00.951087 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:00] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:00.958869 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:00] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:00.984919 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:00] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:01.089712 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:01.144918 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:01.153581 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:01.197313 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:01.253811 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:01.346144 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:01.431760 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:01] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:10.490569 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:33:10.490939 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:33:10.491614 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:10.492477 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:33:10.514034 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:33:40.491113 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:33:40.491643 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:33:40.492965 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:33:40.494666 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:33:40.517613 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:33:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:34:10.490681 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:34:10.491619 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:34:10.491987 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:34:10.493820 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:34:10.511978 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:34:40.494842 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:34:40.495241 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:34:40.496500 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:34:40.496690 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:34:40.516844 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:34:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:35:10.495683 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:35:10.496844 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:35:10.497491 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:35:10.498245 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:35:10.522164 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:35:40.503104 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:35:40.507528 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:35:40.512202 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:35:40.514327 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:35:40.541175 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:35:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:36:10.496771 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:36:10.497105 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:36:10.497472 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:36:10.499268 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:36:10.518246 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:36:40.498103 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:36:40.498483 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:36:40.498839 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:36:40.500258 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:36:40.528059 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:36:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:37:10.499121 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:37:10.499717 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:37:10.500041 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:37:10.500350 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:37:10.519573 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:37:40.497671 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:37:40.499951 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:37:40.500304 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:37:40.501651 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:37:40.539370 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:37:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:38:10.502273 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:38:10.502713 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:38:10.503433 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:38:10.504737 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:38:10.524476 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:38:40.505330 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:38:40.505766 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:38:40.506190 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:38:40.508723 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:38:40.529995 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:38:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:39:10.506333 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:39:10.507373 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:39:10.508113 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:39:10.510262 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:39:10.528799 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:39:40.503954 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:39:40.506362 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:39:40.506719 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:39:40.507175 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:39:40.529705 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:39:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:40:10.505645 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:40:10.508299 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:40:10.508637 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:40:10.509083 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:40:10.534087 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:40:40.508632 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:40] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:40:40.509692 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:40] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:40:40.509880 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:40] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:40:40.511007 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:40] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:40:40.531638 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:40:40] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 08:41:10.509966 140414543718144 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:41:10] "GET /data/environment HTTP/1.1" 200 -
+I0828 08:41:10.510436 140414518540032 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:41:10] "GET /data/runs HTTP/1.1" 200 -
+I0828 08:41:10.511027 140414149453568 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:41:10] "GET /data/experiments HTTP/1.1" 200 -
+I0828 08:41:10.512619 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:41:10] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 08:41:10.530977 140414157846272 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 08:41:10] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+E0828 09:00:22.359680 140414676965120 directory_watcher.py:239] File /mnt/Documents/Projets/PapierFewShot/runs_beluga/Aug27_22-46-36_blg5107.int.ets1.calculquebec.ca/.events.out.tfevents.1566960396.blg5107.int.ets1.calculquebec.ca.302961.0.XPs7gH created after file /mnt/Documents/Projets/PapierFewShot/runs_beluga/Aug27_22-46-36_blg5107.int.ets1.calculquebec.ca/events.out.tfevents.1566960396.blg5107.int.ets1.calculquebec.ca.302961.0 even though it's lexicographically earlier
+TensorBoard caught SIGTERM; exiting...
+TensorFlow installation not found - running with reduced feature set.
+TensorBoard 1.14.0a20190614 at http://ArchPierre:6006/ (Press CTRL+C to quit)
+I0828 09:00:34.660604 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:34] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:00:34.905035 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:00:35.338697 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:35] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:00:35.488659 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:00:35.746125 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:35] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:00:35.826323 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:00:35.827479 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:35] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:00:35.828607 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:00:56.418389 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:56] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:00:56.430382 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:56] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:00:56.448036 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:00:56] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:01:26.538420 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:01:26] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:01:26.544669 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:01:26] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:01:26.572772 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:01:26] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:01:56.432481 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:01:56] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:01:56.462609 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:01:56] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:01:56.473785 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:01:56] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:02:26.515882 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:02:26] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:02:26.543023 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:02:26] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:02:26.549378 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:02:26] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:02:56.554335 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:02:56] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:02:56.578103 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:02:56] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:02:56.597045 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:02:56] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:03:26.580855 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:03:26] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:03:26.581575 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:03:26] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:03:26.641192 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:03:26] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:03:57.712372 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:03:57] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:03:57.713351 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:03:57] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:03:57.738373 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:03:57] "GET /data/plugins_listing HTTP/1.1" 200 -
+W0828 09:04:15.947030 140685411874560 core_plugin.py:172] Unable to get first event timestamp for run Helios/Aug27_00-06-25_gpu-k80-03: No event timestamp could be found
+I0828 09:04:15.953204 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:15] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:15.977087 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:15] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:16.017392 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:16.075911 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:16.081737 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:16.132963 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:16.137803 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:16.154546 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:16.160410 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+I0828 09:04:16.221009 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:16.230615 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+E0828 09:04:16.263791 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:04:16.320456 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:16.424651 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:16.430551 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:04:16.464450 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:04:16.538228 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:16.604559 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:16.838555 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:04:16.926810 140685536311040 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:04:16.927824 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 500 -
+E0828 09:04:16.929485 140685411874560 _internal.py:122] Error on request:
+Traceback (most recent call last):
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 303, in run_wsgi
+    execute(self.server.app)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/serving.py", line 291, in execute
+    application_iter = app(environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/application.py", line 349, in __call__
+    return self.data_applications[clean_path](environ, start_response)
+  File "/home/pedro/.local/lib/python3.7/site-packages/werkzeug/wrappers/base_request.py", line 235, in application
+    resp = f(*args[:-2] + (request,))
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 205, in scalars_route
+    (body, mime_type) = self.scalars_impl(tag, run, experiment, output_format)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/plugins/scalar/scalars_plugin.py", line 163, in scalars_impl
+    tensor_events = self._multiplexer.Tensors(run, tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_multiplexer.py", line 400, in Tensors
+    return accumulator.Tensors(tag)
+  File "/home/pedro/.local/lib/python3.7/site-packages/tensorboard/backend/event_processing/plugin_event_accumulator.py", line 437, in Tensors
+    return self.tensors_by_tag[tag].Items(_TENSOR_RESERVOIR_KEY)
+KeyError: 'Loss_dsc'
+I0828 09:04:16.932128 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 09:04:16.991155 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:16] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 09:04:17.008407 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:17] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 09:04:28.427292 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:28] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:28.427787 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:28] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:04:28.428191 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:28] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:04:28.429376 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:28] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:04:28.448692 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:28] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:28.513986 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:28] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 09:04:59.428089 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:59] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:04:59.430168 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:59] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:04:59.433131 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:59] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:04:59.436112 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:59] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:04:59.506223 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:59] "GET /data/plugin/scalars/tags HTTP/1.1" 200 -
+I0828 09:04:59.524300 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:04:59] "GET /data/plugin/scalars/scalars?tag=Loss_dsc&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&experiment= HTTP/1.1" 200 -
+I0828 09:05:19.044376 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:19] "GET /data/plugin/images/tags HTTP/1.1" 200 -
+I0828 09:05:19.119015 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:19] "GET /data/plugin/images/images?run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&sample=0&tag=images HTTP/1.1" 200 -
+I0828 09:05:19.160199 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:19] "GET /data/plugin/images/individualImage?ts=1566996633.059353&run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&tag=images&sample=0&index=1 HTTP/1.1" 200 -
+I0828 09:05:29.427917 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:29] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:05:29.429118 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:29] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:05:29.433590 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:29] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:05:29.438310 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:29] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:05:29.596388 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:29] "GET /data/plugin/images/tags HTTP/1.1" 200 -
+I0828 09:05:29.601000 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:29] "GET /data/plugin/images/images?run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&sample=0&tag=images HTTP/1.1" 200 -
+I0828 09:05:59.431235 140685403481856 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:59] "GET /data/environment HTTP/1.1" 200 -
+I0828 09:05:59.434953 140685494314752 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:59] "GET /data/experiments HTTP/1.1" 200 -
+I0828 09:05:59.435978 140685536311040 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:59] "GET /data/runs HTTP/1.1" 200 -
+I0828 09:05:59.437670 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:59] "GET /data/plugins_listing HTTP/1.1" 200 -
+I0828 09:05:59.597270 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:59] "GET /data/plugin/images/tags HTTP/1.1" 200 -
+I0828 09:05:59.643135 140685411874560 _internal.py:122] ::ffff:127.0.0.1 - - [28/Aug/2019 09:05:59] "GET /data/plugin/images/images?run=Beluga%2FAug28_08-19-21_blg5208.int.ets1.calculquebec.ca&sample=0&tag=images HTTP/1.1" 200 -
+TensorBoard caught SIGTERM; exiting...

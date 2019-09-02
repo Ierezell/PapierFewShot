@@ -37,9 +37,10 @@ for i in range(NB_EPOCHS):
     print("NEW ONE ! ")
     environement.new_person()
     done = False
+    iterable = 0
     while not done:
         state = environement.synth_im.detach()
-        print("k")
+        print(f"Iter : {iterable}")
         # print("State : ", state.size())
         probas = policy(state)
         # print("probas : ", probas.size())
@@ -139,5 +140,6 @@ for i in range(NB_EPOCHS):
                                        environement.episodes)
         check.addCheckpoint("Rl", torch.sum(loss, dim=-1))
         check.save(torch.sum(loss, dim=-1), policy)
+        iterable += 1
 
 writer.close()

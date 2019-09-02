@@ -310,9 +310,9 @@ class Generator(nn.Module):
         x = self.relu(x)
         outRu3 = outRu2 + 256 + 256//4 + 256//4 + 256//4
 
-        x = torch.cat((x, layerUp3), dim=1)
-        x = self.ResAda4(x)
-        x = self.relu(x)
+        # x = torch.cat((x, layerUp3), dim=1)
+        # x = self.ResAda4(x)
+        # x = self.relu(x)
         x = self.ResUp4(x,
                         w1=paramWeights.narrow(-1, outRu3, 128),
                         b1=paramBias.narrow(-1, outRu3, 128),
@@ -338,6 +338,8 @@ class Generator(nn.Module):
             b3=paramBias.narrow(-1, outRu4+128+128//4, 128//4),
             w4=paramWeights.narrow(-1, outRu4 + 128+128//4+128//4, 128//4),
             b4=paramBias.narrow(-1, outRu4 + 128 + 128//4 + 128//4, 128//4))
+        x = self.relu(x)
+        x = self.attentionUp(x)
         x = self.relu(x)
         outRu5 = outRu4 + 128 + 128//4 + 128//4 + 128//4
         # x = torch.cat((x, layerUp1), dim=1)

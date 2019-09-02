@@ -21,6 +21,7 @@ runs_helios/
 
 dataset/
 CustomDataset/
+one_person_dataset/
 
 vox2_test_mp4.zip
 weights_helios

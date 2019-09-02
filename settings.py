@@ -4,7 +4,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 NB_EPOCHS = 40
-MODEL = "big"
+MODEL = "small"
 
 # Weights
 ROOT_WEIGHTS = './weights/'
@@ -13,6 +13,7 @@ if platform.system() == "Windows":
     ROOT_DATASET = '.\\dataset\\mp4'  # window
 else:
     ROOT_DATASET = './dataset/mp4'  # mac & linux
+    # ROOT_DATASET = './one_person_dataset/mp4'  # mac & linux
     # ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
     # ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
 
@@ -30,7 +31,7 @@ PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator.pt'
 
 
 # Batch
-nb_batch_per_gpu = 2
+nb_batch_per_gpu = 1
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
 BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
 
@@ -42,11 +43,11 @@ LEARNING_RATE_DISC = 2e-4
 
 # Misc Size
 LATENT_SIZE = 512
-K_SHOT = 2
+K_SHOT = 8
 
 # Load parameters
-LOAD_EMBEDDINGS = False
-LOAD_PREVIOUS = False
+LOAD_EMBEDDINGS = True
+LOAD_PREVIOUS = True
 LOAD_PREVIOUS_RL = False
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
