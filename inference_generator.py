@@ -8,7 +8,7 @@ frameloader = frameLoader()
 
 emb, gen, disc = load_models(len(frameloader.ids))
 
-context, user_id = frameloader.load_someone(limit=2000)
+context, first_image_landmarks, user_id = frameloader.load_someone(limit=2000)
 
 real_image = context[0].narrow(0, 0, 3).cpu().permute(1, 2, 0).numpy()
 
