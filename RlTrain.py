@@ -10,19 +10,15 @@ from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
 from environement import Environement
-from utils import CheckpointsRl, load_rl_model
 from settings import (BATCH_SIZE, DEVICE, EPS_DECAY, EPS_END, EPS_START,
                       LEARNING_RATE_RL, NB_EPOCHS)
+from utils import CheckpointsRl, load_rl_model
 
 plt.ion()
 
 environement = Environement()
-# torch.cuda.empty_cache()
-environement.new_person()
-# torch.cuda.empty_cache()
 policy = load_rl_model()
 policy = policy.to(DEVICE)
-# torch.cuda.empty_cache()
 paramPol = sum([np.prod(p.size()) if p.requires_grad else 0
                 for p in policy.parameters()])
 print("Nombre de paramètres police: ", f"{paramPol:,}")
@@ -36,11 +32,13 @@ iteration = 0
 for i in range(NB_EPOCHS):
     print("NEW ONE ! ")
     environement.new_person()
+    torch.cuda.empty_cache()
     done = False
-    iterable = 0
+    compteur = 0
     while not done:
         state = environement.synth_im.detach()
-        print(f"Iter : {iterable}")
+        print(f"comp : {compteur}")
+        compteur += 1
         # print("State : ", state.size())
         probas = policy(state)
         # print("probas : ", probas.size())
@@ -140,6 +138,5 @@ for i in range(NB_EPOCHS):
                                        environement.episodes)
         check.addCheckpoint("Rl", torch.sum(loss, dim=-1))
         check.save(torch.sum(loss, dim=-1), policy)
-        iterable += 1
 
 writer.close()

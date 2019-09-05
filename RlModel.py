@@ -1,12 +1,12 @@
 
-from settings import GAMMA
-from torch import nn
-from losses import vgg_face_dag
 from collections import deque
+
 import numpy as np
 import torch
+from torch import nn
 
-# TODO LSTM dans la politique
+from losses import vgg_face_dag
+from settings import GAMMA
 
 
 class Policy(nn.Module):
@@ -15,7 +15,7 @@ class Policy(nn.Module):
         self.state_space = 2622
         self.action_space = 68*4
 
-        self.repres_image = vgg_face_dag()
+        self.repres_image = vgg_face_dag(freeze=False)
         for name, param in self.repres_image.named_parameters():
             if "fc" in name:
                 print(name)

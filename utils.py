@@ -1,26 +1,25 @@
-import shutil
-import os
 import glob
+import os
+import shutil
+
+import matplotlib.pyplot as plt
+import matplotlib.style as mplstyle
 import numpy as np
 import torch
-from torch import nn
 from matplotlib.lines import Line2D
-from models import Discriminator, Embedder, Generator
+from torch import nn
 
 from bigmodels import Discriminator as BigDiscriminator
 from bigmodels import Embedder as BigEmbedder
 from bigmodels import Generator as BigGenerator
-
+from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
+from models import Discriminator, Embedder, Generator
 from RlModel import Policy
-
-from settings import (PATH_WEIGHTS_DISCRIMINATOR, PATH_WEIGHTS_EMBEDDER,
-                      PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_BIG_DISCRIMINATOR,
-                      PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
-                      DEVICE, MODEL, LOAD_PREVIOUS, LOAD_EMBEDDINGS,
-                      LOAD_PREVIOUS_RL, PATH_WEIGHTS_POLICY)
-
-import matplotlib.style as mplstyle
-import matplotlib.pyplot as plt
+from settings import (
+    DEVICE, LOAD_EMBEDDINGS, LOAD_PREVIOUS, LOAD_PREVIOUS_RL, MODEL,
+    PATH_WEIGHTS_BIG_DISCRIMINATOR, PATH_WEIGHTS_BIG_EMBEDDER,
+    PATH_WEIGHTS_BIG_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
+    PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_POLICY)
 
 mplstyle.use(['dark_background', 'fast'])
 
@@ -87,10 +86,12 @@ def load_big_models(nb_pers, load_previous_state, load_embeddings):
 def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
                 load_embeddings=LOAD_EMBEDDINGS, model=MODEL):
     if model == "small":
-        print("Loaded Small Models")
+        print("Loading Small Models (pretrained)" if LOAD_PREVIOUS
+              else "Loading Small Models (no pretrained)")
         return load_small_models(nb_pers, load_previous_state, load_embeddings)
     elif model == "big":
-        print("Loaded Big Models")
+        print("Loading Big Models (pretrained)" if LOAD_PREVIOUS
+              else "Loading Big Models (no pretrained)")
         return load_big_models(nb_pers, load_previous_state, load_embeddings)
 
 
@@ -101,8 +102,32 @@ def load_rl_model(load_previous_state=LOAD_PREVIOUS_RL):
         policy, device_ids=range(torch.cuda.device_count()))
 
     if load_previous_state:
-        policy.load_state_dict(torch.load(PATH_WEIGHTS_POLICY))
+        print("Loading Rl Policy (pretrained)" if LOAD_PREVIOUS_RL
+              else "Loading Rl Policy (no pretrained)")
+        policy.module.load_state_dict(torch.load(PATH_WEIGHTS_POLICY))
     return policy
+
+
+def load_losses():
+    advLoss = adverserialLoss()
+    mchLoss = matchLoss()
+    cntLoss = contentLoss()
+    dscLoss = discriminatorLoss()
+
+    advLoss = advLoss.to(DEVICE)
+    mchLoss = mchLoss.to(DEVICE)
+    cntLoss = cntLoss.to(DEVICE)
+    dscLoss = dscLoss.to(DEVICE)
+
+    advLoss = nn.DataParallel(
+        advLoss, device_ids=range(torch.cuda.device_count()))
+    mchLoss = nn.DataParallel(
+        mchLoss, device_ids=range(torch.cuda.device_count()))
+    cntLoss = nn.DataParallel(
+        cntLoss, device_ids=range(torch.cuda.device_count()))
+    dscLoss = nn.DataParallel(
+        dscLoss, device_ids=range(torch.cuda.device_count()))
+    return advLoss, mchLoss, cntLoss, dscLoss
 
 
 class CheckpointsFewShots:
@@ -110,14 +135,21 @@ class CheckpointsFewShots:
         self.losses = {"dsc": [], "cnt": [], "adv": [], "mch": []}
         self.best_loss_EmbGen = 1e10
         self.best_loss_Disc = 1e10
+        self.last_save_disc = 0
+        self.last_save_emb = 0
 
     def addCheckpoint(self, model, loss):
         loss = loss.detach()
+        if model == "disc":
+            self.last_save_disc += 1
+        if model == "embGen":
+            self.last_save_emb += 1
         self.losses[model].append(loss)
 
     def save(self, model, loss, embedder, generator, discriminator):
         if model == "disc":
-            if loss < self.best_loss_Disc:
+            if loss < self.best_loss_Disc or self.last_save_disc > 100:
+                self.last_save_disc = 0
                 print('\n' + '-' * 25)
                 print("| Poids disc sauvegardés |")
                 print('-'*25)
@@ -129,7 +161,8 @@ class CheckpointsFewShots:
                     torch.save(discriminator.module.state_dict(),
                                PATH_WEIGHTS_BIG_DISCRIMINATOR)
         else:
-            if loss < self.best_loss_EmbGen:
+            if loss < self.best_loss_EmbGen or self.last_save_emb > 100:
+                self.last_save_emb = 0
                 print('\n' + '-'*31)
                 print("| Poids Emb & Gen sauvegardés |")
                 print('-'*31)
@@ -150,13 +183,16 @@ class CheckpointsRl:
     def __init__(self):
         self.losses = {"Rl": []}
         self.best_loss = 1e10
+        self.last_save = 0
 
     def addCheckpoint(self, model, loss):
         loss = loss.detach()
         self.losses[model].append(loss)
+        self.last_save += 1
 
     def save(self, loss, policy):
-        if loss < self.best_loss:
+        if loss < self.best_loss or self.last_save > 100:
+            self.last_save = 0
             print('\n' + '-'*20)
             print("| Poids sauvegardés |")
             print('-'*20)
@@ -310,3 +346,11 @@ def make_light_dataset(path_dataset, new_path):
                 dest = f"{new_path}/{'/'.join(context.split('/')[-2:])}"
                 shutil.copytree(context, dest)
                 break
+
+
+def print_parameters(model):
+    trainParamModel = sum([np.prod(p.size()) if p.requires_grad else 0
+                           for p in model.parameters()])
+
+    print(f"Nombre de paramètres {model.module.__class__.__name__ }: ",
+          f"{trainParamModel:,}")

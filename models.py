@@ -210,7 +210,9 @@ class Discriminator(nn.Module):
         self.residual3 = ResidualBlockDown(128, 256)
         self.residual4 = ResidualBlockDown(256, 512)
         self.residual5 = ResidualBlockDown(512, 512)
-        self.attention = Attention(128)
+        self.residual6 = ResidualBlockDown(512, 512)
+        self.attention1 = Attention(128)
+        self.attention2 = Attention(512)
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
@@ -227,7 +229,7 @@ class Discriminator(nn.Module):
         out = self.relu(out)
         features_maps.append(out)
 
-        out = self.attention(out)  # 2, 128, 56, 56
+        out = self.attention1(out)  # 2, 128, 56, 56
         out = self.relu(out)
         features_maps.append(out)
 
@@ -239,7 +241,15 @@ class Discriminator(nn.Module):
         out = self.relu(out)
         features_maps.append(out)
 
+        out = self.attention2(out)  # 2, 128, 56, 56
+        out = self.relu(out)
+        features_maps.append(out)
+
         out = self.residual5(out)  # 2, 512, 7,7
+        out = self.relu(out)
+        features_maps.append(out)
+
+        out = self.residual6(out)  # 2, 512, 7,7
         out = self.relu(out)
         features_maps.append(out)
 

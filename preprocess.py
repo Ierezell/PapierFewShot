@@ -1,18 +1,18 @@
-from face_alignment import FaceAlignment, LandmarksType
-from torch.utils.data import DataLoader, Dataset
-
-from settings import (ROOT_DATASET, LOAD_BATCH_SIZE, DEVICE, K_SHOT,
-                      DEVICE_LANDMARKS, NB_WORKERS)
+import copy
 import glob
-import torch
 import platform
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-
-from torchvision import transforms
+import torch
 import torchvision
+from face_alignment import FaceAlignment, LandmarksType
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
+from settings import (DEVICE, DEVICE_LANDMARKS, K_SHOT, LOAD_BATCH_SIZE,
+                      NB_WORKERS, ROOT_DATASET)
 
 
 class frameLoader(Dataset):
@@ -69,34 +69,39 @@ class frameLoader(Dataset):
         userid = np.random.choice(glob.glob(f"{self.root_dir}/*"))
         context = np.random.choice(glob.glob(f"{userid}/*"))
         mp4file = np.random.choice(glob.glob(f"{context}/*"))
+
         if platform.system() == "Windows":
             index_user = self.id_to_tensor[mp4file.split("\\")[-3]].to(DEVICE)
         else:
             index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
+
         video = cv2.VideoCapture(mp4file)
 
-        video_continue = True
         context_tensors_list = []
+        first_image_landmarks = None
         i = 0
         while True:
             video_continue, image = video.read()
-            if not video_continue:
-                break
-            if i > limit:
+            if (not video_continue) or (i > limit):
                 break
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            landmarks = self.face_landmarks.get_landmarks_from_image(image)
+            with torch.no_grad():
+                landmarks = self.face_landmarks.get_landmarks_from_image(image)
             try:
                 landmarks = landmarks[0]
+                if i == 0:
+                    first_image_landmarks = copy.deepcopy(landmarks)
                 image = self.write_landmarks_on_image(image, landmarks)
                 context_tensors_list.append(transforms.ToTensor()(image))
                 i += 1
             except TypeError:
                 continue
+
         video.release()
         all_frames = torch.cat(context_tensors_list).unsqueeze(0).to(DEVICE)
+
         torch.cuda.empty_cache()
-        return all_frames, index_user
+        return all_frames, first_image_landmarks, index_user
 
     def load_random(self, video, total_frame_nb, fusion):
         badLandmarks = True
@@ -105,41 +110,44 @@ class frameLoader(Dataset):
             video.set(cv2.CAP_PROP_POS_FRAMES, frameIndex)
             _, gt_im = video.read()
             gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
-
-            landmarks = self.face_landmarks.get_landmarks_from_image(gt_im)
+            with torch.no_grad():
+                landmarks = self.face_landmarks.get_landmarks_from_image(gt_im)
             try:
                 landmarks = landmarks[0]
                 badLandmarks = False
             except TypeError:
                 continue
 
-        if not fusion:
-            image = np.zeros(gt_im.shape, np.float32)
-        else:
+        if fusion:
             image = gt_im
+        else:
+            image = np.zeros(gt_im.shape, np.float32)
 
         image = self.write_landmarks_on_image(image, landmarks)
+
         torch.cuda.empty_cache()
-        if not fusion:
-            return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
-        else:
+
+        if fusion:
             return transforms.ToTensor()(image)
+        else:
+            return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
 
     def get_landmarks_from_webcam(self):
         cam = cv2.VideoCapture(0)
-        image_ok = False
-        while not image_ok:
+        bad_image = True
+        while bad_image:
             _, image = cam.read()
             image = cv2.flip(image, 1)
             image = cv2.resize(image, (224, 224))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            landmarks = self.face_landmarks.get_landmarks_from_image(image)
+            with torch.no_grad():
+                landmarks = self.face_landmarks.get_landmarks_from_image(image)
             image = np.zeros(image.shape, np.float32)
             try:
                 landmarks = landmarks[0]
                 self.write_landmarks_on_image(image, landmarks)
                 landmark_tensor = transforms.ToTensor()(image)
-                image_ok = True
+                bad_image = False
             except TypeError:
                 continue
         cam.release()
