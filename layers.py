@@ -60,6 +60,8 @@ part of the generator.
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.adaDim = spectral_norm(nn.Conv2d(in_channels,  out_channels,
                                               kernel_size=1, padding=0,
                                               bias=False))
@@ -128,7 +130,8 @@ class ResidualBlock(nn.Module):
 class ResidualBlockDown(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResidualBlockDown, self).__init__()
-
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         temp_channels = max(1, in_channels // 4)
         if out_channels - in_channels > 0:
             self.adaDim = spectral_norm(nn.Conv2d(in_channels,
@@ -183,24 +186,31 @@ class ResidualBlockDown(nn.Module):
 class ResidualBlockUp(nn.Module):
     def __init__(self, in_channels, out_channels, scale=2):
         super(ResidualBlockUp, self).__init__()
-        temp_channels = max(1, in_channels//4)
-        self.adaDim = spectral_norm(nn.Conv2d(in_channels,  out_channels,
+        self.in_channels = in_channels
+        self.temp_channels = max(1, in_channels//4)
+        self.out_channels = out_channels
+        self.adaDim = spectral_norm(nn.Conv2d(self.in_channels,
+                                              self.out_channels,
                                               kernel_size=1, padding=0,
                                               bias=False))
 
-        self.conv1 = spectral_norm(nn.Conv2d(in_channels, temp_channels,
+        self.conv1 = spectral_norm(nn.Conv2d(self.in_channels,
+                                             self.temp_channels,
                                              kernel_size=1, padding=0,
                                              bias=False))
 
-        self.conv2 = spectral_norm(nn.Conv2d(temp_channels, temp_channels,
+        self.conv2 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.temp_channels,
                                              kernel_size=3, padding=1,
                                              bias=False))
 
-        self.conv3 = spectral_norm(nn.Conv2d(temp_channels, temp_channels,
+        self.conv3 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.temp_channels,
                                              kernel_size=3, padding=1,
                                              bias=False))
 
-        self.conv4 = spectral_norm(nn.Conv2d(temp_channels, out_channels,
+        self.conv4 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.out_channels,
                                              kernel_size=1, padding=0,
                                              bias=False))
 
@@ -215,6 +225,8 @@ class ResidualBlockUp(nn.Module):
         residual = self.upsample(self.adaDim(residual))
 
         out = F.instance_norm(x)
+        # print("Out  ", out.size())
+        # print("W1  ", w1.size())
         if w1 is not None and b1 is not None:
             out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
             out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)

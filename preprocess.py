@@ -204,6 +204,7 @@ class frameLoader(Dataset):
         else:
             videos = np.random.choice(video_files, self.K_shots + 1,
                                       replace=False)
+        # print(videos)
         gt_video, *ctx_videos = videos
 
         cvVideo = cv2.VideoCapture(gt_video)
@@ -214,6 +215,7 @@ class frameLoader(Dataset):
         cvVideo.release()
         context_tensors_list = []
         for v in ctx_videos:
+            # print(v)
             cvVideo = cv2.VideoCapture(v)
             total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
             context_frame = self.load_random(cvVideo, total_frame_nb,

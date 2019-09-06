@@ -1,17 +1,23 @@
 
 
-import numpy as np
 import torch
 import torchvision
-from torch import nn
-from torch.optim import Adam
-from torch.utils.tensorboard import SummaryWriter
+from torch.optim import Adam, SGD
+# from torch.utils.tensorboard import SummaryWriter
 
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, MODEL, NB_EPOCHS, PRINT_EVERY)
+                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, CONFIG,
+                      LOAD_PREVIOUS,)
 from utils import (CheckpointsFewShots, load_losses, load_models,
                    print_parameters)
+import wandb
+import datetime
+
+wandb.init(project="papierfewshot",
+           name=f"test-{datetime.datetime.now()}",
+           resume=LOAD_PREVIOUS,
+           config=CONFIG)
 
 print("torch version : ", torch.__version__)
 print("Device : ", DEVICE)
@@ -23,11 +29,11 @@ advLoss, mchLoss, cntLoss, dscLoss = load_losses()
 
 optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
 optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
-optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
+optimizerDisc = SGD(disc.parameters(), lr=LEARNING_RATE_DISC)
 
 check = CheckpointsFewShots()
 
-writer = SummaryWriter()
+# writer = SummaryWriter()
 
 print_parameters(emb)
 print_parameters(gen)
@@ -37,6 +43,7 @@ print_parameters(mchLoss)
 print_parameters(cntLoss)
 print_parameters(dscLoss)
 
+wandb.watch((gen, emb, disc))
 
 # ##########
 # Training #
@@ -58,13 +65,8 @@ for i_epoch in range(NB_EPOCHS):
         context = context.to(DEVICE)
         itemIds = itemIds.to(DEVICE)
 
-        if MODEL == "big":
-            embeddings, paramWeights, paramBias, layersUp = emb(context)
-            synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
-
-        elif MODEL == "small":
-            embeddings, paramWeights, paramBias = emb(context)
-            synth_im = gen(gt_landmarks,  paramWeights, paramBias)
+        embeddings, paramWeights, paramBias, layersUp = emb(context)
+        synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
 
         score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
                                                                gt_landmarks),
@@ -84,8 +86,13 @@ for i_epoch in range(NB_EPOCHS):
             check.addCheckpoint("dsc", torch.sum(lossDsc, dim=-1))
             check.save("disc", torch.sum(lossDsc, dim=-1), emb, gen, disc)
 
-            writer.add_scalar("Loss_dsc", torch.sum(lossDsc, dim=-1),
-                              global_step=i_batch+len(train_loader)*i_epoch)
+            # writer.add_scalar("Loss_dsc", torch.sum(lossDsc, dim=-1),
+            #   global_step = i_batch + len(train_loader) * i_epoch)
+            wandb.log({"Loss_dsc": torch.sum(lossDsc, dim=-1)})
+            # wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
+            # wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
+            # wandb.log({"LossTot": torch.sum(loss, dim=-1)})
+
         else:
             lossAdv = advLoss(score_synth, feature_maps_disc_gt,
                               feature_maps_disc_synth)
@@ -106,14 +113,19 @@ for i_epoch in range(NB_EPOCHS):
             check.addCheckpoint("mch", torch.sum(lossMch, dim=-1))
             check.save("embGen", torch.sum(loss, dim=-1), emb, gen, disc)
 
-            writer.add_scalar("lossCnt", torch.sum(lossCnt, dim=-1),
-                              global_step=i_batch+len(train_loader)*i_epoch)
-            writer.add_scalar("lossMch", torch.sum(lossMch, dim=-1),
-                              global_step=i_batch+len(train_loader)*i_epoch)
-            writer.add_scalar("lossAdv", torch.sum(lossAdv, dim=-1),
-                              global_step=i_batch+len(train_loader)*i_epoch)
-            writer.add_scalar("LossTot", torch.sum(loss, dim=-1),
-                              global_step=i_batch+len(train_loader)*i_epoch)
+            # writer.add_scalar("lossCnt", torch.sum(lossCnt, dim=-1),
+            #   global_step=i_batch+len(train_loader)*i_epoch)
+            # writer.add_scalar("lossMch", torch.sum(lossMch, dim=-1),
+            #    global_step=i_batch+len(train_loader)*i_epoch)
+            # writer.add_scalar("lossAdv", torch.sum(lossAdv, dim=-1),
+            #   global_step=i_batch+len(train_loader)*i_epoch)
+            # writer.add_scalar("LossTot", torch.sum(loss, dim=-1),
+            #   global_step=i_batch + len(train_loader) * i_epoch)
+
+            wandb.log({"lossCnt": torch.sum(lossCnt, dim=-1)})
+            wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
+            wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
+            wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
         if i_batch % PRINT_EVERY == 0:
             # fig = check.visualize(gt_landmarks, synth_im,
@@ -127,9 +139,9 @@ for i_epoch in range(NB_EPOCHS):
                 images_to_grid, padding=4, nrow=3 + K_SHOT,
                 normalize=True, scale_each=True)
 
-            writer.add_image('images', grid,
-                             global_step=i_batch + len(train_loader) * i_epoch)
+            # writer.add_image('images', grid,
+            #  global_step=i_batch + len(train_loader) * i_epoch)
             # writer.add_figure('Resumé', fig, close=False,
             #                   global_step=i_batch+len(train_loader)*i_epoch)
-
-writer.close()
+            wandb.log({"Img": [wandb.Image(grid, caption="image")]})
+# writer.close()

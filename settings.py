@@ -76,3 +76,23 @@ EPS_DECAY = 200
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+'Policy.pt'
 MAX_DEQUE_LANDMARKS = 1000
 MAX_ITER_PERSON = 50
+
+
+CONFIG = {"batch_size": BATCH_SIZE,
+          "lr_gen": LEARNING_RATE_GEN,
+          "lr_disc": LEARNING_RATE_DISC,
+          "resume": LOAD_PREVIOUS,
+          "nb_gpu": torch.cuda.device_count(),
+          "k_shot": K_SHOT,
+          "model": MODEL,
+          }
+
+
+CONFIG_RL = {"batch_size": BATCH_SIZE,
+             "lr": LEARNING_RATE_RL,
+             "decay_start": EPS_START,
+             "decay_end": EPS_END,
+             "decay": EPS_DECAY,
+             "max_iter_person": MAX_ITER_PERSON,
+             "max_deque": MAX_DEQUE_LANDMARKS,
+             }
