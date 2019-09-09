@@ -24,15 +24,16 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='sum')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
         loss = 0
         for ft_gt, ft_synth in zip(features_gt, features_synth):
             loss += self.l1(ft_gt, ft_synth)
         loss /= len(features_synth)
-        # loss *= 10.0
-        return -(torch.sum(score_disc_synth)/score_disc_synth.size(0))+loss
+        # loss /= 10.0
+        loss_disc = -torch.sum(score_disc_synth)
+        return loss_disc + loss
 
 
 # #########
@@ -41,7 +42,7 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='sum')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, ei, Wi):
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)
@@ -60,8 +61,9 @@ class discriminatorLoss(nn.Module):
     def forward(self, score_gt, score_synth):
         one = torch.tensor([1], device=DEVICE, dtype=torch.float)
         zero = torch.tensor([0], device=DEVICE, dtype=torch.float)
-        loss = torch.max(zero, one+torch.sum(score_synth)) +\
+        loss = torch.max(zero, one + torch.sum(score_synth)) +\
             torch.max(zero, one - torch.sum(score_gt))
+        loss /= score_gt.size(0)
         return loss.squeeze()
 
 
@@ -93,7 +95,7 @@ class contentLoss(nn.Module):
             '25': "relu5_1",
         }
 
-        self.l1 = nn.L1Loss(reduction="sum")
+        self.l1 = nn.L1Loss(reduction="mean")
 
     def forward(self, gt, synth):
         # output_gt = {}
@@ -124,7 +126,8 @@ class contentLoss(nn.Module):
                     lossVggFace += self.l1(gtVggFace, synthVggFace)
                 if name == "conv5_2":
                     break
-        return (1e-2*lossVgg19 + 2e-3*lossVggFace)/(5*BATCH_SIZE)
+        # return (1e-2*lossVgg19 + 2e-3*lossVggFace)/(5*BATCH_SIZE)
+        return (lossVgg19 + lossVggFace)/(5*BATCH_SIZE)
 
 
 class Vgg_face_dag(nn.Module):

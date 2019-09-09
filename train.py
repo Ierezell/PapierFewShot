@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torchvision
 from torch import nn
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.utils.tensorboard import SummaryWriter
 
 from preprocess import get_data_loader
@@ -23,7 +23,7 @@ advLoss, mchLoss, cntLoss, dscLoss = load_losses()
 
 optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
 optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
-optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
+optimizerDisc = SGD(disc.parameters(), lr=LEARNING_RATE_DISC)
 
 check = CheckpointsFewShots()
 
@@ -70,8 +70,10 @@ for i_epoch in range(NB_EPOCHS):
                                                                gt_landmarks),
                                                               dim=1), itemIds)
 
-        score_gt, feature_maps_disc_gt = disc(torch.cat((gt_im, gt_landmarks),
-                                                        dim=1), itemIds)
+        score_gt, feature_maps_disc_gt = disc(
+            torch.cat((gt_im+torch.randn_like(gt_im),
+                       gt_landmarks), dim=1),
+            itemIds)
 
         if i_batch % 3 == 0 or i_batch % 3 == 1:
             lossDsc = dscLoss(score_gt, score_synth)

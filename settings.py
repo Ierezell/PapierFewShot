@@ -42,7 +42,7 @@ PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator_Beluga.pt'
 
 
 # Batch
-nb_batch_per_gpu = 1
+nb_batch_per_gpu = 4
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
 BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
 
