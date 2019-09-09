@@ -141,54 +141,95 @@ class frameLoader(Dataset):
             image = cv2.resize(image, (224, 224))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             with torch.no_grad():
-                landmarks = self.face_landmarks.get_landmarks_from_image(image)
+                landmark_pts = self.face_landmarks.get_landmarks_from_image(
+                    image)
             image = np.zeros(image.shape, np.float32)
             try:
-                landmarks = landmarks[0]
-                self.write_landmarks_on_image(image, landmarks)
+                landmark_pts = landmark_pts[0]
+                self.write_landmarks_on_image(image, landmark_pts)
                 landmark_tensor = transforms.ToTensor()(image)
                 bad_image = False
             except TypeError:
                 continue
         cam.release()
         torch.cuda.empty_cache()
-        return landmark_tensor.unsqueeze(0).to(DEVICE)
+        return landmark_pts, landmark_tensor.unsqueeze(0).to(DEVICE)
+
+    # def __getitem__(self, index):
+    #     badVideo = True
+    #     while badVideo:
+    #         try:
+    #             mp4File = self.mp4files[np.random.randint(0,
+    #                                                       len(self.mp4files))]
+    #             if platform.system() == "Windows":
+    #                 itemId = self.id_to_tensor[mp4File.split("\\")[-3]]
+    #             else:
+    #                 itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+
+    #             video = cv2.VideoCapture(mp4File)
+    #             total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    #             gt_im_tensor, gt_landmarks = self.load_random(video,
+    #                                                           total_frame_nb,
+    #                                                           fusion=False)
+    #             badVideo = False
+    #         except ValueError:
+    #             continue
+    #     context_tensors_list = []
+    #     for _ in range(self.K_shots):
+    #         context_frame = self.load_random(video, total_frame_nb,
+    #                                          fusion=True)
+    #         context_tensors_list.append(context_frame)
+
+    #     context_tensors = torch.cat(context_tensors_list)
+    #     video.release()
+
+    #     torch.cuda.empty_cache()
+    #     return gt_im_tensor, gt_landmarks, context_tensors, itemId
+
+    # def __len__(self):
+    #     return len(self.mp4files)
 
     def __getitem__(self, index):
-        badVideo = True
-        while badVideo:
-            try:
-                mp4File = self.mp4files[np.random.randint(0,
-                                                          len(self.mp4files))]
-                if platform.system() == "Windows":
-                    itemId = self.id_to_tensor[mp4File.split("\\")[-3]]
-                else:
-                    itemId = self.id_to_tensor[mp4File.split('/')[-3]]
+        context = self.contexts[index]
 
-                video = cv2.VideoCapture(mp4File)
-                total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        if platform.system() == "Windows":
+            itemId = self.id_to_tensor[context.split("\\")[-2]]
+        else:
+            itemId = self.id_to_tensor[context.split('/')[-2]]
 
-                gt_im_tensor, gt_landmarks = self.load_random(video,
-                                                              total_frame_nb,
-                                                              fusion=False)
-                badVideo = False
-            except ValueError:
-                continue
+        video_files = glob.glob(f"{context}/*")
+        if len(video_files) < self.K_shots+1:
+            videos = np.random.choice(video_files, self.K_shots + 1,
+                                      replace=True)
+        else:
+            videos = np.random.choice(video_files, self.K_shots + 1,
+                                      replace=False)
+        # print(videos)
+        gt_video, *ctx_videos = videos
 
+        cvVideo = cv2.VideoCapture(gt_video)
+        total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+        gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
+                                                      total_frame_nb,
+                                                      fusion=False)
+        cvVideo.release()
         context_tensors_list = []
-        for _ in range(self.K_shots):
-            context_frame = self.load_random(video, total_frame_nb,
+        for v in ctx_videos:
+            # print(v)
+            cvVideo = cv2.VideoCapture(v)
+            total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+            context_frame = self.load_random(cvVideo, total_frame_nb,
                                              fusion=True)
             context_tensors_list.append(context_frame)
+            cvVideo.release()
 
         context_tensors = torch.cat(context_tensors_list)
-
-        video.release()
         torch.cuda.empty_cache()
         return gt_im_tensor, gt_landmarks, context_tensors, itemId
 
     def __len__(self):
-        return len(self.mp4files)
+        return len(self.contexts)
 
 
 def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS):

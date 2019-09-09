@@ -153,23 +153,29 @@ class Generator(nn.Module):
         self.ResBlock_128_4 = ResidualBlock(512, 512)
         self.ResBlock_128_5 = ResidualBlockDown(512, 512)
         # Up
-        self.ResAda1 = ResidualBlock(1024, 512)
-        self.ResUp1 = ResidualBlock(512, 512)
+        self.ResAda1 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
+                                               padding=1, bias=False))
+        self.Res1 = ResidualBlock(512, 512)
 
-        self.ResAda2 = ResidualBlock(1024, 512)
-        self.Res2 = ResidualBlockUp(512, 256)
+        self.ResAda2 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
+                                               padding=1, bias=False))
+        self.ResUp2 = ResidualBlockUp(512, 256)
 
-        self.ResAda3 = ResidualBlock(512, 256)
+        self.ResAda3 = spectral_norm(nn.Conv2d(512, 256, kernel_size=3,
+                                               padding=1, bias=False))
         self.ResUp3 = ResidualBlockUp(256, 128)
 
-        self.ResAda4 = ResidualBlock(256, 128)
-        self.ResUp4 = ResidualBlock(128, 128)
+        self.ResAda4 = spectral_norm(nn.Conv2d(256, 128, kernel_size=3,
+                                               padding=1, bias=False))
+        self.Res4 = ResidualBlock(128, 128)
 
-        self.ResAda5 = ResidualBlock(256, 128)
+        self.ResAda5 = spectral_norm(nn.Conv2d(128, 64, kernel_size=3,
+                                               padding=1, bias=False))
         self.ResUp5 = ResidualBlockUp(128, 64)
 
-        self.ResAda6 = ResidualBlock(128, 64)
-        self.Res6 = ResidualBlockUp(64, 32)
+        self.ResAda6 = spectral_norm(nn.Conv2d(64, 32, kernel_size=3,
+                                               padding=1, bias=False))
+        self.ResUp6 = ResidualBlockUp(64, 32)
 
         self.Res7 = ResidualBlock(32, 3)
         self.attentionUp = Attention(64)
@@ -178,7 +184,7 @@ class Generator(nn.Module):
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, img, paramWeights, paramBias, layersUp):
+    def forward(self, img, pWeights, pBias, layersUp):
         """
         Res block : in out out out
         Res block up : in out//4 out//4 out//4
@@ -202,164 +208,207 @@ class Generator(nn.Module):
         x = self.attentionDown(x)
         x = self.relu(x)
 
+        i = 0
+
+        i_c = self.ResBlock_128_1.in_channels
+        o_c = self.ResBlock_128_1.out_channels
         x = self.ResBlock_128_1(x,
-                                w1=paramWeights.narrow(-1, 0, 128),
-                                b1=paramBias.narrow(-1, 0, 128),
-                                w2=paramWeights.narrow(-1, 128, 256),
-                                b2=paramBias.narrow(-1, 128, 256),
-                                w3=paramWeights.narrow(-1, 128+256, 256),
-                                b3=paramBias.narrow(-1, 128+256, 256),
-                                w4=paramWeights.narrow(-1, 128+256+256, 256),
-                                b4=paramBias.narrow(-1, 128+256+256, 256)
+                                w1=pWeights.narrow(-1, i, i_c),
+                                b1=pBias.narrow(-1, i, i_c),
+                                w2=pWeights.narrow(-1, i+i_c, o_c),
+                                b2=pBias.narrow(-1, i+i_c, o_c),
+                                w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+                                b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+                                w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+                                b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
                                 )
         x = self.relu(x)
-        outR1 = 128 + 256 + 256 + 256
+        i = i + i_c + (3*o_c)
 
         # TODO Register backward hook
-
+        i_c = self.ResBlock_128_2.in_channels
+        o_c = self.ResBlock_128_2.out_channels
         x = self.ResBlock_128_2(
             x,
-            w1=paramWeights.narrow(-1, outR1, 256),
-            b1=paramBias.narrow(-1, outR1, 256),
-            w2=paramWeights.narrow(-1, outR1+256, 512),
-            b2=paramBias.narrow(-1, outR1+256, 512),
-            w3=paramWeights.narrow(-1, outR1+256+512, 512),
-            b3=paramBias.narrow(-1, outR1+256+512, 512),
-            w4=paramWeights.narrow(-1, outR1+256+512+512, 512),
-            b4=paramBias.narrow(-1, outR1+256+512+512, 512)
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
         )
         x = self.relu(x)
-        outR2 = outR1 + 256 + 512 + 512 + 512
+        i = i + i_c + (3*o_c)
 
+        i_c = self.ResBlock_128_3.in_channels
+        o_c = self.ResBlock_128_3.out_channels
         x = self.ResBlock_128_3(
             x,
-            w1=paramWeights.narrow(-1, outR2, 512),
-            b1=paramBias.narrow(-1, outR2, 512),
-            w2=paramWeights.narrow(-1, outR2+512, 512),
-            b2=paramBias.narrow(-1, outR2+512, 512),
-            w3=paramWeights.narrow(-1, outR2+512+512, 512),
-            b3=paramBias.narrow(-1, outR2+512+512, 512),
-            w4=paramWeights.narrow(-1, outR2+512+512+512, 512),
-            b4=paramBias.narrow(-1, outR2+512+512+512, 512))
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i + i_c + (2 * o_c), o_c)
+        )
         x = self.relu(x)
-        outR3 = outR2 + 512 + 512 + 512 + 512
+        i = i + i_c + (3*o_c)
 
         x = self.attention(x)
         x = self.relu(x)
 
+        i_c = self.ResBlock_128_4.in_channels
+        o_c = self.ResBlock_128_4.out_channels
         x = self.ResBlock_128_4(
             x,
-            w1=paramWeights.narrow(-1, outR3, 512),
-            b1=paramBias.narrow(-1, outR3, 512),
-            w2=paramWeights.narrow(-1, outR3+512, 512),
-            b2=paramBias.narrow(-1, outR3+512, 512),
-            w3=paramWeights.narrow(-1, outR3+512+512, 512),
-            b3=paramBias.narrow(-1, outR3+512+512, 512),
-            w4=paramWeights.narrow(-1,  outR3+512+512+512, 512),
-            b4=paramBias.narrow(-1, outR3 + 512 + 512 + 512, 512))
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
-        outR4 = outR3 + 512 + 512 + 512 + 512
-        x = self.ResBlock_128_5(x)
+        i = i + i_c + (3*o_c)
+
+        i_c = self.ResBlock_128_5.in_channels
+        o_c = self.ResBlock_128_5.out_channels
+        x = self.ResBlock_128_5(
+            x,
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
-        outR5 = outR4
+        i = i + i_c + (3*o_c)
 
         x = torch.cat((x, layerUp6), dim=1)
         x = self.ResAda1(x)
         x = self.relu(x)
-        x = self.ResUp1(x,
-                        w1=paramWeights.narrow(-1, outR5, 512),
-                        b1=paramBias.narrow(-1, outR5, 512),
-                        w2=paramWeights.narrow(-1, outR5+512, 512),
-                        b2=paramBias.narrow(-1, outR5+512, 512),
-                        w3=paramWeights.narrow(-1, outR5+512+512, 512),
-                        b3=paramBias.narrow(-1, outR5+512+512, 512),
-                        w4=paramWeights.narrow(-1, outR5+512+512+512, 512),
-                        b4=paramBias.narrow(-1, outR5 + 512 + 512 + 512, 512))
+
+        i_c = self.Res1.in_channels
+        o_c = self.Res1.out_channels
+        x = self.Res1(x,
+                      w1=pWeights.narrow(-1, i, i_c),
+                      b1=pBias.narrow(-1, i, i_c),
+                      w2=pWeights.narrow(-1, i+i_c, o_c),
+                      b2=pBias.narrow(-1, i+i_c, o_c),
+                      w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+                      b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+                      w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+                      b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
-        outRu1 = outR5 + 512 + 512 + 512 + 512
+        i = i + i_c + (3*o_c)
 
         x = torch.cat((x, layerUp5), dim=1)
         x = self.ResAda2(x)
         x = self.relu(x)
-        x = self.Res2(
+
+        i_c = self.ResUp2.in_channels
+        o_c = self.ResUp2.temp_channels
+        x = self.ResUp2(
             x,
-            w1=paramWeights.narrow(-1, outRu1, 512),
-            b1=paramBias.narrow(-1, outRu1, 512),
-            w2=paramWeights.narrow(-1, outRu1+512, 512//4),
-            b2=paramBias.narrow(-1, outRu1+512, 512//4),
-            w3=paramWeights.narrow(-1, outRu1+512+512//4, 512//4),
-            b3=paramBias.narrow(-1, outRu1+512+512//4, 512//4),
-            w4=paramWeights.narrow(-1, outRu1+512+512//4+512//4, 512//4),
-            b4=paramBias.narrow(-1, outRu1 + 512 + 512//4 + 512//4, 512//4))
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
-        outRu2 = outRu1 + 512 + 512//4 + 512//4 + 512//4
+        i = i + i_c + (3*o_c)
 
         x = torch.cat((x, layerUp4), dim=1)
         x = self.ResAda3(x)
         x = self.relu(x)
+
+        i_c = self.ResUp3.in_channels
+        o_c = self.ResUp3.temp_channels
         x = self.ResUp3(
             x,
-            w1=paramWeights.narrow(-1, outRu2, 256),
-            b1=paramBias.narrow(-1, outRu2, 256),
-            w2=paramWeights.narrow(-1, outRu2+256, 256//4),
-            b2=paramBias.narrow(-1, outRu2+256, 256//4),
-            w3=paramWeights.narrow(-1, outRu2+256+256//4, 256//4),
-            b3=paramBias.narrow(-1, outRu2+256+256//4, 256//4),
-            w4=paramWeights.narrow(-1, outRu2 + 256+256//4+256//4, 256//4),
-            b4=paramBias.narrow(-1, outRu2 + 256 + 256//4 + 256//4, 256//4))
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
-        outRu3 = outRu2 + 256 + 256//4 + 256//4 + 256//4
+        i = i + i_c + (3*o_c)
 
         # x = torch.cat((x, layerUp3), dim=1)
         # x = self.ResAda4(x)
         # x = self.relu(x)
-        x = self.ResUp4(x,
-                        w1=paramWeights.narrow(-1, outRu3, 128),
-                        b1=paramBias.narrow(-1, outRu3, 128),
-                        w2=paramWeights.narrow(-1, outRu3+128, 128),
-                        b2=paramBias.narrow(-1, outRu3+128, 128),
-                        w3=paramWeights.narrow(-1, outRu3+128+128, 128),
-                        b3=paramBias.narrow(-1, outRu3+128+128, 128),
-                        w4=paramWeights.narrow(-1, outRu3+128+128+128, 128),
-                        b4=paramBias.narrow(-1, outRu3 + 128 + 128 + 128, 128))
+
+        i_c = self.Res4.in_channels
+        o_c = self.Res4.out_channels
+        x = self.Res4(x,
+                      w1=pWeights.narrow(-1, i, i_c),
+                      b1=pBias.narrow(-1, i, i_c),
+                      w2=pWeights.narrow(-1, i+i_c, o_c),
+                      b2=pBias.narrow(-1, i+i_c, o_c),
+                      w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+                      b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+                      w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+                      b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
-        outRu4 = outRu3 + 128 + 128 + 128 + 128
+        i = i + i_c + (3*o_c)
 
         # x = torch.cat((x, layerUp2), dim=1)
         # x = self.ResAda5(x)
         # x = self.relu(x)
+
+        i_c = self.ResUp5.in_channels
+        o_c = self.ResUp5.temp_channels
         x = self.ResUp5(
             x,
-            w1=paramWeights.narrow(-1, outRu4, 128),
-            b1=paramBias.narrow(-1, outRu4, 128),
-            w2=paramWeights.narrow(-1, outRu4+128, 128//4),
-            b2=paramBias.narrow(-1, outRu4+128, 128//4),
-            w3=paramWeights.narrow(-1, outRu4+128+128//4, 128//4),
-            b3=paramBias.narrow(-1, outRu4+128+128//4, 128//4),
-            w4=paramWeights.narrow(-1, outRu4 + 128+128//4+128//4, 128//4),
-            b4=paramBias.narrow(-1, outRu4 + 128 + 128//4 + 128//4, 128//4))
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
+        i = i + i_c + (3*o_c)
+
         x = self.attentionUp(x)
         x = self.relu(x)
-        outRu5 = outRu4 + 128 + 128//4 + 128//4 + 128//4
+
         # x = torch.cat((x, layerUp1), dim=1)
         # x = self.ResAda6(x)
         # x = self.relu(x)
-        x = self.Res6(
+
+        i_c = self.ResUp6.in_channels
+        o_c = self.ResUp6.temp_channels
+        x = self.ResUp6(
             x,
-            w1=paramWeights.narrow(-1, outRu5, 64),
-            b1=paramBias.narrow(-1, outRu5, 64),
-            w2=paramWeights.narrow(-1, outRu5+64, 64//4),
-            b2=paramBias.narrow(-1, outRu5+64, 64//4),
-            w3=paramWeights.narrow(-1, outRu5+64+64//4, 64//4),
-            b3=paramBias.narrow(-1, outRu5+64+64//4, 64//4),
-            w4=paramWeights.narrow(-1, outRu5+64+64//4+64//4, 64//4),
-            b4=paramBias.narrow(-1, outRu5 + 64 + 64//4 + 64//4, 64//4))
+            w1=pWeights.narrow(-1, i, i_c),
+            b1=pBias.narrow(-1, i, i_c),
+            w2=pWeights.narrow(-1, i+i_c, o_c),
+            b2=pBias.narrow(-1, i+i_c, o_c),
+            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
+            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
+            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
+            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
         x = self.relu(x)
+        i = i + i_c + (3*o_c)
+
         x = self.Res7(x)
-        x = self.sigmoid(x)
-        # outRu6 = outRu5 + 64 + 64//4 + 64//4 + 64//4
-        # print("PARAMMMMMM  : ", outRu6)
+        x = self.tanh(x)
+        # print("PARAMMMMMM  : ", i)
         return x
 
 
