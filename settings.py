@@ -3,7 +3,6 @@ import platform
 import torch
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 NB_EPOCHS = 40
 MODEL = "small"
 
@@ -12,37 +11,35 @@ ROOT_WEIGHTS = './weights/'
 ROOT_IMAGE = './images/'
 
 if platform.system() == "Windows":
-    ROOT_DATASET = '.\\dataset\\mp4'  # window
-    # ROOT_DATASET = '.\\one_person_dataset\\mp4'  # window
+    ROOT_DATASET = '.\\dataset\\mp4'
 else:
-    ROOT_DATASET = './dataset/mp4'  # mac & linux
-    # ROOT_DATASET = './one_person_dataset/mp4'  # mac & linux
-    # ROOT_DATASET ='/scratch/syi-200-aa/dev/mp4/' # HELIOS
-    # ROOT_DATASET = '../scratch/dev/mp4/' # BELUGA
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if "blg" in platform.node():
+        ROOT_DATASET = '../scratch/dev/mp4/'
+    elif "gpu-k" in platform.node():
+        ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
+    else:
+        ROOT_DATASET = './dataset/mp4'
 
 # Save
+# TODO transforner pour wandb
+PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
+PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
+PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator.pt'
 
-# PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder11.pt'
-# PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator11.pt'
-# PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator11.pt'
-
-PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder_helios.pt'
-PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator_helios.pt'
-PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator_helios.pt'
-
-# PATH_WEIGHTS_BIG_EMBEDDER = ROOT_WEIGHTS+'BigEmbedder.pt'
-# PATH_WEIGHTS_BIG_GENERATOR = ROOT_WEIGHTS+'BigGenerator.pt'
-# PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator.pt'
-
-PATH_WEIGHTS_BIG_EMBEDDER = ROOT_WEIGHTS+'BigEmbedder_Beluga.pt'
-PATH_WEIGHTS_BIG_GENERATOR = ROOT_WEIGHTS+'BigGenerator_Beluga.pt'
-PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator_Beluga.pt'
+PATH_WEIGHTS_BIG_EMBEDDER = ROOT_WEIGHTS+'BigEmbedder.pt'
+PATH_WEIGHTS_BIG_GENERATOR = ROOT_WEIGHTS+'BigGenerator.pt'
+PATH_WEIGHTS_BIG_DISCRIMINATOR = ROOT_WEIGHTS + 'BigDiscriminator.pt'
 
 
 # Batch
-nb_batch_per_gpu = 1
+if "blg" in platform.node():
+    nb_batch_per_gpu = 6
+elif "gpu-k" in platform.node():
+    nb_batch_per_gpu = 4
+else:
+    nb_batch_per_gpu = 1
+
+
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
 BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
 
@@ -78,14 +75,18 @@ MAX_DEQUE_LANDMARKS = 1000
 MAX_ITER_PERSON = 50
 
 
-CONFIG = {"batch_size": BATCH_SIZE,
-          "lr_gen": LEARNING_RATE_GEN,
-          "lr_disc": LEARNING_RATE_DISC,
-          "resume": LOAD_PREVIOUS,
-          "nb_gpu": torch.cuda.device_count(),
-          "k_shot": K_SHOT,
-          "model": MODEL,
-          }
+CONFIG = {
+    "platform": platform.node(),
+    "batch_size": BATCH_SIZE,
+    "lr_gen": LEARNING_RATE_GEN,
+    "lr_disc": LEARNING_RATE_DISC,
+    "resume": LOAD_PREVIOUS,
+    "nb_gpu": torch.cuda.device_count(),
+    "k_shot": K_SHOT,
+    "model": MODEL,
+    "disc_out": "div 10",
+    "in_disc": "noisy"
+}
 
 
 CONFIG_RL = {"batch_size": BATCH_SIZE,
@@ -96,3 +97,5 @@ CONFIG_RL = {"batch_size": BATCH_SIZE,
              "max_iter_person": MAX_ITER_PERSON,
              "max_deque": MAX_DEQUE_LANDMARKS,
              }
+
+# find /some/directory -maxdepth 1 -type f -exec cmd option {} \; > results.out

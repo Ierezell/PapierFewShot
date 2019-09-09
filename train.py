@@ -8,7 +8,10 @@ from torch.optim import Adam, SGD
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, CONFIG,
-                      LOAD_PREVIOUS,)
+                      LOAD_PREVIOUS, MODEL, PATH_WEIGHTS_EMBEDDER,
+                      PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
+                      PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
+                      PATH_WEIGHTS_BIG_DISCRIMINATOR,)
 from utils import (CheckpointsFewShots, load_losses, load_models,
                    print_parameters)
 import wandb
@@ -71,9 +74,9 @@ for i_epoch in range(NB_EPOCHS):
         score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
                                                                gt_landmarks),
                                                               dim=1), itemIds)
-
-        score_gt, feature_maps_disc_gt = disc(torch.cat((gt_im, gt_landmarks),
-                                                        dim=1), itemIds)
+        gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
+        score_gt, feature_maps_disc_gt = disc(
+            gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
 
         if i_batch % 3 == 0 or i_batch % 3 == 1:
             lossDsc = dscLoss(score_gt, score_synth)
@@ -144,4 +147,12 @@ for i_epoch in range(NB_EPOCHS):
             # writer.add_figure('Resumé', fig, close=False,
             #                   global_step=i_batch+len(train_loader)*i_epoch)
             wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-# writer.close()
+            if MODEL == "big":
+                wandb.save(PATH_WEIGHTS_BIG_EMBEDDER)
+                wandb.save(PATH_WEIGHTS_BIG_GENERATOR)
+                wandb.save(PATH_WEIGHTS_BIG_DISCRIMINATOR)
+            else:
+                wandb.save(PATH_WEIGHTS_EMBEDDER)
+                wandb.save(PATH_WEIGHTS_GENERATOR)
+                wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+                # writer.close()

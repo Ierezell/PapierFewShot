@@ -124,7 +124,7 @@ class contentLoss(nn.Module):
                     lossVggFace += self.l1(gtVggFace, synthVggFace)
                 if name == "conv5_2":
                     break
-        return (1e-2*lossVgg19 + 2e-3*lossVggFace)/(5*BATCH_SIZE)
+        return (lossVgg19 + lossVggFace)/(5*BATCH_SIZE)
 
 
 class Vgg_face_dag(nn.Module):

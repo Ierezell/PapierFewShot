@@ -141,18 +141,19 @@ class frameLoader(Dataset):
             image = cv2.resize(image, (224, 224))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             with torch.no_grad():
-                landmarks = self.face_landmarks.get_landmarks_from_image(image)
+                landmark_pts = self.face_landmarks.get_landmarks_from_image(
+                    image)
             image = np.zeros(image.shape, np.float32)
             try:
-                landmarks = landmarks[0]
-                self.write_landmarks_on_image(image, landmarks)
+                landmark_pts = landmark_pts[0]
+                self.write_landmarks_on_image(image, landmark_pts)
                 landmark_tensor = transforms.ToTensor()(image)
                 bad_image = False
             except TypeError:
                 continue
         cam.release()
         torch.cuda.empty_cache()
-        return landmark_tensor.unsqueeze(0).to(DEVICE)
+        return landmark_pts, landmark_tensor.unsqueeze(0).to(DEVICE)
 
     # def __getitem__(self, index):
     #     badVideo = True

@@ -23,7 +23,7 @@ class Embedder(nn.Module):
         self.FcWeights = spectral_norm(nn.Linear(512, 3385))
         self.FcBias = spectral_norm(nn.Linear(512, 3385))
         self.attention = Attention(128)
-        self.relu = nn.ReLU()
+        self.relu = nn.SELU()
 
     def forward(self, x):  # b, 12, 224, 224
         temp = torch.tensor(np.zeros(LATENT_SIZE, dtype=np.float),
@@ -103,7 +103,7 @@ class Generator(nn.Module):
         #                                     padding=1, bias=False))
         # self.Ada3 = spectral_norm(nn.Conv2d(128 * 2, 128, kernel_size=3,
         #                                     padding=1, bias=False))
-        self.relu = nn.ReLU()
+        self.relu = nn.SELU()
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
 
@@ -296,8 +296,9 @@ class Discriminator(nn.Module):
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
-        self.relu = nn.ReLU()
+        self.relu = nn.SELU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
+        self.tanh = nn.Tanh()
 
     def forward(self, x, indexes):  # b, 6, 224, 224
         features_maps = []
@@ -349,4 +350,5 @@ class Discriminator(nn.Module):
         final_out = final_out.view(b.size())
         final_out += b
         # final_out = self.tanh(final_out)
+        final_out /= 10
         return final_out, features_maps
