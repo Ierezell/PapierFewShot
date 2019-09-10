@@ -85,20 +85,25 @@ CONFIG_RL = {"batch_size": BATCH_SIZE,
              "max_deque": MAX_DEQUE_LANDMARKS,
              }
 
-# folder_weights = str(CONFIG['model'])+'_'+str(CONFIG['batch_size'])+'_' +\
-#     str(CONFIG['disc_out'])+'_'+str(CONFIG['in_disc'])+'_' +\
-#     str(CONFIG['k_shot'])+'_'+str(CONFIG['layers']) + '_' +\
-#     str(CONFIG['lr_gen'])+'_'+str(CONFIG['lr_disc'])+'/'
+folder_weights = str(CONFIG['model'])+'_'+str(CONFIG['batch_size'])+'_' +\
+    str(CONFIG['disc_out'])+'_'+str(CONFIG['in_disc'])+'_' +\
+    str(CONFIG['k_shot'])+'_'+str(CONFIG['layers']) + '_' +\
+    str(CONFIG['lr_gen'])+'_'+str(CONFIG['lr_disc'])+'/'
 
-# if not os.path.exists(Path(ROOT_WEIGHTS+folder_weights)):
-#     os.makedirs(Path(ROOT_WEIGHTS+folder_weights))
+# Load parameters
+if not os.path.exists(ROOT_WEIGHTS+folder_weights):
+    os.makedirs(ROOT_WEIGHTS + folder_weights)
+    LOAD_EMBEDDINGS = False
+    LOAD_PREVIOUS = False
+    LOAD_PREVIOUS_RL = False
 
-folder_weights = "test/"
+else:
+    LOAD_EMBEDDINGS = True
+    LOAD_PREVIOUS = True
+    LOAD_PREVIOUS_RL = True
 
 # Save
-PATH_WEIGHTS_EMBEDDER = str(Path(ROOT_WEIGHTS+folder_weights+'Embedder.pt'))
-print(PATH_WEIGHTS_EMBEDDER)
-PATH_WEIGHTS_GENERATOR = str(Path(ROOT_WEIGHTS+folder_weights+'Generator.pt'))
-PATH_WEIGHTS_DISCRIMINATOR = str(Path(
-    ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'))
-PATH_WEIGHTS_POLICY = Path(ROOT_WEIGHTS+'Policy.pt')
+PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
+PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
+PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
+PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+'Policy.pt'

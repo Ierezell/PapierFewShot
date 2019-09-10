@@ -4,7 +4,6 @@ import sys
 import torch
 import torchvision
 from torch.optim import Adam, SGD
-# from torch.utils.tensorboard import SummaryWriter
 
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
@@ -35,8 +34,6 @@ optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
 optimizerDisc = SGD(disc.parameters(), lr=LEARNING_RATE_DISC)
 
 check = CheckpointsFewShots()
-
-# writer = SummaryWriter()
 
 print_parameters(emb)
 print_parameters(gen)
@@ -78,7 +75,6 @@ for i_epoch in range(NB_EPOCHS):
         score_gt, feature_maps_disc_gt = disc(
             gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
 
-        # if i_batch % 3 == 0 or i_batch % 3 == 1:
         lossDsc = dscLoss(score_gt, score_synth)
         lossDsc = lossDsc.mean()
         lossAdv = advLoss(score_synth, feature_maps_disc_gt,
@@ -88,15 +84,9 @@ for i_epoch in range(NB_EPOCHS):
         loss = lossAdv + lossCnt + lossMch
         loss = loss.mean()
 
-        # else :
         loss_totale = loss + lossDsc
         loss_totale.backward(torch.cuda.FloatTensor(
             torch.cuda.device_count()).fill_(1))
-        # lossDsc.backward(torch.cuda.FloatTensor(
-        #     torch.cuda.device_count()).fill_(1))
-
-        # loss.backward(torch.cuda.FloatTensor(
-        #     torch.cuda.device_count()).fill_(1))
 
         optimizerDisc.step()
         optimizerEmb.step()
@@ -117,8 +107,6 @@ for i_epoch in range(NB_EPOCHS):
         wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
         if i_batch % PRINT_EVERY == 0 and i_batch != 0:
-            # fig = check.visualize(gt_landmarks, synth_im,
-            #                       gt_im, emb, gen, disc, show=False)
 
             images_to_grid = torch.cat((gt_landmarks, synth_im,
                                         gt_im, context),
@@ -128,12 +116,7 @@ for i_epoch in range(NB_EPOCHS):
                 images_to_grid, padding=4, nrow=3 + K_SHOT,
                 normalize=True, scale_each=True)
 
-            # writer.add_image('images', grid,
-            #  global_step=i_batch + len(train_loader) * i_epoch)
-            # writer.add_figure('Resumé', fig, close=False,
-            #                   global_step=i_batch+len(train_loader)*i_epoch)
             wandb.log({"Img": [wandb.Image(grid, caption="image")]})
             wandb.save(PATH_WEIGHTS_EMBEDDER)
-            # wandb.save(PATH_WEIGHTS_GENERATOR)
-            # wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
-            # writer.close()
+            wandb.save(PATH_WEIGHTS_GENERATOR)
+            wandb.save(PATH_WEIGHTS_DISCRIMINATOR)

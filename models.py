@@ -164,7 +164,6 @@ class Generator(nn.Module):
         # print("ResUp2", x.size())
         # print("Layer3 ", layerUp3.size())
         if CONCAT:
-            1
             x = torch.cat((x, layerUp3), dim=1)
             x = self.Ada3(x)
             x = self.relu(x)
