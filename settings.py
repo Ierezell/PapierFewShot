@@ -5,7 +5,7 @@ import torch
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
 MODEL = "small"
-LAYERS = "small"
+LAYERS = "big"
 
 # Weights
 ROOT_WEIGHTS = './weights/'
@@ -35,7 +35,7 @@ BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
 # LR
 LEARNING_RATE_EMB = 5e-6
 LEARNING_RATE_GEN = 5e-6
-LEARNING_RATE_DISC = 1e-5
+LEARNING_RATE_DISC = 5e-6
 
 # Sizes
 LATENT_SIZE = 512

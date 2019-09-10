@@ -23,8 +23,8 @@ class Embedder(nn.Module):
         self.residual4 = ResidualBlockDown(128, 256)
         self.residual5 = ResidualBlockDown(256, 512)
         self.residual6 = ResidualBlockDown(512, 512)
-        self.FcWeights = spectral_norm(nn.Linear(512, 3385))
-        self.FcBias = spectral_norm(nn.Linear(512, 3385))
+        self.FcWeights = spectral_norm(nn.Linear(512, 1960))
+        self.FcBias = spectral_norm(nn.Linear(512, 1960))
         self.attention = Attention(128)
         self.relu = nn.SELU()
 
@@ -193,7 +193,7 @@ class Generator(nn.Module):
         i += nb_params
 
         # print("ResUp5", x.size())
-        print("Nb_param   ", i)
+        # print("Nb_param   ", i)
         return x
 
 
