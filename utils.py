@@ -130,7 +130,7 @@ class CheckpointsFewShots:
             if loss < self.best_loss_Disc or self.last_save_disc > 100:
                 self.last_save_disc = 0
                 print('\n' + '-' * 25)
-                print("| Poids disc sauvegardés |")
+                print("| Poids disc sauvegardes |")
                 print('-'*25)
                 self.best_loss_Disc = loss
                 torch.save(discriminator.module.state_dict(),
@@ -139,7 +139,7 @@ class CheckpointsFewShots:
             if loss < self.best_loss_EmbGen or self.last_save_emb > 100:
                 self.last_save_emb = 0
                 print('\n' + '-'*31)
-                print("| Poids Emb & Gen sauvegardés |")
+                print("| Poids Emb & Gen sauvegardes |")
                 print('-'*31)
                 self.best_loss_Emb = loss
 
@@ -164,7 +164,7 @@ class CheckpointsRl:
         if loss < self.best_loss or self.last_save > 100:
             self.last_save = 0
             print('\n' + '-'*20)
-            print("| Poids sauvegardés |")
+            print("| Poids sauvegardes |")
             print('-'*20)
             self.best_loss = loss
             torch.save(policy.module.state_dict(),  PATH_WEIGHTS_POLICY)
@@ -322,5 +322,5 @@ def print_parameters(model):
     trainParamModel = sum([np.prod(p.size()) if p.requires_grad else 0
                            for p in model.parameters()])
 
-    print(f"Nombre de paramètres {model.module.__class__.__name__ }: ",
+    print(f"Nombre de parametres {model.module.__class__.__name__ }: ",
           f"{trainParamModel:,}")
