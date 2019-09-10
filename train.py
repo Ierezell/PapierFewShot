@@ -1,5 +1,6 @@
 
 
+import sys
 import torch
 import torchvision
 from torch.optim import Adam, SGD
@@ -13,14 +14,14 @@ from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       )
 from utils import (CheckpointsFewShots, load_losses, load_models,
                    print_parameters)
-import wandb
 import datetime
-
+import wandb
 wandb.init(project="papierfewshot",
            name=f"test-{datetime.datetime.now().replace(microsecond=0)}",
            resume=LOAD_PREVIOUS,
            config=CONFIG)
 
+print("Python : ", sys.version)
 print("torch version : ", torch.__version__)
 print("Device : ", DEVICE)
 
@@ -87,7 +88,7 @@ for i_epoch in range(NB_EPOCHS):
         loss = lossAdv + lossCnt + lossMch
         loss = loss.mean()
 
-    # else :
+        # else :
         loss_totale = loss + lossDsc
         loss_totale.backward(torch.cuda.FloatTensor(
             torch.cuda.device_count()).fill_(1))
@@ -115,7 +116,7 @@ for i_epoch in range(NB_EPOCHS):
         wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
         wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
-        if i_batch % PRINT_EVERY == 0:
+        if i_batch % PRINT_EVERY == 0 and i_batch != 0:
             # fig = check.visualize(gt_landmarks, synth_im,
             #                       gt_im, emb, gen, disc, show=False)
 
@@ -133,6 +134,6 @@ for i_epoch in range(NB_EPOCHS):
             #                   global_step=i_batch+len(train_loader)*i_epoch)
             wandb.log({"Img": [wandb.Image(grid, caption="image")]})
             wandb.save(PATH_WEIGHTS_EMBEDDER)
-            wandb.save(PATH_WEIGHTS_GENERATOR)
-            wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+            # wandb.save(PATH_WEIGHTS_GENERATOR)
+            # wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
             # writer.close()

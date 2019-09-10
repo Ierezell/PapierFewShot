@@ -1,6 +1,7 @@
 import os
 import platform
 import torch
+from pathlib import Path
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
@@ -8,18 +9,15 @@ MODEL = "small"
 LAYERS = "big"
 CONCAT = True
 
-# Weights
 ROOT_WEIGHTS = './weights/'
 
-if platform.system() == "Windows":
-    ROOT_DATASET = '.\\dataset\\mp4'
+# Weights
+if "blg" in platform.node():
+    ROOT_DATASET = '../scratch/dev/mp4/'
+elif "gpu-k" in platform.node():
+    ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
 else:
-    if "blg" in platform.node():
-        ROOT_DATASET = '../scratch/dev/mp4/'
-    elif "gpu-k" in platform.node():
-        ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
-    else:
-        ROOT_DATASET = './dataset/mp4'
+    ROOT_DATASET = Path('./dataset/mp4')
 
 # Batch
 if "blg" in platform.node():
@@ -87,28 +85,20 @@ CONFIG_RL = {"batch_size": BATCH_SIZE,
              "max_deque": MAX_DEQUE_LANDMARKS,
              }
 
-folder_weights = str(CONFIG['model'])+'_'+str(CONFIG['batch_size'])+'_' +\
-    str(CONFIG['disc_out'])+'_'+str(CONFIG['in_disc'])+'_' +\
-    str(CONFIG['k_shot'])+'_'+str(CONFIG['layers']) +\
-    str(CONFIG['lr_gen'])+'_'+str(CONFIG['lr_disc'])+'/'
+# folder_weights = str(CONFIG['model'])+'_'+str(CONFIG['batch_size'])+'_' +\
+#     str(CONFIG['disc_out'])+'_'+str(CONFIG['in_disc'])+'_' +\
+#     str(CONFIG['k_shot'])+'_'+str(CONFIG['layers']) + '_' +\
+#     str(CONFIG['lr_gen'])+'_'+str(CONFIG['lr_disc'])+'/'
 
-# Load parameters
-if not os.path.exists(ROOT_WEIGHTS+folder_weights):
-    os.makedirs(ROOT_WEIGHTS + folder_weights)
-    LOAD_EMBEDDINGS = False
-    LOAD_PREVIOUS = False
-    LOAD_PREVIOUS_RL = False
+# if not os.path.exists(Path(ROOT_WEIGHTS+folder_weights)):
+#     os.makedirs(Path(ROOT_WEIGHTS+folder_weights))
 
-else:
-    LOAD_EMBEDDINGS = True
-    LOAD_PREVIOUS = True
-    LOAD_PREVIOUS_RL = True
-
-CONFIG["resume"] = LOAD_PREVIOUS
+folder_weights = "test/"
 
 # Save
-PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
-PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
-PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
-
-PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+'Policy.pt'
+PATH_WEIGHTS_EMBEDDER = str(Path(ROOT_WEIGHTS+folder_weights+'Embedder.pt'))
+print(PATH_WEIGHTS_EMBEDDER)
+PATH_WEIGHTS_GENERATOR = str(Path(ROOT_WEIGHTS+folder_weights+'Generator.pt'))
+PATH_WEIGHTS_DISCRIMINATOR = str(Path(
+    ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'))
+PATH_WEIGHTS_POLICY = Path(ROOT_WEIGHTS+'Policy.pt')
