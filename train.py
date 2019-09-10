@@ -8,17 +8,16 @@ from torch.optim import Adam, SGD
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, CONFIG,
-                      LOAD_PREVIOUS, MODEL, PATH_WEIGHTS_EMBEDDER,
+                      LOAD_PREVIOUS, PATH_WEIGHTS_EMBEDDER,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
-                      PATH_WEIGHTS_BIG_EMBEDDER, PATH_WEIGHTS_BIG_GENERATOR,
-                      PATH_WEIGHTS_BIG_DISCRIMINATOR,)
+                      )
 from utils import (CheckpointsFewShots, load_losses, load_models,
                    print_parameters)
 import wandb
 import datetime
 
 wandb.init(project="papierfewshot",
-           name=f"test-{datetime.datetime.now()}",
+           name=f"test-{datetime.datetime.now().replace(microsecond=0)}",
            resume=LOAD_PREVIOUS,
            config=CONFIG)
 
@@ -147,12 +146,7 @@ for i_epoch in range(NB_EPOCHS):
             # writer.add_figure('Resumé', fig, close=False,
             #                   global_step=i_batch+len(train_loader)*i_epoch)
             wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-            if MODEL == "big":
-                wandb.save(PATH_WEIGHTS_BIG_EMBEDDER)
-                wandb.save(PATH_WEIGHTS_BIG_GENERATOR)
-                wandb.save(PATH_WEIGHTS_BIG_DISCRIMINATOR)
-            else:
-                wandb.save(PATH_WEIGHTS_EMBEDDER)
-                wandb.save(PATH_WEIGHTS_GENERATOR)
-                wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
-                # writer.close()
+            wandb.save(PATH_WEIGHTS_EMBEDDER)
+            wandb.save(PATH_WEIGHTS_GENERATOR)
+            wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+            # writer.close()

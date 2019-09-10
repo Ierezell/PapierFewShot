@@ -8,30 +8,34 @@ import numpy as np
 import torch
 from matplotlib.lines import Line2D
 from torch import nn
-
-from bigmodels import Discriminator as BigDiscriminator
-from bigmodels import Embedder as BigEmbedder
-from bigmodels import Generator as BigGenerator
-from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
-from models import Discriminator, Embedder, Generator
-from RlModel import Policy
-from settings import (
-    DEVICE, LOAD_EMBEDDINGS, LOAD_PREVIOUS, LOAD_PREVIOUS_RL, MODEL,
-    PATH_WEIGHTS_BIG_DISCRIMINATOR, PATH_WEIGHTS_BIG_EMBEDDER,
-    PATH_WEIGHTS_BIG_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
-    PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_POLICY)
+from settings import (DEVICE, LAYERS, LOAD_EMBEDDINGS, LOAD_PREVIOUS,
+                      LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
+                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
+                      PATH_WEIGHTS_POLICY)
 
 mplstyle.use(['dark_background', 'fast'])
 
 
-def load_small_models(nb_pers, load_previous_state, load_embeddings):
-    embedder = Embedder()
-    generator = Generator()
-    discriminator = Discriminator(nb_pers)
+def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
+                load_embeddings=LOAD_EMBEDDINGS, model=MODEL):
 
-    embedder = embedder.to(DEVICE)
-    generator = generator.to(DEVICE)
-    discriminator = discriminator.to(DEVICE)
+    if model == "small":
+        from models import Discriminator, Embedder, Generator
+        print("Loading Small Models (pretrained)" if LOAD_PREVIOUS
+              else "Loading Small Models (no pretrained)")
+
+        embedder = Embedder()
+        generator = Generator()
+        discriminator = Discriminator(nb_pers)
+
+    elif model == "big":
+        from bigmodels import BigDiscriminator, BigEmbedder, BigGenerator
+        print("Loading Big Models (pretrained)" if LOAD_PREVIOUS
+              else "Loading Big Models (no pretrained)")
+
+        embedder = BigEmbedder()
+        generator = BigGenerator()
+        discriminator = BigDiscriminator(nb_pers)
 
     embedder = nn.DataParallel(
         embedder, device_ids=range(torch.cuda.device_count()))
@@ -53,49 +57,8 @@ def load_small_models(nb_pers, load_previous_state, load_embeddings):
     return embedder, generator, discriminator
 
 
-def load_big_models(nb_pers, load_previous_state, load_embeddings):
-    embedder = BigEmbedder()
-    generator = BigGenerator()
-    discriminator = BigDiscriminator(nb_pers)
-
-    embedder = embedder.to(DEVICE)
-    generator = generator.to(DEVICE)
-    discriminator = discriminator.to(DEVICE)
-
-    embedder = nn.DataParallel(
-        embedder, device_ids=range(torch.cuda.device_count()))
-    generator = nn.DataParallel(
-        generator, device_ids=range(torch.cuda.device_count()))
-    discriminator = nn.DataParallel(
-        discriminator, device_ids=range(torch.cuda.device_count()))
-
-    if load_previous_state:
-        embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_BIG_EMBEDDER))
-        generator.module.load_state_dict(
-            torch.load(PATH_WEIGHTS_BIG_GENERATOR))
-        state_dict_discriminator = torch.load(PATH_WEIGHTS_BIG_DISCRIMINATOR)
-        if load_embeddings:
-            discriminator.module.load_state_dict(state_dict_discriminator)
-        else:
-            state_dict_discriminator.pop("embeddings.weight")
-            discriminator.module.load_state_dict(state_dict_discriminator,
-                                                 strict=False)
-    return embedder, generator, discriminator
-
-
-def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
-                load_embeddings=LOAD_EMBEDDINGS, model=MODEL):
-    if model == "small":
-        print("Loading Small Models (pretrained)" if LOAD_PREVIOUS
-              else "Loading Small Models (no pretrained)")
-        return load_small_models(nb_pers, load_previous_state, load_embeddings)
-    elif model == "big":
-        print("Loading Big Models (pretrained)" if LOAD_PREVIOUS
-              else "Loading Big Models (no pretrained)")
-        return load_big_models(nb_pers, load_previous_state, load_embeddings)
-
-
 def load_rl_model(load_previous_state=LOAD_PREVIOUS_RL):
+    from RlModel import Policy
     policy = Policy()
     policy = policy.to(DEVICE)
     policy = nn.DataParallel(
@@ -109,6 +72,8 @@ def load_rl_model(load_previous_state=LOAD_PREVIOUS_RL):
 
 
 def load_losses():
+    from losses import (adverserialLoss, contentLoss,
+                        discriminatorLoss, matchLoss)
     advLoss = adverserialLoss()
     mchLoss = matchLoss()
     cntLoss = contentLoss()
@@ -128,6 +93,20 @@ def load_losses():
     dscLoss = nn.DataParallel(
         dscLoss, device_ids=range(torch.cuda.device_count()))
     return advLoss, mchLoss, cntLoss, dscLoss
+
+
+def load_layers(size=LAYERS):
+    if size == "small":
+        from layers import (Attention, ResidualBlock,
+                            ResidualBlockDown, ResidualBlockUp)
+        print("Loading small layers")
+        return ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
+    elif size == "big":
+        from biglayers import (BigResidualBlock, BigResidualBlockDown,
+                               BigResidualBlockUp, Attention)
+        print("Loading big layers")
+        return (BigResidualBlock, BigResidualBlockDown,
+                BigResidualBlockUp, Attention)
 
 
 class CheckpointsFewShots:
@@ -154,12 +133,8 @@ class CheckpointsFewShots:
                 print("| Poids disc sauvegardés |")
                 print('-'*25)
                 self.best_loss_Disc = loss
-                if MODEL == 'small':
-                    torch.save(discriminator.module.state_dict(),
-                               PATH_WEIGHTS_DISCRIMINATOR)
-                elif MODEL == "big":
-                    torch.save(discriminator.module.state_dict(),
-                               PATH_WEIGHTS_BIG_DISCRIMINATOR)
+                torch.save(discriminator.module.state_dict(),
+                           PATH_WEIGHTS_DISCRIMINATOR)
         else:
             if loss < self.best_loss_EmbGen or self.last_save_emb > 100:
                 self.last_save_emb = 0
@@ -167,16 +142,11 @@ class CheckpointsFewShots:
                 print("| Poids Emb & Gen sauvegardés |")
                 print('-'*31)
                 self.best_loss_Emb = loss
-                if MODEL == 'small':
-                    torch.save(embedder.module.state_dict(),
-                               PATH_WEIGHTS_EMBEDDER)
-                    torch.save(generator.module.state_dict(),
-                               PATH_WEIGHTS_GENERATOR)
-                elif MODEL == "big":
-                    torch.save(embedder.module.state_dict(),
-                               PATH_WEIGHTS_BIG_EMBEDDER)
-                    torch.save(generator.module.state_dict(),
-                               PATH_WEIGHTS_BIG_GENERATOR)
+
+                torch.save(embedder.module.state_dict(),
+                           PATH_WEIGHTS_EMBEDDER)
+                torch.save(generator.module.state_dict(),
+                           PATH_WEIGHTS_GENERATOR)
 
 
 class CheckpointsRl:
