@@ -36,7 +36,7 @@ The discriminator network, compared to the embedder, has an additional
 residual block at
 the end, which operates at 4×4 spatial resolution. To obtain
 the vectorized outputs in both networks, we perform global
-sum pooling over spatial dimensions followed by SELU
+sum pooling over spatial dimensions followed by ReLU
 
 We use spectral normalization [33] for all convolutional
 and fully connected layers in all the networks
@@ -57,75 +57,117 @@ part of the generator.
 """
 
 
-class ResidualBlock(nn.Module):
+class BigResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(ResidualBlock, self).__init__()
+        super(BigResidualBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.params = in_channels+out_channels
+        self.temp_channels = max(1, in_channels // 4)
+        self.params = in_channels + 3*self.temp_channels
         self.adaDim = spectral_norm(nn.Conv2d(in_channels,  out_channels,
                                               kernel_size=1, padding=0,
                                               bias=False))
-        self.conv1 = spectral_norm(nn.Conv2d(in_channels, out_channels,
+        self.conv1 = spectral_norm(nn.Conv2d(in_channels, self.temp_channels,
+                                             kernel_size=1, padding=0,
+                                             bias=False))
+
+        self.conv2 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.temp_channels,
                                              kernel_size=3, padding=1,
                                              bias=False))
 
-        self.conv2 = spectral_norm(nn.Conv2d(out_channels, out_channels,
+        self.conv3 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.temp_channels,
                                              kernel_size=3, padding=1,
+                                             bias=False))
+
+        self.conv4 = spectral_norm(nn.Conv2d(self.temp_channels, out_channels,
+                                             kernel_size=1, padding=0,
                                              bias=False))
 
         self.relu = nn.SELU()
 
-    def forward(self, x, w, b):
-        w1 = w.narrow(-1, 0, self.in_channels)
-        w2 = w.narrow(-1, self.in_channels, self.out_channels)
-
-        b1 = b.narrow(-1, 0, self.in_channels)
-        b2 = b.narrow(-1, self.in_channels, self.out_channels)
-
-        x = F.instance_norm(x)
+    def forward(self, x, w=None, b=None):
+        if w is not None and b is not None:
+            w1 = w.narrow(-1, 0, self.in_channels)
+            b1 = b.narrow(-1, 0, self.in_channels)
+            w2 = w.narrow(-1, self.in_channels, self.temp_channels)
+            b2 = b.narrow(-1, self.in_channels, self.temp_channels)
+            w3 = w.narrow(-1, self.in_channels +
+                          self.temp_channels, self.temp_channels)
+            b3 = b.narrow(-1, self.in_channels +
+                          self.temp_channels, self.temp_channels)
+            w4 = w.narrow(-1, self.in_channels+2 *
+                          self.temp_channels, self.temp_channels)
+            b4 = b.narrow(-1, self.in_channels+2 *
+                          self.temp_channels, self.temp_channels)
 
         residual = self.relu(self.adaDim(x))
 
-        # out = F.instance_norm(x)
-        out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        x = F.instance_norm(x)
+        if w is not None and b is not None:
+            out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
+            out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        else:
+            out = x
 
         out = self.relu(out)
         out = self.conv1(x)
 
-        # out = F.instance_norm(out)
-        out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = F.instance_norm(out)
+        if w is not None and b is not None:
+            out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv2(out)
 
-        # out = F.instance_norm(out)
+        out = F.instance_norm(out)
+        if w is not None and b is not None:
+            out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+
         out = self.relu(out)
+        out = self.conv3(out)
+
+        out = F.instance_norm(out)
+        if w is not None and b is not None:
+            out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+            out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+
+        out = self.relu(out)
+        out = self.conv4(out)
 
         out += residual
         return out
 
 
-class ResidualBlockDown(nn.Module):
+class BigResidualBlockDown(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(ResidualBlockDown, self).__init__()
+        super(BigResidualBlockDown, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-
+        temp_channels = max(1, in_channels // 4)
         if out_channels - in_channels > 0:
             self.adaDim = spectral_norm(nn.Conv2d(in_channels,
                                                   out_channels-in_channels,
                                                   kernel_size=1, padding=0,
                                                   bias=False))
 
-        self.conv1 = spectral_norm(nn.Conv2d(in_channels, out_channels,
+        self.conv1 = spectral_norm(nn.Conv2d(in_channels, temp_channels,
+                                             kernel_size=1, padding=0,
+                                             bias=False))
+
+        self.conv2 = spectral_norm(nn.Conv2d(temp_channels, temp_channels,
                                              kernel_size=3, padding=1,
                                              bias=False))
 
-        self.conv2 = spectral_norm(nn.Conv2d(out_channels, out_channels,
+        self.conv3 = spectral_norm(nn.Conv2d(temp_channels, temp_channels,
                                              kernel_size=3, padding=1,
+                                             bias=False))
+
+        self.conv4 = spectral_norm(nn.Conv2d(temp_channels, out_channels,
+                                             kernel_size=1, padding=0,
                                              bias=False))
 
         self.avgPool = nn.AvgPool2d(kernel_size=2)
@@ -133,47 +175,59 @@ class ResidualBlockDown(nn.Module):
         self.relu = nn.SELU()
 
     def forward(self, x):
-        x = F.instance_norm(x)
-
         residual = x
         residual = self.avgPool(residual)
         if hasattr(self, "adaDim"):
             fill_to_out_channels = self.adaDim(residual)
             residual = torch.cat((residual, fill_to_out_channels), dim=1)
-
-        # out = F.instance_norm(x)
-        out = self.relu(x)
+        out = F.instance_norm(x)
+        out = self.relu(out)
         out = self.conv1(out)
-
-        # out = F.instance_norm(out)
+        out = F.instance_norm(out)
         out = self.relu(out)
         out = self.conv2(out)
-
+        out = F.instance_norm(out)
+        out = self.relu(out)
+        out = self.conv3(out)
+        out = F.instance_norm(out)
+        out = self.relu(out)
         out = self.avgPool(out)
+        out = self.conv4(out)
 
         out += residual
         return out
 
 
-class ResidualBlockUp(nn.Module):
+class BigResidualBlockUp(nn.Module):
     def __init__(self, in_channels, out_channels, scale=2):
-        super(ResidualBlockUp, self).__init__()
+        super(BigResidualBlockUp, self).__init__()
         self.in_channels = in_channels
+        self.temp_channels = max(1, in_channels//4)
         self.out_channels = out_channels
-        self.params = in_channels+out_channels
+        self.params = in_channels + 3*self.temp_channels
         self.adaDim = spectral_norm(nn.Conv2d(self.in_channels,
                                               self.out_channels,
                                               kernel_size=1, padding=0,
                                               bias=False))
 
         self.conv1 = spectral_norm(nn.Conv2d(self.in_channels,
-                                             self.out_channels,
+                                             self.temp_channels,
+                                             kernel_size=1, padding=0,
+                                             bias=False))
+
+        self.conv2 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.temp_channels,
                                              kernel_size=3, padding=1,
                                              bias=False))
 
-        self.conv2 = spectral_norm(nn.Conv2d(self.out_channels,
-                                             self.out_channels,
+        self.conv3 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.temp_channels,
                                              kernel_size=3, padding=1,
+                                             bias=False))
+
+        self.conv4 = spectral_norm(nn.Conv2d(self.temp_channels,
+                                             self.out_channels,
+                                             kernel_size=1, padding=0,
                                              bias=False))
 
         self.upsample = nn.Upsample(scale_factor=scale, mode='nearest')
@@ -183,10 +237,17 @@ class ResidualBlockUp(nn.Module):
 
     def forward(self, x, w, b):
         w1 = w.narrow(-1, 0, self.in_channels)
-        b1 = b.narrow(-1, 0, self.out_channels)
-
-        w2 = w.narrow(-1, self.in_channels, self.out_channels)
-        b2 = b.narrow(-1, self.in_channels, self.out_channels)
+        b1 = b.narrow(-1, 0, self.in_channels)
+        w2 = w.narrow(-1, self.in_channels, self.temp_channels)
+        b2 = b.narrow(-1, self.in_channels, self.temp_channels)
+        w3 = w.narrow(-1, self.in_channels +
+                      self.temp_channels, self.temp_channels)
+        b3 = b.narrow(-1, self.in_channels +
+                      self.temp_channels, self.temp_channels)
+        w4 = w.narrow(-1, self.in_channels+2 *
+                      self.temp_channels, self.temp_channels)
+        b4 = b.narrow(-1, self.in_channels+2 *
+                      self.temp_channels, self.temp_channels)
 
         x = F.instance_norm(x)
         residual = x
@@ -196,7 +257,6 @@ class ResidualBlockUp(nn.Module):
         out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
-        out = self.upsample(out)
         out = self.conv1(out)
 
         out = F.instance_norm(out)
@@ -204,8 +264,22 @@ class ResidualBlockUp(nn.Module):
         out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
+        out = self.upsample(out)
         out = self.conv2(out)
 
+        out = F.instance_norm(out)
+        out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+
+        out = self.relu(out)
+        out = self.conv3(out)
+
+        out = F.instance_norm(out)
+        out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+
+        out = self.relu(out)
+        out = self.conv4(out)
         out += residual
         return out
 

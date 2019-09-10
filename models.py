@@ -1,11 +1,14 @@
 from settings import LATENT_SIZE, BATCH_SIZE
-from layers import ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
 from torch.nn.utils import spectral_norm
 from torch import nn
 import torch
 import numpy as np
+from utils import load_layers
 
-
+(ResidualBlock,
+ ResidualBlockDown,
+ ResidualBlockUp,
+ Attention) = load_layers()
 # ###############
 #    Embedder   #
 # ###############
@@ -20,8 +23,8 @@ class Embedder(nn.Module):
         self.residual4 = ResidualBlockDown(128, 256)
         self.residual5 = ResidualBlockDown(256, 512)
         self.residual6 = ResidualBlockDown(512, 512)
-        self.FcWeights = spectral_norm(nn.Linear(512, 3385))
-        self.FcBias = spectral_norm(nn.Linear(512, 3385))
+        self.FcWeights = spectral_norm(nn.Linear(512, 1960))
+        self.FcBias = spectral_norm(nn.Linear(512, 1960))
         self.attention = Attention(128)
         self.relu = nn.SELU()
 
@@ -128,72 +131,23 @@ class Generator(nn.Module):
         # print("resdown3", x.size())
         # TODO Register backward hook
         i = 0
-        # i_c = self.ResBlock_128_1.in_channels
-        # o_c = self.ResBlock_128_1.out_channels
-        # x = self.ResBlock_128_1(x,
-        #                         w1=pWeights.narrow(-1, i, i_c),
-        #                         b1=pBias.narrow(-1, i, i_c),
-        #                         w2=pWeights.narrow(-1, i+i_c, o_c),
-        #                         b2=pBias.narrow(-1, i+i_c, o_c),
-        #                         w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-        #                         b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-        #                         w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-        #                         b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-        #                         )
-        # x = self.relu(x)
-        # i = i + i_c + (3*o_c)
-        # print("ResBlock1", x.size())
 
-        # i_c = self.ResBlock_128_2.in_channels
-        # o_c = self.ResBlock_128_2.out_channels
-        # x = self.ResBlock_128_2(x,
-        #                         w1=pWeights.narrow(-1, i, i_c),
-        #                         b1=pBias.narrow(-1, i, i_c),
-        #                         w2=pWeights.narrow(-1, i+i_c, o_c),
-        #                         b2=pBias.narrow(-1, i+i_c, o_c),
-        #                         w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-        #                         b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-        #                         w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-        #                         b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-        #                         )
-        # x = self.relu(x)
-        # i = i + i_c + (3*o_c)        # b, 128, 55, 55
-        # print("ResBlock2", x.size())
-
-        i_c = self.ResBlock_128_3.in_channels
-        o_c = self.ResBlock_128_3.out_channels
-        x = self.ResBlock_128_3(x,
-                                w1=pWeights.narrow(-1, i, i_c),
-                                b1=pBias.narrow(-1, i, i_c),
-                                w2=pWeights.narrow(-1, i+i_c, o_c),
-                                b2=pBias.narrow(-1, i+i_c, o_c),
-                                w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                                b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                                w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                                b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                                )
+        nb_params = self.ResBlock_128_3.params
+        x = self.ResBlock_128_3(x, w=pWeights.narrow(-1, i, nb_params),
+                                b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
         # print("ResBlock3", x.size())    # b, 128, 55, 55
 
         # x = torch.cat((x, layerUp1), dim=1)
         # x = self.Ada1(x)
         # x = self.relu(x)
 
-        i_c = self.ResUp1.in_channels
-        o_c = self.ResUp1.temp_channels
-        x = self.ResUp1(x,
-                        w1=pWeights.narrow(-1, i, i_c),
-                        b1=pBias.narrow(-1, i, i_c),
-                        w2=pWeights.narrow(-1, i+i_c, o_c),
-                        b2=pBias.narrow(-1, i+i_c, o_c),
-                        w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                        b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                        w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                        b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                        )
+        nb_params = self.ResUp1.params
+        x = self.ResUp1(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
         # print("ResUp1", x.size())
 
         # x = torch.cat((x, layerUp2), dim=1)
@@ -202,20 +156,11 @@ class Generator(nn.Module):
 
         # b, 64, 109, 109
 
-        i_c = self.ResUp2.in_channels
-        o_c = self.ResUp2.temp_channels
-        x = self.ResUp2(x,
-                        w1=pWeights.narrow(-1, i, i_c),
-                        b1=pBias.narrow(-1, i, i_c),
-                        w2=pWeights.narrow(-1, i+i_c, o_c),
-                        b2=pBias.narrow(-1, i+i_c, o_c),
-                        w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                        b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                        w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                        b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                        )
+        nb_params = self.ResUp2.params
+        x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
         # print("ResUp2", x.size())
         # print("Layer3 ", layerUp3.size())
 
@@ -223,58 +168,31 @@ class Generator(nn.Module):
         # x = self.Ada3(x)
         # x = self.relu(x)
 
-        i_c = self.ResUp3.in_channels
-        o_c = self.ResUp3.temp_channels
-        x = self.ResUp3(x,
-                        w1=pWeights.narrow(-1, i, i_c),
-                        b1=pBias.narrow(-1, i, i_c),
-                        w2=pWeights.narrow(-1, i+i_c, o_c),
-                        b2=pBias.narrow(-1, i+i_c, o_c),
-                        w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                        b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                        w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                        b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                        )
+        nb_params = self.ResUp3.params
+        x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
         # print("ResUp3", x.size())
 
         # x = self.attentionUp(x)
         # x = self.relu(x)
         # print("AttUp", x.size())
 
-        i_c = self.ResUp4.in_channels
-        o_c = self.ResUp4.temp_channels
-        x = self.ResUp4(x,
-                        w1=pWeights.narrow(-1, i, i_c),
-                        b1=pBias.narrow(-1, i, i_c),
-                        w2=pWeights.narrow(-1, i+i_c, o_c),
-                        b2=pBias.narrow(-1, i+i_c, o_c),
-                        w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                        b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                        w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                        b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                        )
+        nb_params = self.ResUp4.params
+        x = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3 * o_c)
+        i += nb_params
         # print("ResUp4", x.size())
 
-        i_c = self.Res5.in_channels
-        o_c = self.Res5.out_channels
-        x = self.Res5(x,
-                      w1=pWeights.narrow(-1, i, i_c),
-                      b1=pBias.narrow(-1, i, i_c),
-                      w2=pWeights.narrow(-1, i+i_c, o_c),
-                      b2=pBias.narrow(-1, i+i_c, o_c),
-                      w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                      b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                      w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                      b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                      )
+        nb_params = self.Res5.params
+        x = self.Res5(x, pWeights.narrow(-1, i, nb_params),
+                      b=pBias.narrow(-1, i, nb_params))
         x = self.tanh(x)
-        i = i + i_c + (3*o_c)
-        # print("ResUp5", x.size())
+        i += nb_params
 
+        # print("ResUp5", x.size())
         # print("Nb_param   ", i)
         return x
 

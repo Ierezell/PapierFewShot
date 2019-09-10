@@ -1,17 +1,21 @@
-from settings import LATENT_SIZE, BATCH_SIZE
-from layers import ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
-from torch.nn.utils import spectral_norm
-from torch import nn
-import torch
 import numpy as np
+import torch
+from torch import nn
+from torch.nn.utils import spectral_norm
 
+from settings import BATCH_SIZE, LATENT_SIZE
+from utils import load_layers
 
+(ResidualBlock,
+ ResidualBlockDown,
+ ResidualBlockUp,
+ Attention) = load_layers()
 # ###############
 #    Embedder   #
 # ###############
 
 
-class Embedder(nn.Module):
+class BigEmbedder(nn.Module):
     """Class for the embedding network
 
     Arguments:
@@ -30,7 +34,7 @@ class Embedder(nn.Module):
         Attention is present on two different size
         fully connected are used to grow the 1*512 to the size of the generator
         """
-        super(Embedder, self).__init__()
+        super(BigEmbedder, self).__init__()
         self.residual1 = ResidualBlockDown(3, 64)
         self.residual2 = ResidualBlockDown(64, 128)
         self.residual3 = ResidualBlock(128, 128)
@@ -43,6 +47,7 @@ class Embedder(nn.Module):
         self.attention1 = Attention(128)
         self.attention2 = Attention(512)
         self.relu = nn.ReLU()
+        self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x):  # b, 12, 224, 224
         """Forward pass :
@@ -100,8 +105,11 @@ class Embedder(nn.Module):
             out = self.relu(out)
             out = self.residual7(out)  # b, 512, 7, 7
             out = self.relu(out)
-            out = torch.sum(
-                out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
+            # out = torch.sum(
+            #     out.view(out.size(0), out.size(1), -1), dim=2)
+            out = self.avgPool(out).squeeze()
+            print(out.size())
+            # b,512
             out = self.relu(out)
             temp = torch.add(out, temp)
 
@@ -115,6 +123,7 @@ class Embedder(nn.Module):
 
         paramWeights = self.relu(self.FcWeights(out)).squeeze()
         paramBias = self.relu(self.FcBias(out)).squeeze()
+        print(paramWeights.size())
         layersUp = (layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6)
         return context, paramWeights, paramBias, layersUp
 
@@ -122,7 +131,7 @@ class Embedder(nn.Module):
 # ################
 #    Generator   #
 # ################
-class Generator(nn.Module):
+class BigGenerator(nn.Module):
     """
     Class for the BigGenerator : It takes ONE landmark image and output a
     synthetic face, helped with layers and coeficient from the embedder.
@@ -138,7 +147,7 @@ class Generator(nn.Module):
         All are residuals with spectral norm
         Attention is present on three different size (down constant and up)
         """
-        super(Generator, self).__init__()
+        super(BigGenerator, self).__init__()
         # Down
         self.ResDown1 = ResidualBlockDown(3, 32)
         self.ResDown2 = ResidualBlockDown(32, 64)
@@ -151,7 +160,7 @@ class Generator(nn.Module):
         self.ResBlock_128_3 = ResidualBlock(512, 512)
         self.attention = Attention(512)
         self.ResBlock_128_4 = ResidualBlock(512, 512)
-        self.ResBlock_128_5 = ResidualBlockDown(512, 512)
+        self.ResDown5 = ResidualBlockDown(512, 512)
         # Up
         self.ResAda1 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
                                                padding=1, bias=False))
@@ -210,179 +219,85 @@ class Generator(nn.Module):
 
         i = 0
 
-        i_c = self.ResBlock_128_1.in_channels
-        o_c = self.ResBlock_128_1.out_channels
-        x = self.ResBlock_128_1(x,
-                                w1=pWeights.narrow(-1, i, i_c),
-                                b1=pBias.narrow(-1, i, i_c),
-                                w2=pWeights.narrow(-1, i+i_c, o_c),
-                                b2=pBias.narrow(-1, i+i_c, o_c),
-                                w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                                b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                                w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                                b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-                                )
+        nb_params = self.ResBlock_128_1.params
+        x = self.ResBlock_128_1(x, w=pWeights.narrow(-1, i, nb_params),
+                                b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
-        # TODO Register backward hook
-        i_c = self.ResBlock_128_2.in_channels
-        o_c = self.ResBlock_128_2.out_channels
-        x = self.ResBlock_128_2(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c)
-        )
+        nb_params = self.ResBlock_128_2.params
+        x = self.ResBlock_128_2(x, w=pWeights.narrow(-1, i, nb_params),
+                                b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
-        i_c = self.ResBlock_128_3.in_channels
-        o_c = self.ResBlock_128_3.out_channels
-        x = self.ResBlock_128_3(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i + i_c + (2 * o_c), o_c)
-        )
+        nb_params = self.ResBlock_128_3.params
+        x = self.ResBlock_128_3(x, w=pWeights.narrow(-1, i, nb_params),
+                                b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         x = self.attention(x)
         x = self.relu(x)
 
-        i_c = self.ResBlock_128_4.in_channels
-        o_c = self.ResBlock_128_4.out_channels
-        x = self.ResBlock_128_4(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.ResBlock_128_4.params
+        x = self.ResBlock_128_4(x, w=pWeights.narrow(-1, i, nb_params),
+                                b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
-        i_c = self.ResBlock_128_5.in_channels
-        o_c = self.ResBlock_128_5.out_channels
-        x = self.ResBlock_128_5(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        x = self.ResDown5(x)
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
 
         x = torch.cat((x, layerUp6), dim=1)
         x = self.ResAda1(x)
         x = self.relu(x)
 
-        i_c = self.Res1.in_channels
-        o_c = self.Res1.out_channels
-        x = self.Res1(x,
-                      w1=pWeights.narrow(-1, i, i_c),
-                      b1=pBias.narrow(-1, i, i_c),
-                      w2=pWeights.narrow(-1, i+i_c, o_c),
-                      b2=pBias.narrow(-1, i+i_c, o_c),
-                      w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                      b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                      w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                      b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.Res1.params
+        x = self.Res1(x, w=pWeights.narrow(-1, i, nb_params),
+                      b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         x = torch.cat((x, layerUp5), dim=1)
         x = self.ResAda2(x)
         x = self.relu(x)
 
-        i_c = self.ResUp2.in_channels
-        o_c = self.ResUp2.temp_channels
-        x = self.ResUp2(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.ResUp2.params
+        x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         x = torch.cat((x, layerUp4), dim=1)
         x = self.ResAda3(x)
         x = self.relu(x)
 
-        i_c = self.ResUp3.in_channels
-        o_c = self.ResUp3.temp_channels
-        x = self.ResUp3(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.ResUp3.params
+        x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         # x = torch.cat((x, layerUp3), dim=1)
         # x = self.ResAda4(x)
         # x = self.relu(x)
 
-        i_c = self.Res4.in_channels
-        o_c = self.Res4.out_channels
-        x = self.Res4(x,
-                      w1=pWeights.narrow(-1, i, i_c),
-                      b1=pBias.narrow(-1, i, i_c),
-                      w2=pWeights.narrow(-1, i+i_c, o_c),
-                      b2=pBias.narrow(-1, i+i_c, o_c),
-                      w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-                      b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-                      w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-                      b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.Res4.params
+        x = self.Res4(x, w=pWeights.narrow(-1, i, nb_params),
+                      b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         # x = torch.cat((x, layerUp2), dim=1)
         # x = self.ResAda5(x)
         # x = self.relu(x)
 
-        i_c = self.ResUp5.in_channels
-        o_c = self.ResUp5.temp_channels
-        x = self.ResUp5(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.ResUp5.params
+        x = self.ResUp5(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         x = self.attentionUp(x)
         x = self.relu(x)
@@ -391,31 +306,22 @@ class Generator(nn.Module):
         # x = self.ResAda6(x)
         # x = self.relu(x)
 
-        i_c = self.ResUp6.in_channels
-        o_c = self.ResUp6.temp_channels
-        x = self.ResUp6(
-            x,
-            w1=pWeights.narrow(-1, i, i_c),
-            b1=pBias.narrow(-1, i, i_c),
-            w2=pWeights.narrow(-1, i+i_c, o_c),
-            b2=pBias.narrow(-1, i+i_c, o_c),
-            w3=pWeights.narrow(-1, i+i_c+o_c, o_c),
-            b3=pBias.narrow(-1, i+i_c+o_c, o_c),
-            w4=pWeights.narrow(-1, i+i_c+(2*o_c), o_c),
-            b4=pBias.narrow(-1, i+i_c+(2*o_c), o_c))
+        nb_params = self.ResUp6.params
+        x = self.ResUp6(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i = i + i_c + (3*o_c)
+        i += nb_params
 
         x = self.Res7(x)
         x = self.tanh(x)
-        # print("PARAMMMMMM  : ", i)
+        print("Nb_param   ", i)
         return x
 
 
 # ######################
 #     Discriminator    #
 # ######################
-class Discriminator(nn.Module):
+class BigDiscriminator(nn.Module):
     """
     Class for the BigDiscriminator
     Architecture is almost the same as the embedder.
@@ -445,7 +351,7 @@ class Discriminator(nn.Module):
             Will be used to prevent the loading of embeddings to fintune only
             on one unknown person (variables are differents).
         """
-        super(Discriminator, self).__init__()
+        super(BigDiscriminator, self).__init__()
         self.residual1 = ResidualBlockDown(6, 64)
         self.residual2 = ResidualBlockDown(64, 128)
         self.residual3 = ResidualBlock(128, 128)
@@ -461,6 +367,7 @@ class Discriminator(nn.Module):
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
         self.relu = nn.ReLU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
+        self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x, indexes):  # b, 6, 224, 224
         features_maps = []
@@ -504,7 +411,9 @@ class Discriminator(nn.Module):
         out = self.relu(out)
         features_maps.append(out)
 
-        out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)  # b,512
+        # out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)
+        # b,512
+        out = self.avgPool(out).squeeze()
         out = self.relu(out)
         final_out = self.fc(out)
         features_maps.append(out)

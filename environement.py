@@ -1,5 +1,4 @@
 
-import copy
 from collections import deque
 
 import matplotlib.pyplot as plt
