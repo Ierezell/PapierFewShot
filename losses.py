@@ -103,20 +103,21 @@ class contentLoss(nn.Module):
         gtVggFace = gt.clone()
         synthVggFace = synth.clone()
 
-        lossVgg19 = 0
+        # lossVgg19 = 0
         lossVggFace = 0
 
-        with torch.no_grad():
-            for name, module in self.vgg_layers._modules.items():
-                gtVgg19 = module(gtVgg19)
-                synthVgg19 = module(synthVgg19)
-                if name in self.layer_name_mapping_vgg19:
-                    lossVgg19 += self.l1(gtVgg19, synthVgg19)
-                    # If needed, output can be dictionaries of vgg feature for
-                    # each layer :
-                    # output_gt[self.layer_name_mapping[name]] = gt
-                    # output_synth[self.layer_name_mapping[name]] = synth
+        # with torch.no_grad():
+        #     for name, module in self.vgg_layers._modules.items():
+        #         gtVgg19 = module(gtVgg19)
+        #         synthVgg19 = module(synthVgg19)
+        #         if name in self.layer_name_mapping_vgg19:
+        #             lossVgg19 += self.l1(gtVgg19, synthVgg19)
+        #             # If needed, output can be dictionaries of vgg feature for
+        #             # each layer :
+        #             # output_gt[self.layer_name_mapping[name]] = gt
+        #             # output_synth[self.layer_name_mapping[name]] = synth
 
+        with torch.no_grad():
             for name, module in self.vgg_Face.named_children():
                 gtVggFace = module(gtVggFace)
                 synthVggFace = module(synthVggFace)
@@ -124,7 +125,8 @@ class contentLoss(nn.Module):
                     lossVggFace += self.l1(gtVggFace, synthVggFace)
                 if name == "conv5_2":
                     break
-        return (lossVgg19 + lossVggFace)/(5*BATCH_SIZE)
+        # return (lossVgg19 + lossVggFace)/(5*BATCH_SIZE)
+        return (lossVggFace)/(5*BATCH_SIZE)
 
 
 class Vgg_face_dag(nn.Module):

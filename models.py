@@ -1,4 +1,4 @@
-from settings import LATENT_SIZE, BATCH_SIZE
+from settings import LATENT_SIZE, BATCH_SIZE, CONCAT
 from torch.nn.utils import spectral_norm
 from torch import nn
 import torch
@@ -99,13 +99,13 @@ class Generator(nn.Module):
         self.ResUp4 = ResidualBlockUp(64, 32)
         self.Res5 = ResidualBlock(32, 3)
         # self.attentionUp = Attention(64)
-
-        # self.Ada1 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
-        #                                     padding=1, bias=False))
-        # self.Ada2 = spectral_norm(nn.Conv2d(256 * 2, 256, kernel_size=3,
-        #                                     padding=1, bias=False))
-        # self.Ada3 = spectral_norm(nn.Conv2d(128 * 2, 128, kernel_size=3,
-        #                                     padding=1, bias=False))
+        if CONCAT:
+            self.Ada1 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
+                                                padding=1, bias=False))
+            self.Ada2 = spectral_norm(nn.Conv2d(256 * 2, 256, kernel_size=3,
+                                                padding=1, bias=False))
+            self.Ada3 = spectral_norm(nn.Conv2d(128 * 2, 128, kernel_size=3,
+                                                padding=1, bias=False))
         self.relu = nn.SELU()
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
@@ -138,10 +138,10 @@ class Generator(nn.Module):
         x = self.relu(x)
         i += nb_params
         # print("ResBlock3", x.size())    # b, 128, 55, 55
-
-        # x = torch.cat((x, layerUp1), dim=1)
-        # x = self.Ada1(x)
-        # x = self.relu(x)
+        if CONCAT:
+            x = torch.cat((x, layerUp1), dim=1)
+            x = self.Ada1(x)
+            x = self.relu(x)
 
         nb_params = self.ResUp1.params
         x = self.ResUp1(x, w=pWeights.narrow(-1, i, nb_params),
@@ -149,10 +149,10 @@ class Generator(nn.Module):
         x = self.relu(x)
         i += nb_params
         # print("ResUp1", x.size())
-
-        # x = torch.cat((x, layerUp2), dim=1)
-        # x = self.Ada2(x)
-        # x = self.relu(x)
+        if CONCAT:
+            x = torch.cat((x, layerUp2), dim=1)
+            x = self.Ada2(x)
+            x = self.relu(x)
 
         # b, 64, 109, 109
 
@@ -163,10 +163,11 @@ class Generator(nn.Module):
         i += nb_params
         # print("ResUp2", x.size())
         # print("Layer3 ", layerUp3.size())
-
-        # x = torch.cat((x, layerUp3), dim=1)
-        # x = self.Ada3(x)
-        # x = self.relu(x)
+        if CONCAT:
+            1
+            x = torch.cat((x, layerUp3), dim=1)
+            x = self.Ada3(x)
+            x = self.relu(x)
 
         nb_params = self.ResUp3.params
         x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),

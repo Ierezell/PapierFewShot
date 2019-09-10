@@ -6,6 +6,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
 MODEL = "small"
 LAYERS = "big"
+CONCAT = True
 
 # Weights
 ROOT_WEIGHTS = './weights/'
@@ -41,10 +42,6 @@ LEARNING_RATE_DISC = 5e-6
 LATENT_SIZE = 512
 K_SHOT = 8
 
-# Load parameters
-LOAD_EMBEDDINGS = False
-LOAD_PREVIOUS = False
-LOAD_PREVIOUS_RL = False
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
@@ -64,17 +61,17 @@ MAX_ITER_PERSON = 50
 
 
 CONFIG = {
-    "platform": platform.node(),
+    "platform": platform.node()[:4],
     "batch_size": BATCH_SIZE,
     "lr_gen": LEARNING_RATE_GEN,
     "lr_disc": LEARNING_RATE_DISC,
-    "resume": LOAD_PREVIOUS,
     "nb_gpu": torch.cuda.device_count(),
     "k_shot": K_SHOT,
     "model": MODEL,
     "layers": LAYERS,
     "disc_out": "div10",
-    "in_disc": "noisy"
+    "in_disc": "noisy",
+    "concat": True,
 }
 
 
@@ -92,9 +89,19 @@ folder_weights = str(CONFIG['model'])+'_'+str(CONFIG['batch_size'])+'_' +\
     str(CONFIG['k_shot'])+'_'+str(CONFIG['layers']) +\
     str(CONFIG['lr_gen'])+'_'+str(CONFIG['lr_disc'])+'/'
 
+# Load parameters
 if not os.path.exists(ROOT_WEIGHTS+folder_weights):
-    os.makedirs(ROOT_WEIGHTS+folder_weights)
+    os.makedirs(ROOT_WEIGHTS + folder_weights)
+    LOAD_EMBEDDINGS = False
+    LOAD_PREVIOUS = False
+    LOAD_PREVIOUS_RL = False
 
+else:
+    LOAD_EMBEDDINGS = True
+    LOAD_PREVIOUS = True
+    LOAD_PREVIOUS_RL = True
+
+CONFIG["resume"] = LOAD_PREVIOUS
 
 # Save
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
@@ -102,5 +109,3 @@ PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
 PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+'Policy.pt'
-
-# find /some/directory -maxdepth 1 -type f -exec cmd option {} \; > results.out
