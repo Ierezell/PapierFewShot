@@ -26,12 +26,15 @@ if "blg" in platform.node():
     nb_batch_per_gpu = 6
 elif "gpu-k" in platform.node():
     nb_batch_per_gpu = 4
+elif "GATINEAU" in platform.node():
+    nb_batch_per_gpu = 2
 else:
     nb_batch_per_gpu = 1
 
 
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
-BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
+# BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
+BATCH_SIZE = nb_batch_per_gpu
 
 # LR
 LEARNING_RATE_EMB = 5e-6
