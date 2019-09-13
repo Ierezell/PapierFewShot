@@ -49,7 +49,7 @@ class Environement:
 
         (self.contexts,
          self.landmarks,
-         self.user_ids) = self.frameloader.load_someone(limit=20)
+         self.user_ids) = self.frameloader.load_someone(limit=200)
 
         if MODEL == "big":
             with torch.no_grad():
@@ -62,7 +62,8 @@ class Environement:
             with torch.no_grad():
                 (self.embeddings,
                  self.paramWeights,
-                 self.paramBias) = self.embedder(self.contexts)
+                 self.paramBias,
+                 self.layersUp) = self.embedder(self.contexts)
 
         self.iterations = 0
         self.episodes += 1
@@ -115,17 +116,10 @@ class Environement:
 
         self.landmarks_img = transforms.ToTensor()(landmarks_img)
         self.landmarks_img = self.landmarks_img.unsqueeze(0).to(DEVICE)
-        if MODEL == "big":
-            with torch.no_grad():
-                self.synth_im = self.generator(self.landmarks_img,
-                                               self.paramWeights,
-                                               self.paramBias, self.layersUp)
-        elif MODEL == "small":
-            with torch.no_grad():
-                self.synth_im = self.generator(self.landmarks_img,
-                                               self.paramWeights,
-                                               self.paramBias)
-
+        with torch.no_grad():
+            self.synth_im = self.generator(self.landmarks_img,
+                                           self.paramWeights,
+                                           self.paramBias, self.layersUp)
         self.axes[0, 1].clear()
         self.axes[0, 1].imshow(landmarks_img/landmarks_img.max())
         self.axes[0, 1].axis("off")

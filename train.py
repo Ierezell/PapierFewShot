@@ -8,15 +8,19 @@ from torch.optim import Adam, SGD
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, CONFIG,
-                      LOAD_PREVIOUS, PATH_WEIGHTS_EMBEDDER,
+                      LOAD_PREVIOUS, PATH_WEIGHTS_EMBEDDER, TTUR,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
                       )
 from utils import (CheckpointsFewShots, load_losses, load_models,
                    print_parameters)
 import datetime
 import wandb
+
+date = datetime.datetime.now().replace(microsecond=0)
+train_id = "_".join(CONFIG.values())
 wandb.init(project="papierfewshot",
-           name=f"test-{datetime.datetime.now().replace(microsecond=0)}",
+           id=train_id,
+           name=train_id,
            resume=LOAD_PREVIOUS,
            config=CONFIG)
 
@@ -84,13 +88,24 @@ for i_epoch in range(NB_EPOCHS):
         loss = lossAdv + lossCnt + lossMch
         loss = loss.mean()
 
-        loss_totale = loss + lossDsc
-        loss_totale.backward(torch.cuda.FloatTensor(
-            torch.cuda.device_count()).fill_(1))
+        if TTUR:
+            if i_batch % 3 == 0:
+                lossDsc.backward(torch.cuda.FloatTensor(
+                    torch.cuda.device_count()).fill_(1))
+                optimizerDisc.step()
+            else:
+                loss.backward(torch.cuda.FloatTensor(
+                    torch.cuda.device_count()).fill_(1))
+                optimizerEmb.step()
+                optimizerGen.step()
+        else:
+            loss_totale = loss + lossDsc
+            loss_totale.backward(torch.cuda.FloatTensor(
+                torch.cuda.device_count()).fill_(1))
 
-        optimizerDisc.step()
-        optimizerEmb.step()
-        optimizerGen.step()
+            optimizerDisc.step()
+            optimizerEmb.step()
+            optimizerGen.step()
 
         check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
         check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
