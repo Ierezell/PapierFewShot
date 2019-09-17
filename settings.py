@@ -44,11 +44,11 @@ TTUR = True
 
 # Sizes
 LATENT_SIZE = 512
-K_SHOT = 8
+K_SHOT = 16
 
 
-DEVICE_LANDMARKS = "cuda"  # cuda or cpu
-NB_WORKERS = 0
+DEVICE_LANDMARKS = "cpu"  # cuda or cpu
+NB_WORKERS = 8
 
 PRINT_EVERY = 1000
 
@@ -75,8 +75,8 @@ CONFIG = {
     "K_SHOT": str(K_SHOT),
     "MODEL": str(MODEL),
     "LAYERS": str(LAYERS),
-    "DISC_OUT": str("div10"),
-    "IN_DISC": str("noisy"),
+    "DISC_OUT": "tanh",
+    "IN_DISC": "noisy",
     "CONCAT": str(CONCAT),
     "TTUR": str(TTUR),
     "TIME": TIME,

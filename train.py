@@ -77,27 +77,30 @@ for i_epoch in range(NB_EPOCHS):
                                                               dim=1), itemIds)
         gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
         score_gt, feature_maps_disc_gt = disc(
-            gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
-
+            gt_w_ldm+(torch.randn_like(gt_w_ldm)/4), itemIds)
+        # print("score_gt  ",score_gt)
         lossDsc = dscLoss(score_gt, score_synth)
-        lossDsc = lossDsc.mean()
+        # print("lossDsc  ",lossDsc)
+        # lossDsc = lossDsc.mean()
         lossAdv = advLoss(score_synth, feature_maps_disc_gt,
                           feature_maps_disc_synth)
         lossCnt = cntLoss(gt_im, synth_im)
         lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
         loss = lossAdv + lossCnt + lossMch
-        loss = loss.mean()
-
+        # loss = loss.mean()
+        # print("Loss computed")
         if TTUR:
             if i_batch % 3 == 0:
                 lossDsc.backward(torch.cuda.FloatTensor(
                     torch.cuda.device_count()).fill_(1))
                 optimizerDisc.step()
+                # print("Back dsc")
             else:
                 loss.backward(torch.cuda.FloatTensor(
                     torch.cuda.device_count()).fill_(1))
                 optimizerEmb.step()
                 optimizerGen.step()
+                # print("Back Emb Gen")
         else:
             loss_totale = loss + lossDsc
             loss_totale.backward(torch.cuda.FloatTensor(
@@ -106,6 +109,7 @@ for i_epoch in range(NB_EPOCHS):
             optimizerDisc.step()
             optimizerEmb.step()
             optimizerGen.step()
+            # print("Back all")
 
         check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
         check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
@@ -121,11 +125,16 @@ for i_epoch in range(NB_EPOCHS):
         wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
         wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
-        if i_batch % PRINT_EVERY == 0 and i_batch != 0:
+        # wandb.log({"Loss_dsc": lossDsc})
+        # wandb.log({"lossCnt": lossCnt})
+        # wandb.log({"lossMch": lossMch})
+        # wandb.log({"lossAdv": lossAdv})
+        # wandb.log({"LossTot": loss})
 
+        if i_batch % PRINT_EVERY == 0 :#and i_batch != 0:
             images_to_grid = torch.cat((gt_landmarks, synth_im,
                                         gt_im, context),
-                                       dim=1).view(-1, 3, 224, 224)
+                                        dim=1).view(-1, 3, 224, 224)
 
             grid = torchvision.utils.make_grid(
                 images_to_grid, padding=4, nrow=3 + K_SHOT,

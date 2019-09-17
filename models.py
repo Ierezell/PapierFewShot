@@ -217,6 +217,7 @@ class Discriminator(nn.Module):
         self.relu = nn.SELU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
         self.tanh = nn.Tanh()
+        self.sig = nn.Sigmoid()
 
     def forward(self, x, indexes):  # b, 6, 224, 224
         features_maps = []
@@ -267,6 +268,6 @@ class Discriminator(nn.Module):
         final_out += condition.view(final_out.size())
         final_out = final_out.view(b.size())
         final_out += b
-        # final_out = self.tanh(final_out)
-        final_out /= 10
+        final_out = self.sig(final_out)
+        # final_out /= 10
         return final_out, features_maps
