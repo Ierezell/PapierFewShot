@@ -27,7 +27,7 @@ if "blg" in platform.node():
 elif "gpu-k" in platform.node():
     nb_batch_per_gpu = 4
 elif "GATINEAU" in platform.node():
-    nb_batch_per_gpu = 2
+    nb_batch_per_gpu = 8
 else:
     nb_batch_per_gpu = 1
 
@@ -44,13 +44,13 @@ TTUR = True
 
 # Sizes
 LATENT_SIZE = 512
-K_SHOT = 8
+K_SHOT = 4
 
 
-DEVICE_LANDMARKS = "cuda"  # cuda or cpu
-NB_WORKERS = 0
+DEVICE_LANDMARKS = "cpu"  # cuda or cpu
+NB_WORKERS = 4
 
-PRINT_EVERY = 1000
+PRINT_EVERY = 100
 
 ###############
 # RL SETTINGS #
@@ -120,7 +120,7 @@ if not os.path.exists(ROOT_WEIGHTS+folder_weights_Rl):
     os.makedirs(ROOT_WEIGHTS + folder_weights_Rl)
     LOAD_PREVIOUS_RL = False
 else:
-    LOAD_PREVIOUS_RL = True
+    LOAD_PREVIOUS_RL = False
 
 # Save
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
