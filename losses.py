@@ -27,10 +27,10 @@ class adverserialLoss(nn.Module):
         self.l1 = nn.MSELoss(reduction='mean')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
-        loss = 0
+        feature_loss = 0
         for ft_gt, ft_synth in zip(features_gt, features_synth):
-            loss += self.l1(ft_gt, ft_synth)
-        loss = loss.expand_as(score_disc_synth)
+            feature_loss += self.l1(ft_gt, ft_synth)
+        feature_loss = feature_loss.expand_as(score_disc_synth)
         # loss /= len(features_synth)
         # loss /= 10.0
         loss_disc = -score_disc_synth
@@ -43,7 +43,7 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        self.l1 = nn.MSELoss(reduction='mean') 
+        self.l1 = nn.MSELoss(reduction='mean')
 
     def forward(self, ei, Wi):
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)

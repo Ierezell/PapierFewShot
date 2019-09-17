@@ -81,9 +81,9 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
             discriminator.module.load_state_dict(state_dict_discriminator,
                                                  strict=False)
 
-    # embedder = embedder.to(DEVICE)
-    # generator = generator.to(DEVICE)
-    # discriminator = discriminator.to(DEVICE)
+    embedder = embedder.to(DEVICE)
+    generator = generator.to(DEVICE)
+    discriminator = discriminator.to(DEVICE)
     return embedder, generator, discriminator
 
 

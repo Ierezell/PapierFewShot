@@ -82,7 +82,7 @@ CONFIG = {
     "TIME": TIME,
 }
 folder_weights = CONFIG["PLATFORM"] + "_" + CONFIG["BATCH_SIZE"] + "_" + \
-    CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
+    CONFIG["LATENT_SIZE"]+"_" + CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
     CONFIG["NB_GPU"] + "_" + CONFIG["K_SHOT"] + "_" + \
     CONFIG["MODEL"] + "_" + CONFIG["LAYERS"] + "_" + \
     CONFIG["DISC_OUT"] + "_" + CONFIG["IN_DISC"] + "_" + \
