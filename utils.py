@@ -1,3 +1,4 @@
+from shutil import copyfile
 import glob
 import os
 import shutil
@@ -11,7 +12,7 @@ from torch import nn
 from settings import (DEVICE, LAYERS, LOAD_EMBEDDINGS, LOAD_PREVIOUS,
                       LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_POLICY)
+                      PATH_WEIGHTS_POLICY, PRINT_EVERY)
 
 mplstyle.use(['dark_background', 'fast'])
 
@@ -45,15 +46,44 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
         discriminator, device_ids=range(torch.cuda.device_count()))
 
     if load_previous_state:
-        embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
-        generator.module.load_state_dict(torch.load(PATH_WEIGHTS_GENERATOR))
-        state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR)
-        if load_embeddings:
+        try:
+            embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
+        except RuntimeError:
+            embedder.module.load_state_dict(
+                torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+        except FileNotFoundError:
+            print("File not found, not loading weights embedder...")
+
+        try:
+            generator.module.load_state_dict(
+                torch.load(PATH_WEIGHTS_GENERATOR))
+        except RuntimeError:
+            generator.module.load_state_dict(
+                torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+        except FileNotFoundError:
+            print("File not found, not loading weights generator...")
+
+        try:
+            state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR)
+            weight_disc = True
+        except RuntimeError:
+            state_dict_discriminator = torch.load(
+                PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"))
+            weight_disc = True
+        except FileNotFoundError:
+            print("File not found, not loading weights discriminator...")
+            weight_disc = False
+
+        if load_embeddings and weight_disc:
             discriminator.module.load_state_dict(state_dict_discriminator)
-        else:
+        elif weight_disc:
             state_dict_discriminator.pop("embeddings.weight")
             discriminator.module.load_state_dict(state_dict_discriminator,
                                                  strict=False)
+
+    # embedder = embedder.to(DEVICE)
+    # generator = generator.to(DEVICE)
+    # discriminator = discriminator.to(DEVICE)
     return embedder, generator, discriminator
 
 
@@ -79,11 +109,6 @@ def load_losses():
     cntLoss = contentLoss()
     dscLoss = discriminatorLoss()
 
-    advLoss = advLoss.to(DEVICE)
-    mchLoss = mchLoss.to(DEVICE)
-    cntLoss = cntLoss.to(DEVICE)
-    dscLoss = dscLoss.to(DEVICE)
-
     advLoss = nn.DataParallel(
         advLoss, device_ids=range(torch.cuda.device_count()))
     mchLoss = nn.DataParallel(
@@ -92,6 +117,12 @@ def load_losses():
         cntLoss, device_ids=range(torch.cuda.device_count()))
     dscLoss = nn.DataParallel(
         dscLoss, device_ids=range(torch.cuda.device_count()))
+
+    advLoss = advLoss.to(DEVICE)
+    mchLoss = mchLoss.to(DEVICE)
+    cntLoss = cntLoss.to(DEVICE)
+    dscLoss = dscLoss.to(DEVICE)
+
     return advLoss, mchLoss, cntLoss, dscLoss
 
 
@@ -127,16 +158,18 @@ class CheckpointsFewShots:
 
     def save(self, model, loss, embedder, generator, discriminator):
         if model == "disc":
-            if loss < self.best_loss_Disc or self.last_save_disc > 100:
+            if loss < self.best_loss_Disc or self.last_save_disc > PRINT_EVERY:
                 self.last_save_disc = 0
                 print('\n' + '-' * 25)
                 print("| Poids disc sauvegardes |")
                 print('-'*25)
                 self.best_loss_Disc = loss
                 torch.save(discriminator.module.state_dict(),
-                           PATH_WEIGHTS_DISCRIMINATOR)
+                           PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"))
+                copyfile(PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
+                         PATH_WEIGHTS_DISCRIMINATOR)
         else:
-            if loss < self.best_loss_EmbGen or self.last_save_emb > 100:
+            if loss < self.best_loss_EmbGen or self.last_save_emb > PRINT_EVERY:
                 self.last_save_emb = 0
                 print('\n' + '-'*31)
                 print("| Poids Emb & Gen sauvegardes |")
@@ -144,9 +177,13 @@ class CheckpointsFewShots:
                 self.best_loss_Emb = loss
 
                 torch.save(embedder.module.state_dict(),
-                           PATH_WEIGHTS_EMBEDDER)
+                           PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
+                copyfile(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
+                         PATH_WEIGHTS_EMBEDDER)
                 torch.save(generator.module.state_dict(),
-                           PATH_WEIGHTS_GENERATOR)
+                           PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
+                copyfile(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
+                         PATH_WEIGHTS_GENERATOR)
 
 
 class CheckpointsRl:
@@ -324,3 +361,8 @@ def print_parameters(model):
 
     print(f"Nombre de parametres {model.module.__class__.__name__ }: ",
           f"{trainParamModel:,}")
+
+
+
+def print_device(model):
+    print(f"{model.module.__class__.__name__ } est sur {model.module.device}")

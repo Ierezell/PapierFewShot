@@ -27,7 +27,7 @@ if "blg" in platform.node():
 elif "gpu-k" in platform.node():
     nb_batch_per_gpu = 4
 elif "GATINEAU" in platform.node():
-    nb_batch_per_gpu = 8
+    nb_batch_per_gpu = 2
 else:
     nb_batch_per_gpu = 1
 
@@ -44,11 +44,11 @@ TTUR = True
 
 # Sizes
 LATENT_SIZE = 512
-K_SHOT = 4
+K_SHOT = 16
 
 
 DEVICE_LANDMARKS = "cpu"  # cuda or cpu
-NB_WORKERS = 4
+NB_WORKERS = 8
 
 PRINT_EVERY = 100
 
@@ -75,8 +75,8 @@ CONFIG = {
     "K_SHOT": str(K_SHOT),
     "MODEL": str(MODEL),
     "LAYERS": str(LAYERS),
-    "DISC_OUT": str("div10"),
-    "IN_DISC": str("noisy"),
+    "DISC_OUT": "tanh",
+    "IN_DISC": "noisy",
     "CONCAT": str(CONCAT),
     "TTUR": str(TTUR),
     "TIME": TIME,

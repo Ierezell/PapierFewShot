@@ -12,18 +12,18 @@ from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
                       )
 from utils import (CheckpointsFewShots, load_losses, load_models,
-                   print_parameters)
+                   print_parameters, print_device)
 import datetime
-# import wandb
+import wandb
 
 if __name__ == '__main__':
     date = datetime.datetime.now().replace(microsecond=0)
     train_id = "_".join(CONFIG.values())
-    # wandb.init(project="papierfewshot",
-    #    id = train_id,
-    #    name = train_id,
-    #    resume = LOAD_PREVIOUS,
-    #    config = CONFIG)
+    wandb.init(project="papierfewshot",
+               id=train_id,
+               name=train_id,
+               resume=LOAD_PREVIOUS,
+               config=CONFIG)
 
     print("Python : ", sys.version)
     print("torch version : ", torch.__version__)
@@ -48,7 +48,15 @@ if __name__ == '__main__':
     print_parameters(cntLoss)
     print_parameters(dscLoss)
 
-    # wandb.watch((gen, emb, disc))
+    print_device(emb)
+    print_device(gen)
+    print_device(disc)
+    print_device(advLoss)
+    print_device(mchLoss)
+    print_device(cntLoss)
+    print_device(dscLoss)
+
+    wandb.watch((gen, emb, disc))
 
     # ##########
     # Training #
@@ -64,6 +72,7 @@ if __name__ == '__main__':
             optimizerGen.zero_grad()
 
             gt_im, gt_landmarks, context, itemIds = batch
+            print("batch loade")
 
             gt_im = gt_im.to(DEVICE)
             gt_landmarks = gt_landmarks.to(DEVICE)
@@ -71,7 +80,9 @@ if __name__ == '__main__':
             itemIds = itemIds.to(DEVICE)
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
+            print("emb ok")
             synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            print("gen ok")
 
             score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
                                                                    gt_landmarks),
@@ -79,6 +90,7 @@ if __name__ == '__main__':
             gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
             score_gt, feature_maps_disc_gt = disc(
                 gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
+            print("disc ok")
 
             lossDsc = dscLoss(score_gt, score_synth)
             lossDsc = lossDsc.mean()
@@ -89,6 +101,7 @@ if __name__ == '__main__':
             loss = lossAdv + lossCnt + lossMch
             loss = loss.mean()
 
+            print("loss ok")
             if TTUR:
                 if i_batch % 3 == 0:
                     lossDsc.backward(torch.cuda.FloatTensor(
@@ -107,6 +120,8 @@ if __name__ == '__main__':
                 optimizerDisc.step()
                 optimizerEmb.step()
                 optimizerGen.step()
+                # print("Back all")
+            print("backprop ok")
 
             check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
             check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
@@ -116,23 +131,29 @@ if __name__ == '__main__':
             check.save("embGen", torch.sum(loss, dim=-1), emb, gen, disc)
             check.save("disc", torch.sum(lossDsc, dim=-1), emb, gen, disc)
 
-            # wandb.log({"Loss_dsc": torch.sum(lossDsc, dim=-1)})
-            # wandb.log({"lossCnt": torch.sum(lossCnt, dim=-1)})
-            # wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
-            # wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
-            # wandb.log({"LossTot": torch.sum(loss, dim=-1)})
+            wandb.log({"Loss_dsc": torch.sum(lossDsc, dim=-1)})
+            wandb.log({"lossCnt": torch.sum(lossCnt, dim=-1)})
+            wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
+            wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
+            wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
-            if i_batch % PRINT_EVERY == 0 and i_batch != 0:
+            wandb.log({"Loss_dsc": lossDsc})
+            wandb.log({"lossCnt": lossCnt})
+            wandb.log({"lossMch": lossMch})
+            wandb.log({"lossAdv": lossAdv})
+            wandb.log({"LossTot": loss})
+            print("save ok")
 
+            if i_batch % PRINT_EVERY == 0:  # and i_batch != 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
-                                           dim=1).view(-1, 3, 224, 224)
+                                        dim=1).view(-1, 3, 224, 224)
 
                 grid = torchvision.utils.make_grid(
                     images_to_grid, padding=4, nrow=3 + K_SHOT,
                     normalize=True, scale_each=True)
 
-                # # wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-                # wandb.save(PATH_WEIGHTS_EMBEDDER)
-                # wandb.save(PATH_WEIGHTS_GENERATOR)
-                # wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+                wandb.log({"Img": [wandb.Image(grid, caption="image")]})
+                wandb.save(PATH_WEIGHTS_EMBEDDER)
+                wandb.save(PATH_WEIGHTS_GENERATOR)
+                wandb.save(PATH_WEIGHTS_DISCRIMINATOR)

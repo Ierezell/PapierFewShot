@@ -24,16 +24,17 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='mean')
+        self.l1 = nn.MSELoss(reduction='mean')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
-        loss = 0
+        feature_loss = 0
         for ft_gt, ft_synth in zip(features_gt, features_synth):
-            loss += self.l1(ft_gt, ft_synth)
-        loss /= len(features_synth)
+            feature_loss += self.l1(ft_gt, ft_synth)
+        feature_loss = feature_loss.expand_as(score_disc_synth)
+        # loss /= len(features_synth)
         # loss /= 10.0
-        loss_disc = -torch.sum(score_disc_synth)
-        return loss_disc + loss
+        loss_disc = -score_disc_synth
+        return loss_disc + feature_loss
 
 
 # #########
@@ -42,12 +43,12 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        self.l1 = nn.L1Loss(reduction='mean')
+        self.l1 = nn.MSELoss(reduction='mean')
 
     def forward(self, ei, Wi):
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)
         Wi = Wi.view(BATCH_SIZE, LATENT_SIZE)
-        return self.l1(ei, Wi)/BATCH_SIZE
+        return self.l1(ei, Wi)
         # return 80*(self.l1(ei, Wi)/BATCH_SIZE)
 
 
@@ -59,13 +60,27 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        one = torch.tensor([1], device=DEVICE, dtype=torch.float)
-        zero = torch.tensor([0], device=DEVICE, dtype=torch.float)
-        loss = torch.max(zero, one + torch.sum(score_synth)) +\
-            torch.max(zero, one - torch.sum(score_gt))
-        loss /= score_gt.size(0)
-        return loss.squeeze()
+        one = torch.tensor((), device=DEVICE, dtype=torch.float)
+        one = one.new_ones(score_gt.size())
+        zero = torch.tensor((), device=DEVICE, dtype=torch.float)
+        zero = zero.new_zeros(score_gt.size())
+        loss = torch.max(zero, one + score_synth) +\
+            torch.max(zero, one - score_gt)
+        return loss
 
+
+# class discriminatorLoss(nn.Module):
+#     def __init__(self):
+#         super(discriminatorLoss, self).__init__()
+
+#     def forward(self, score_gt, score_synth):
+#         one = torch.tensor((), device=DEVICE, dtype=torch.float)
+#         eps = torch.tensor((),device=DEVICE,dtype=torch.float)
+#         eps = eps.new_full(score_gt.size(), 1e-6)
+#         one = one.new_ones(score_synth.size())+eps
+#         loss = torch.log(score_gt+eps) + torch.log(one - score_synth)
+#         loss /= score_gt.size(0)
+#         return loss
 
 # #########
 #  L_cnt  #
@@ -95,7 +110,7 @@ class contentLoss(nn.Module):
             '25': "relu5_1",
         }
 
-        self.l1 = nn.L1Loss(reduction="mean")
+        self.l1 = nn.MSELoss(reduction="mean")
 
     def forward(self, gt, synth):
         # output_gt = {}
@@ -105,19 +120,19 @@ class contentLoss(nn.Module):
         gtVggFace = gt.clone()
         synthVggFace = synth.clone()
 
-        # lossVgg19 = 0
+        lossVgg19 = 0
         lossVggFace = 0
 
-        # with torch.no_grad():
-        #     for name, module in self.vgg_layers._modules.items():
-        #         gtVgg19 = module(gtVgg19)
-        #         synthVgg19 = module(synthVgg19)
-        #         if name in self.layer_name_mapping_vgg19:
-        #             lossVgg19 += self.l1(gtVgg19, synthVgg19)
-        #             # If needed, output can be dictionaries of vgg feature for
-        #             # each layer :
-        #             # output_gt[self.layer_name_mapping[name]] = gt
-        #             # output_synth[self.layer_name_mapping[name]] = synth
+        with torch.no_grad():
+            for name, module in self.vgg_layers._modules.items():
+                gtVgg19 = module(gtVgg19)
+                synthVgg19 = module(synthVgg19)
+                if name in self.layer_name_mapping_vgg19:
+                    lossVgg19 += self.l1(gtVgg19, synthVgg19)
+                    # If needed, output can be dictionaries of vgg feature for
+                    # each layer :
+                    # output_gt[self.layer_name_mapping[name]] = gt
+                    # output_synth[self.layer_name_mapping[name]] = synth
 
         with torch.no_grad():
             for name, module in self.vgg_Face.named_children():
@@ -127,7 +142,7 @@ class contentLoss(nn.Module):
                     lossVggFace += self.l1(gtVggFace, synthVggFace)
                 if name == "conv5_2":
                     break
-        return lossVggFace
+        return lossVggFace + 0.33*lossVgg19
 
 
 class Vgg_face_dag(nn.Module):
