@@ -361,3 +361,8 @@ def print_parameters(model):
 
     print(f"Nombre de parametres {model.module.__class__.__name__ }: ",
           f"{trainParamModel:,}")
+
+
+
+def print_device(model):
+    print(f"{model.module.__class__.__name__ } est sur {model.module.device}")

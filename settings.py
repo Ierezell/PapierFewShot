@@ -50,7 +50,7 @@ K_SHOT = 16
 DEVICE_LANDMARKS = "cpu"  # cuda or cpu
 NB_WORKERS = 8
 
-PRINT_EVERY = 1000
+PRINT_EVERY = 100
 
 ###############
 # RL SETTINGS #
@@ -120,7 +120,7 @@ if not os.path.exists(ROOT_WEIGHTS+folder_weights_Rl):
     os.makedirs(ROOT_WEIGHTS + folder_weights_Rl)
     LOAD_PREVIOUS_RL = False
 else:
-    LOAD_PREVIOUS_RL = True
+    LOAD_PREVIOUS_RL = False
 
 # Save
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'

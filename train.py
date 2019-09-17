@@ -12,135 +12,148 @@ from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
                       )
 from utils import (CheckpointsFewShots, load_losses, load_models,
-                   print_parameters)
+                   print_parameters, print_device)
 import datetime
 import wandb
 
-date = datetime.datetime.now().replace(microsecond=0)
-train_id = "_".join(CONFIG.values())
-wandb.init(project="papierfewshot",
-           id=train_id,
-           name=train_id,
-           resume=LOAD_PREVIOUS,
-           config=CONFIG)
+if __name__ == '__main__':
+    date = datetime.datetime.now().replace(microsecond=0)
+    train_id = "_".join(CONFIG.values())
+    wandb.init(project="papierfewshot",
+               id=train_id,
+               name=train_id,
+               resume=LOAD_PREVIOUS,
+               config=CONFIG)
 
-print("Python : ", sys.version)
-print("torch version : ", torch.__version__)
-print("Device : ", DEVICE)
+    print("Python : ", sys.version)
+    print("torch version : ", torch.__version__)
+    print("Device : ", DEVICE)
 
-train_loader, nb_pers = get_data_loader()
+    train_loader, nb_pers = get_data_loader()
 
-emb, gen, disc = load_models(nb_pers)
-advLoss, mchLoss, cntLoss, dscLoss = load_losses()
+    emb, gen, disc = load_models(nb_pers)
+    advLoss, mchLoss, cntLoss, dscLoss = load_losses()
 
-optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
-optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
-optimizerDisc = SGD(disc.parameters(), lr=LEARNING_RATE_DISC)
+    optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
+    optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
+    optimizerDisc = SGD(disc.parameters(), lr=LEARNING_RATE_DISC)
 
-check = CheckpointsFewShots()
+    check = CheckpointsFewShots()
 
-print_parameters(emb)
-print_parameters(gen)
-print_parameters(disc)
-print_parameters(advLoss)
-print_parameters(mchLoss)
-print_parameters(cntLoss)
-print_parameters(dscLoss)
+    print_parameters(emb)
+    print_parameters(gen)
+    print_parameters(disc)
+    print_parameters(advLoss)
+    print_parameters(mchLoss)
+    print_parameters(cntLoss)
+    print_parameters(dscLoss)
 
-wandb.watch((gen, emb, disc))
+    print_device(emb)
+    print_device(gen)
+    print_device(disc)
+    print_device(advLoss)
+    print_device(mchLoss)
+    print_device(cntLoss)
+    print_device(dscLoss)
 
-# ##########
-# Training #
-# ##########
-# torch.autograd.set_detect_anomaly(True)
+    wandb.watch((gen, emb, disc))
 
-for i_epoch in range(NB_EPOCHS):
-    print("Epoch ! Epoch ! Epooooooch !!")
-    for i_batch, batch in enumerate(train_loader):
+    # ##########
+    # Training #
+    # ##########
+    # torch.autograd.set_detect_anomaly(True)
 
-        optimizerEmb.zero_grad()
-        optimizerDisc.zero_grad()
-        optimizerGen.zero_grad()
+    for i_epoch in range(NB_EPOCHS):
+        print("Epoch ! Epoch ! Epooooooch !!")
+        for i_batch, batch in enumerate(train_loader):
 
-        gt_im, gt_landmarks, context, itemIds = batch
+            optimizerEmb.zero_grad()
+            optimizerDisc.zero_grad()
+            optimizerGen.zero_grad()
 
-        gt_im = gt_im.to(DEVICE)
-        gt_landmarks = gt_landmarks.to(DEVICE)
-        context = context.to(DEVICE)
-        itemIds = itemIds.to(DEVICE)
+            gt_im, gt_landmarks, context, itemIds = batch
+            print("batch loade")
 
-        embeddings, paramWeights, paramBias, layersUp = emb(context)
-        synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            gt_im = gt_im.to(DEVICE)
+            gt_landmarks = gt_landmarks.to(DEVICE)
+            context = context.to(DEVICE)
+            itemIds = itemIds.to(DEVICE)
 
-        score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
-                                                               gt_landmarks),
-                                                              dim=1), itemIds)
-        gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
-        score_gt, feature_maps_disc_gt = disc(
-            gt_w_ldm+(torch.randn_like(gt_w_ldm)/4), itemIds)
-        # print("score_gt  ",score_gt)
-        lossDsc = dscLoss(score_gt, score_synth)
-        # print("lossDsc  ",lossDsc)
-        # lossDsc = lossDsc.mean()
-        lossAdv = advLoss(score_synth, feature_maps_disc_gt,
-                          feature_maps_disc_synth)
-        lossCnt = cntLoss(gt_im, synth_im)
-        lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
-        loss = lossAdv + lossCnt + lossMch
-        # loss = loss.mean()
-        # print("Loss computed")
-        if TTUR:
-            if i_batch % 3 == 0:
-                lossDsc.backward(torch.cuda.FloatTensor(
-                    torch.cuda.device_count()).fill_(1))
-                optimizerDisc.step()
-                # print("Back dsc")
+            embeddings, paramWeights, paramBias, layersUp = emb(context)
+            print("emb ok")
+            synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            print("gen ok")
+
+            score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
+                                                                   gt_landmarks),
+                                                                  dim=1), itemIds)
+            gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
+            score_gt, feature_maps_disc_gt = disc(
+                gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
+            print("disc ok")
+
+            lossDsc = dscLoss(score_gt, score_synth)
+            lossDsc = lossDsc.mean()
+            lossAdv = advLoss(score_synth, feature_maps_disc_gt,
+                              feature_maps_disc_synth)
+            lossCnt = cntLoss(gt_im, synth_im)
+            lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
+            loss = lossAdv + lossCnt + lossMch
+            loss = loss.mean()
+
+            print("loss ok")
+            if TTUR:
+                if i_batch % 3 == 0:
+                    lossDsc.backward(torch.cuda.FloatTensor(
+                        torch.cuda.device_count()).fill_(1))
+                    optimizerDisc.step()
+                else:
+                    loss.backward(torch.cuda.FloatTensor(
+                        torch.cuda.device_count()).fill_(1))
+                    optimizerEmb.step()
+                    optimizerGen.step()
             else:
-                loss.backward(torch.cuda.FloatTensor(
+                loss_totale = loss + lossDsc
+                loss_totale.backward(torch.cuda.FloatTensor(
                     torch.cuda.device_count()).fill_(1))
+
+                optimizerDisc.step()
                 optimizerEmb.step()
                 optimizerGen.step()
-                # print("Back Emb Gen")
-        else:
-            loss_totale = loss + lossDsc
-            loss_totale.backward(torch.cuda.FloatTensor(
-                torch.cuda.device_count()).fill_(1))
+                # print("Back all")
+            print("backprop ok")
 
-            optimizerDisc.step()
-            optimizerEmb.step()
-            optimizerGen.step()
-            # print("Back all")
+            check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
+            check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
+            check.addCheckpoint("mch", torch.sum(lossMch, dim=-1))
+            check.addCheckpoint("dsc", torch.sum(lossDsc, dim=-1))
 
-        check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
-        check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
-        check.addCheckpoint("mch", torch.sum(lossMch, dim=-1))
-        check.addCheckpoint("dsc", torch.sum(lossDsc, dim=-1))
+            check.save("embGen", torch.sum(loss, dim=-1), emb, gen, disc)
+            check.save("disc", torch.sum(lossDsc, dim=-1), emb, gen, disc)
 
-        check.save("embGen", torch.sum(loss, dim=-1), emb, gen, disc)
-        check.save("disc", torch.sum(lossDsc, dim=-1), emb, gen, disc)
+            wandb.log({"Loss_dsc": torch.sum(lossDsc, dim=-1)})
+            wandb.log({"lossCnt": torch.sum(lossCnt, dim=-1)})
+            wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
+            wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
+            wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
-        wandb.log({"Loss_dsc": torch.sum(lossDsc, dim=-1)})
-        wandb.log({"lossCnt": torch.sum(lossCnt, dim=-1)})
-        wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
-        wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
-        wandb.log({"LossTot": torch.sum(loss, dim=-1)})
+            wandb.log({"Loss_dsc": lossDsc})
+            wandb.log({"lossCnt": lossCnt})
+            wandb.log({"lossMch": lossMch})
+            wandb.log({"lossAdv": lossAdv})
+            wandb.log({"LossTot": loss})
+            print("save ok")
 
-        # wandb.log({"Loss_dsc": lossDsc})
-        # wandb.log({"lossCnt": lossCnt})
-        # wandb.log({"lossMch": lossMch})
-        # wandb.log({"lossAdv": lossAdv})
-        # wandb.log({"LossTot": loss})
-
-        if i_batch % PRINT_EVERY == 0 :#and i_batch != 0:
-            images_to_grid = torch.cat((gt_landmarks, synth_im,
-                                        gt_im, context),
+            if i_batch % PRINT_EVERY == 0:  # and i_batch != 0:
+                images_to_grid = torch.cat((gt_landmarks, synth_im,
+                                            gt_im, context),
                                         dim=1).view(-1, 3, 224, 224)
 
-            grid = torchvision.utils.make_grid(
-                images_to_grid, padding=4, nrow=3 + K_SHOT,
-                normalize=True, scale_each=True)
+                grid = torchvision.utils.make_grid(
+                    images_to_grid, padding=4, nrow=3 + K_SHOT,
+                    normalize=True, scale_each=True)
 
-            wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-            wandb.save(PATH_WEIGHTS_EMBEDDER)
-            wandb.save(PATH_WEIGHTS_GENERATOR)
-            wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+                wandb.log({"Img": [wandb.Image(grid, caption="image")]})
+                wandb.save(PATH_WEIGHTS_EMBEDDER)
+                wandb.save(PATH_WEIGHTS_GENERATOR)
+                wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
