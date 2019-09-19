@@ -1,47 +1,87 @@
-import torch
 from matplotlib import pyplot as plt
-from utils import load_models
-from preprocess import frameLoader
-from settings import MODEL
-
-frameloader = frameLoader()
-
-emb, gen, disc = load_models(len(frameloader.ids))
-
-context, first_image_landmarks, user_id = frameloader.load_someone(limit=2000)
-
-real_image = context[0].narrow(0, 0, 3).cpu().permute(1, 2, 0).numpy()
-
-print(context.size(1)/3, "  Frames Loaded")
+import cv2
+from face_alignment import FaceAlignment, LandmarksType
+import torch
+import numpy as np
 
 plt.ion()
+fig, axes = plt.subplots(2, 2, num='Metrics')
+cam = cv2.VideoCapture(0)
+face_landmarks = FaceAlignment(LandmarksType._2D, device="cuda")
 
-with torch.no_grad():
-    if MODEL == "small":
-        embeddings, paramWeights, paramBias = emb(context)
-    elif MODEL == "big":
-        embeddings, paramWeights, paramBias, layersUp = emb(context)
+ref_ldmk = np.ones((224, 224), np.float32)
+ref_img = np.ones((224, 224), np.float32)
+ref_ldmk_pts = np.ones((68, 2), np.float32)
 
-    while True:
-        ldm_pts, landmarks_img = frameloader.get_landmarks_from_webcam()
-        if MODEL == "small":
-            synth_im = gen(landmarks_img, paramWeights, paramBias)
-        elif MODEL == "big":
-            synth_im = gen(landmarks_img, paramWeights, paramBias, layersUp)
-        score_synth, _ = disc(
-            torch.cat((synth_im, landmarks_img), dim=1), user_id)
+while True:
+    _, image = cam.read()
+    image = cv2.flip(image, 1)
+    image = cv2.resize(image, (224, 224))
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    with torch.no_grad():
+        landmark_pts = face_landmarks.get_landmarks_from_image(image)
+    ldmk = np.zeros(image.shape, np.float32)
+    try:
+        landmark_pts = landmark_pts[0]
+        landmark_pts[:, 0] = landmark_pts[:, 0] - min(landmark_pts[:, 0])
+        landmark_pts[:, 1] = landmark_pts[:, 1] - min(landmark_pts[:, 1])
+        landmark_pts[:, 0] = (landmark_pts[:, 0] / max(landmark_pts[:, 1]))*224
+        landmark_pts[:, 1] = (landmark_pts[:, 1] / max(landmark_pts[:, 1]))*224
+        # Machoire
+        cv2.polylines(ldmk, [np.int32(landmark_pts[0:17])],
+                      isClosed=False, color=(0, 255, 0))
+        # Sourcil Gauche
+        cv2.polylines(ldmk, [np.int32(landmark_pts[17:22])],
+                      isClosed=False, color=(255, 0, 0))
+        # Sourcil droit
+        cv2.polylines(ldmk, [np.int32(landmark_pts[22:27])],
+                      isClosed=False, color=(255, 0, 0))
+        # Nez arrete
+        cv2.polylines(ldmk, [np.int32(landmark_pts[27:31])],
+                      isClosed=False, color=(255, 0, 255))
+        # Nez narine
+        cv2.polylines(ldmk, [np.int32(landmark_pts[31:36])],
+                      isClosed=False, color=(255, 0, 255))
+        # Oeil gauche
+        cv2.polylines(ldmk, [np.int32(landmark_pts[36:42])],
+                      isClosed=True, color=(0, 0, 255))
+        # oeil droit
+        cv2.polylines(ldmk, [np.int32(landmark_pts[42:48])],
+                      isClosed=True, color=(0, 0, 255))
+        # Bouche exterieur
+        cv2.polylines(ldmk, [np.int32(landmark_pts[48:60])],
+                      isClosed=True, color=(255, 255, 0))
+        # Bouche interieur
+        cv2.polylines(ldmk, [np.int32(landmark_pts[60:68])],
+                      isClosed=True, color=(255, 255, 0))
 
-        im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
-        im_landmarks = landmarks_img[0].detach().cpu().permute(1, 2, 0).numpy()
-        fig, axes = plt.subplots(2, 2, num='Inf')
-        axes[0, 0].imshow(im_synth / im_synth.max())
-        axes[0, 1].imshow(im_landmarks / im_landmarks.max())
-        axes[1, 0].imshow(real_image / real_image.max())
-
-        print(score_synth)
-
+        axes[0, 0].clear()
+        axes[0, 1].clear()
+        axes[1, 0].clear()
+        axes[1, 1].clear()
+        axes[0, 0].imshow(ldmk / ldmk.max())
+        axes[0, 1].imshow(image / image.max())
+        axes[1, 0].imshow(ref_ldmk / ref_ldmk.max())
+        axes[1, 1].imshow(ref_img / ref_img.max())
+        axes[0, 0].text(0, 0, f"{np.linalg.norm(ref_ldmk_pts-landmark_pts)}")
         fig.canvas.draw()
         fig.canvas.flush_events()
+
+        # if (cv2.waitKey(0) & 0xFF) == ord('z'):
+        #     print("New ref !")
+        #     ref_img = image
+        #     ref_ldmk = ldmk
+        #     ref_ldmk_pts = landmark_pts
+
+        if plt.waitforbuttonpress(0.001):
+            print("New reference !")
+            ref_img = image
+            ref_ldmk = ldmk
+            ref_ldmk_pts = landmark_pts
+
+    except TypeError:
+        continue
+cam.release()
 
 
 # print("torch version : ", torch.__version__)

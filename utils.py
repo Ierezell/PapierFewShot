@@ -75,7 +75,11 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
             weight_disc = False
 
         if load_embeddings and weight_disc:
-            discriminator.module.load_state_dict(state_dict_discriminator)
+            try:
+                discriminator.module.load_state_dict(state_dict_discriminator)
+            except RuntimeError:
+                print("Pas le bon dataset, different nombre de personnes")
+                print("On repars a 0 pour le Discriminateur !")
         elif weight_disc:
             state_dict_discriminator.pop("embeddings.weight")
             discriminator.module.load_state_dict(state_dict_discriminator,
@@ -363,6 +367,9 @@ def print_parameters(model):
           f"{trainParamModel:,}")
 
 
-
 def print_device(model):
-    print(f"{model.module.__class__.__name__ } est sur {model.module.device}")
+    try:
+        print(f"{model.module.__class__.__name__ } est sur ",
+              next(model.module.parameters()).device)
+    except StopIteration:
+        print(f"{model.module.__class__.__name__ } n'as pas de parametres")

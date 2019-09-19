@@ -34,7 +34,7 @@ class adverserialLoss(nn.Module):
         # loss /= len(features_synth)
         # loss /= 10.0
         loss_disc = -score_disc_synth
-        return loss_disc + feature_loss
+        return (loss_disc + feature_loss).sum()
 
 
 # #########

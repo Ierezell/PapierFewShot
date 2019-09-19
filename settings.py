@@ -19,7 +19,8 @@ if "blg" in platform.node():
 elif "gpu-k" in platform.node():
     ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
 else:
-    ROOT_DATASET = Path('./dataset/mp4')
+    # ROOT_DATASET = './dataset/mp4'
+    ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
 
 # Batch
 if "blg" in platform.node():
@@ -29,7 +30,7 @@ elif "gpu-k" in platform.node():
 elif "GATINEAU" in platform.node():
     nb_batch_per_gpu = 2
 else:
-    nb_batch_per_gpu = 1
+    nb_batch_per_gpu = 2
 
 
 LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
@@ -44,11 +45,11 @@ TTUR = True
 
 # Sizes
 LATENT_SIZE = 512
-K_SHOT = 16
+K_SHOT = 2
 
 
-DEVICE_LANDMARKS = "cpu"  # cuda or cpu
-NB_WORKERS = 8
+DEVICE_LANDMARKS = "cuda"  # cuda or cpu
+NB_WORKERS = 0
 
 PRINT_EVERY = 100
 
@@ -82,7 +83,7 @@ CONFIG = {
     "TIME": TIME,
 }
 folder_weights = CONFIG["PLATFORM"] + "_" + CONFIG["BATCH_SIZE"] + "_" + \
-    CONFIG["LATENT_SIZE"]+"_" + CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
+    CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
     CONFIG["NB_GPU"] + "_" + CONFIG["K_SHOT"] + "_" + \
     CONFIG["MODEL"] + "_" + CONFIG["LAYERS"] + "_" + \
     CONFIG["DISC_OUT"] + "_" + CONFIG["IN_DISC"] + "_" + \

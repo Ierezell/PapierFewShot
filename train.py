@@ -15,21 +15,26 @@ from utils import (CheckpointsFewShots, load_losses, load_models,
                    print_parameters, print_device)
 import datetime
 import wandb
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = True
+date = datetime.datetime.now().replace(microsecond=0)
+train_id = "_".join(CONFIG.values())
+wandb.init(project="papierfewshot",
+           id=train_id,
+           name=train_id,
+           resume=LOAD_PREVIOUS,
+           config=CONFIG)
 
 if __name__ == '__main__':
-    date = datetime.datetime.now().replace(microsecond=0)
-    train_id = "_".join(CONFIG.values())
-    wandb.init(project="papierfewshot",
-               id=train_id,
-               name=train_id,
-               resume=LOAD_PREVIOUS,
-               config=CONFIG)
 
     print("Python : ", sys.version)
     print("torch version : ", torch.__version__)
     print("Device : ", DEVICE)
 
+    print("Loading Dataset")
     train_loader, nb_pers = get_data_loader()
+
+    print("Loading Models & Losses")
 
     emb, gen, disc = load_models(nb_pers)
     advLoss, mchLoss, cntLoss, dscLoss = load_losses()
@@ -72,7 +77,7 @@ if __name__ == '__main__':
             optimizerGen.zero_grad()
 
             gt_im, gt_landmarks, context, itemIds = batch
-            print("batch loade")
+            # print("batch loade")
 
             gt_im = gt_im.to(DEVICE)
             gt_landmarks = gt_landmarks.to(DEVICE)
@@ -80,17 +85,16 @@ if __name__ == '__main__':
             itemIds = itemIds.to(DEVICE)
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
-            print("emb ok")
+            # print("emb ok")
             synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
-            print("gen ok")
+            # print("gen ok")
 
-            score_synth, feature_maps_disc_synth = disc(torch.cat((synth_im,
-                                                                   gt_landmarks),
-                                                                  dim=1), itemIds)
+            score_synth, feature_maps_disc_synth = disc(torch.cat(
+                (synth_im, gt_landmarks), dim=1), itemIds)
             gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
             score_gt, feature_maps_disc_gt = disc(
                 gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
-            print("disc ok")
+            # print("disc ok")
 
             lossDsc = dscLoss(score_gt, score_synth)
             lossDsc = lossDsc.mean()
@@ -101,7 +105,7 @@ if __name__ == '__main__':
             loss = lossAdv + lossCnt + lossMch
             loss = loss.mean()
 
-            print("loss ok")
+            # print("loss ok")
             if TTUR:
                 if i_batch % 3 == 0:
                     lossDsc.backward(torch.cuda.FloatTensor(
@@ -121,7 +125,7 @@ if __name__ == '__main__':
                 optimizerEmb.step()
                 optimizerGen.step()
                 # print("Back all")
-            print("backprop ok")
+            # print("backprop ok")
 
             check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
             check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
@@ -137,17 +141,17 @@ if __name__ == '__main__':
             wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
             wandb.log({"LossTot": torch.sum(loss, dim=-1)})
 
-            wandb.log({"Loss_dsc": lossDsc})
-            wandb.log({"lossCnt": lossCnt})
-            wandb.log({"lossMch": lossMch})
-            wandb.log({"lossAdv": lossAdv})
-            wandb.log({"LossTot": loss})
-            print("save ok")
+            wandb.log({"Loss_dsc": torch.sum(lossDsc)})
+            wandb.log({"lossCnt": torch.sum(lossCnt)})
+            wandb.log({"lossMch": torch.sum(lossMch)})
+            wandb.log({"lossAdv": torch.sum(lossAdv)})
+            wandb.log({"LossTot": torch.sum(loss)})
+            # print("save ok")
 
             if i_batch % PRINT_EVERY == 0:  # and i_batch != 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
-                                        dim=1).view(-1, 3, 224, 224)
+                                           dim=1).view(-1, 3, 224, 224)
 
                 grid = torchvision.utils.make_grid(
                     images_to_grid, padding=4, nrow=3 + K_SHOT,

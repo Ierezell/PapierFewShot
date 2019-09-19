@@ -25,7 +25,7 @@ class frameLoader(Dataset):
         self.root_dir = root_dir
         self.ids = glob.glob(f"{self.root_dir}/*")
         self.contexts = glob.glob(f"{self.root_dir}/*/*")
-        self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
+        # self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
 
         if platform.system() == "Windows":
             self.id_to_tensor = {name.split("\\")[-1]: torch.tensor(i).view(1)
@@ -191,14 +191,20 @@ class frameLoader(Dataset):
     #     return len(self.mp4files)
 
     def __getitem__(self, index):
+        bad_context = True
         context = self.contexts[index]
-
+        video_files = glob.glob(f"{context}/*")
+        while bad_context:
+            if not video_files:
+                context = self.contexts[np.random.randint(len(self.contexts))]
+                video_files = glob.glob(f"{context}/*")
+            else:
+                bad_context = False
         if platform.system() == "Windows":
             itemId = self.id_to_tensor[context.split("\\")[-2]]
         else:
             itemId = self.id_to_tensor[context.split('/')[-2]]
 
-        video_files = glob.glob(f"{context}/*")
         if len(video_files) < self.K_shots+1:
             videos = np.random.choice(video_files, self.K_shots + 1,
                                       replace=True)
@@ -207,23 +213,42 @@ class frameLoader(Dataset):
                                       replace=False)
         # print(videos)
         gt_video, *ctx_videos = videos
-
+        # print("Video Choosen")
         cvVideo = cv2.VideoCapture(gt_video)
-        total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
-        gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
-                                                      total_frame_nb,
-                                                      fusion=False)
+        bad_video = True
+        while bad_video:
+            total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+            if total_frame_nb == 0:
+                # print("Muavaise video")
+                cvVideo.release()
+                gt_video = np.random.choice(video_files, 1, replace=True)
+                cvVideo = cv2.VideoCapture(gt_video)
+            else:
+                # print("video Ok")
+                gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
+                                                              total_frame_nb,
+                                                              fusion=False)
+                bad_video = False
+        # print("Gt done")
         cvVideo.release()
         context_tensors_list = []
         for v in ctx_videos:
             # print(v)
             cvVideo = cv2.VideoCapture(v)
-            total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
-            context_frame = self.load_random(cvVideo, total_frame_nb,
-                                             fusion=True)
-            context_tensors_list.append(context_frame)
+            bad_video = True
+            while bad_video:
+                total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+                if total_frame_nb == 0:
+                    cvVideo.release()
+                    v = np.random.choice(video_files, 1, replace=True)
+                    cvVideo = cv2.VideoCapture(v)
+                else:
+                    context_frame = self.load_random(cvVideo, total_frame_nb,
+                                                     fusion=True)
+                    context_tensors_list.append(context_frame)
+                    bad_video = False
             cvVideo.release()
-
+        # print("Context ok")
         context_tensors = torch.cat(context_tensors_list)
         torch.cuda.empty_cache()
         return gt_im_tensor, gt_landmarks, context_tensors, itemId
