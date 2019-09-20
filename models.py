@@ -21,10 +21,10 @@ class Embedder(nn.Module):
         # self.residual2 = ResidualBlock(32, 64)
         self.residual3 = ResidualBlockDown(64, 128)
         self.residual4 = ResidualBlockDown(128, 256)
-        self.residual5 = ResidualBlockDown(256, 512)
-        self.residual6 = ResidualBlockDown(512, 512)
-        self.FcWeights = spectral_norm(nn.Linear(512, 1960))
-        self.FcBias = spectral_norm(nn.Linear(512, 1960))
+        self.residual5 = ResidualBlockDown(256, LATENT_SIZE)
+        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 1960))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 1960))
         self.attention = Attention(128)
         self.relu = nn.SELU()
 
@@ -32,7 +32,8 @@ class Embedder(nn.Module):
         temp = torch.tensor(np.zeros(LATENT_SIZE, dtype=np.float),
                             dtype=torch.float, device="cuda")
 
-        layerUp1 = torch.tensor(np.zeros((512, 14, 14), dtype=np.float),
+        layerUp1 = torch.tensor(np.zeros((BATCH_SIZE, LATENT_SIZE, 14, 14),
+                                         dtype=np.float),
                                 dtype=torch.float, device="cuda")
         layerUp2 = torch.tensor(np.zeros((256, 28, 28), dtype=np.float),
                                 dtype=torch.float, device="cuda")
@@ -59,6 +60,7 @@ class Embedder(nn.Module):
 
             out = self.residual5(out)  # b, 512, 14, 14
             out = self.relu(out)
+
             layerUp1 = torch.add(out, layerUp1)
 
             out = self.residual6(out)  # b, 512, 7, 7
@@ -91,16 +93,17 @@ class Generator(nn.Module):
         # Constant
         # self.ResBlock_128_1 = ResidualBlock(128, 128)
         # self.ResBlock_128_2 = ResidualBlock(128, 256)
-        self.ResBlock_128_3 = ResidualBlock(128, 512)
+        self.ResBlock_128_3 = ResidualBlock(128, LATENT_SIZE)
         # Up
-        self.ResUp1 = ResidualBlockUp(512, 256)
+        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)
         self.ResUp2 = ResidualBlockUp(256, 128)
         self.ResUp3 = ResidualBlockUp(128, 64)
         self.ResUp4 = ResidualBlockUp(64, 32)
         self.Res5 = ResidualBlock(32, 3)
         # self.attentionUp = Attention(64)
         if CONCAT:
-            self.Ada1 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
+            self.Ada1 = spectral_norm(nn.Conv2d(LATENT_SIZE * 2, LATENT_SIZE,
+                                                kernel_size=3,
                                                 padding=1, bias=False))
             self.Ada2 = spectral_norm(nn.Conv2d(256 * 2, 256, kernel_size=3,
                                                 padding=1, bias=False))
@@ -209,8 +212,8 @@ class Discriminator(nn.Module):
         self.attention1 = Attention(128)
         self.residual4 = ResidualBlockDown(256, 512)
         self.attention2 = Attention(512)
-        self.residual5 = ResidualBlockDown(512, 512)
-        self.residual6 = ResidualBlockDown(512, 512)
+        self.residual5 = ResidualBlockDown(512, LATENT_SIZE)
+        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)

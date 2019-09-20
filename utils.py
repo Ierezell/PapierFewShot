@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from matplotlib.lines import Line2D
 from torch import nn
-from settings import (DEVICE, LAYERS, LOAD_EMBEDDINGS, LOAD_PREVIOUS,
+from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
                       LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
                       PATH_WEIGHTS_POLICY, PRINT_EVERY)
@@ -17,8 +17,7 @@ from settings import (DEVICE, LAYERS, LOAD_EMBEDDINGS, LOAD_PREVIOUS,
 mplstyle.use(['dark_background', 'fast'])
 
 
-def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
-                load_embeddings=LOAD_EMBEDDINGS, model=MODEL):
+def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
     if model == "small":
         from models import Discriminator, Embedder, Generator
@@ -74,16 +73,15 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS,
             print("File not found, not loading weights discriminator...")
             weight_disc = False
 
-        if load_embeddings and weight_disc:
+        if weight_disc:
             try:
                 discriminator.module.load_state_dict(state_dict_discriminator)
             except RuntimeError:
                 print("Pas le bon dataset, different nombre de personnes")
-                print("On repars a 0 pour le Discriminateur !")
-        elif weight_disc:
-            state_dict_discriminator.pop("embeddings.weight")
-            discriminator.module.load_state_dict(state_dict_discriminator,
-                                                 strict=False)
+                print("Chargement du disc sans les embeddings ")
+                state_dict_discriminator.pop("embeddings.weight")
+                discriminator.module.load_state_dict(state_dict_discriminator,
+                                                     strict=False)
 
     embedder = embedder.to(DEVICE)
     generator = generator.to(DEVICE)
@@ -146,22 +144,15 @@ def load_layers(size=LAYERS):
 
 class CheckpointsFewShots:
     def __init__(self):
-        self.losses = {"dsc": [], "cnt": [], "adv": [], "mch": []}
         self.best_loss_EmbGen = 1e10
         self.best_loss_Disc = 1e10
         self.last_save_disc = 0
         self.last_save_emb = 0
 
-    def addCheckpoint(self, model, loss):
+    def save(self, model, loss, embedder, generator, discriminator):
         loss = loss.detach()
         if model == "disc":
             self.last_save_disc += 1
-        if model == "embGen":
-            self.last_save_emb += 1
-        self.losses[model].append(loss)
-
-    def save(self, model, loss, embedder, generator, discriminator):
-        if model == "disc":
             if loss < self.best_loss_Disc or self.last_save_disc > PRINT_EVERY:
                 self.last_save_disc = 0
                 print('\n' + '-' * 25)
@@ -173,6 +164,7 @@ class CheckpointsFewShots:
                 copyfile(PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
                          PATH_WEIGHTS_DISCRIMINATOR)
         else:
+            self.last_save_emb += 1
             if loss < self.best_loss_EmbGen or self.last_save_emb > PRINT_EVERY:
                 self.last_save_emb = 0
                 print('\n' + '-'*31)

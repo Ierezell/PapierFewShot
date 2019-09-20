@@ -1,29 +1,39 @@
 
 
+import datetime
+import os
 import sys
+
 import torch
 import torchvision
-from torch.optim import Adam, SGD
+import wandb
+from torch.optim import SGD, Adam
 
 from preprocess import get_data_loader
-from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, CONFIG,
-                      LOAD_PREVIOUS, PATH_WEIGHTS_EMBEDDER, TTUR,
-                      PATH_WEIGHTS_GENERATOR, PATH_WEIGHTS_DISCRIMINATOR,
-                      )
-from utils import (CheckpointsFewShots, load_losses, load_models,
-                   print_parameters, print_device)
-import datetime
-import wandb
+from settings import (CONFIG, DEVICE, K_SHOT, LEARNING_RATE_DISC,
+                      LEARNING_RATE_EMB, LEARNING_RATE_GEN, LOAD_PREVIOUS,
+                      NB_EPOCHS, PATH_WEIGHTS_DISCRIMINATOR,
+                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
+                      PRINT_EVERY, TTUR)
+from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
+                   print_parameters)
+
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
 date = datetime.datetime.now().replace(microsecond=0)
 train_id = "_".join(CONFIG.values())
+
+os.environ['WANDB_MODE'] = 'dryrun'
+os.environ['WANDB_PROJECT'] = "papierfewshot"
+os.environ['WANDB_RUN_ID'] = train_id
+os.environ['WANDB_RESUME'] = str(LOAD_PREVIOUS)
+
 wandb.init(project="papierfewshot",
            id=train_id,
            name=train_id,
            resume=LOAD_PREVIOUS,
            config=CONFIG)
+
 
 if __name__ == '__main__':
 
@@ -97,40 +107,33 @@ if __name__ == '__main__':
             # print("disc ok")
 
             lossDsc = dscLoss(score_gt, score_synth)
-            lossDsc = lossDsc.mean()
             lossAdv = advLoss(score_synth, feature_maps_disc_gt,
                               feature_maps_disc_synth)
             lossCnt = cntLoss(gt_im, synth_im)
             lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
             loss = lossAdv + lossCnt + lossMch
-            loss = loss.mean()
 
             # print("loss ok")
             if TTUR:
                 if i_batch % 3 == 0:
+                    print("DSC  : ", lossDsc, lossDsc.size())
                     lossDsc.backward(torch.cuda.FloatTensor(
                         torch.cuda.device_count()).fill_(1))
                     optimizerDisc.step()
                 else:
+                    print("LOSS  : ", loss, loss.size())
                     loss.backward(torch.cuda.FloatTensor(
                         torch.cuda.device_count()).fill_(1))
                     optimizerEmb.step()
                     optimizerGen.step()
             else:
-                loss_totale = loss + lossDsc
-                loss_totale.backward(torch.cuda.FloatTensor(
+                loss = loss + lossDsc
+                loss.backward(torch.cuda.FloatTensor(
                     torch.cuda.device_count()).fill_(1))
 
                 optimizerDisc.step()
                 optimizerEmb.step()
                 optimizerGen.step()
-                # print("Back all")
-            # print("backprop ok")
-
-            check.addCheckpoint("cnt", torch.sum(lossCnt, dim=-1))
-            check.addCheckpoint("adv", torch.sum(lossAdv, dim=-1))
-            check.addCheckpoint("mch", torch.sum(lossMch, dim=-1))
-            check.addCheckpoint("dsc", torch.sum(lossDsc, dim=-1))
 
             check.save("embGen", torch.sum(loss, dim=-1), emb, gen, disc)
             check.save("disc", torch.sum(lossDsc, dim=-1), emb, gen, disc)

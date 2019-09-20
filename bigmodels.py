@@ -329,9 +329,6 @@ class BigDiscriminator(nn.Module):
     Arguments:
         num_persons {int} -- The number of persons in the dataset. It's used to
         create the embeddings for each persons.
-        Could be disabled in settings.py
-        with the LOAD_EMBEDDINGS parameter to False.
-
     Returns:
         Create the model of the network (used then in utils.py -> load_models )
     """
@@ -342,8 +339,6 @@ class BigDiscriminator(nn.Module):
         Arguments:
         num_persons {int} -- The number of persons in the dataset. It's used to
         Create the embeddings for each persons.
-        Could be disabled in settings.py
-        with the LOAD_EMBEDDINGS parameter to False.
 
         Keyword Arguments:
             fine_tunning {bool} -- will be used after... still not implemented

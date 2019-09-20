@@ -66,7 +66,7 @@ class discriminatorLoss(nn.Module):
         zero = zero.new_zeros(score_gt.size())
         loss = torch.max(zero, one + score_synth) +\
             torch.max(zero, one - score_gt)
-        return loss
+        return loss.sum(dim=0)
 
 
 # class discriminatorLoss(nn.Module):

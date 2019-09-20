@@ -148,12 +148,15 @@ class BigResidualBlockDown(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         temp_channels = max(1, in_channels // 4)
-        if out_channels - in_channels > 0:
-            self.adaDim = spectral_norm(nn.Conv2d(in_channels,
-                                                  out_channels-in_channels,
-                                                  kernel_size=1, padding=0,
-                                                  bias=False))
-
+        # if out_channels - in_channels > 0:
+        #     self.adaDim = spectral_norm(nn.Conv2d(in_channels,
+        #                                           out_channels-in_channels,
+        #                                           kernel_size=1, padding=0,
+        #                                           bias=False))
+        self.adaDim = spectral_norm(nn.Conv2d(in_channels,
+                                              out_channels,
+                                              kernel_size=1, padding=0,
+                                              bias=False))
         self.conv1 = spectral_norm(nn.Conv2d(in_channels, temp_channels,
                                              kernel_size=1, padding=0,
                                              bias=False))
@@ -178,8 +181,10 @@ class BigResidualBlockDown(nn.Module):
         residual = x
         residual = self.avgPool(residual)
         if hasattr(self, "adaDim"):
-            fill_to_out_channels = self.adaDim(residual)
-            residual = torch.cat((residual, fill_to_out_channels), dim=1)
+            # fill_to_out_channels = self.adaDim(residual)
+            # residual = torch.cat((residual, fill_to_out_channels), dim=1)
+            residual = self.adaDim(residual)
+
         out = F.instance_norm(x)
         out = self.relu(out)
         out = self.conv1(out)

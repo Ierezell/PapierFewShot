@@ -9,18 +9,22 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
 MODEL = "small"
 LAYERS = "big"
+DATASET = "small"
 CONCAT = True
 
 ROOT_WEIGHTS = './weights/'
 
-# Weights
-if "blg" in platform.node():
-    ROOT_DATASET = '../scratch/dev/mp4/'
-elif "gpu-k" in platform.node():
-    ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
-else:
-    # ROOT_DATASET = './dataset/mp4'
-    ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
+# Dataset
+if DATASET == "big":
+    if "blg" in platform.node():
+        ROOT_DATASET = '../scratch/dev/mp4/'
+    elif "gpu-k" in platform.node():
+        ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
+    else:
+        ROOT_DATASET = './dataset/mp4'
+        # ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
+elif DATASET == "small":
+    ROOT_DATASET = './dataset/mp4'
 
 # Batch
 if "blg" in platform.node():
@@ -44,7 +48,7 @@ LEARNING_RATE_DISC = 5e-5
 TTUR = True
 
 # Sizes
-LATENT_SIZE = 512
+LATENT_SIZE = 128
 K_SHOT = 2
 
 
@@ -81,13 +85,14 @@ CONFIG = {
     "CONCAT": str(CONCAT),
     "TTUR": str(TTUR),
     "TIME": TIME,
+    "LATENT_SIZE": str(LATENT_SIZE),
 }
 folder_weights = CONFIG["PLATFORM"] + "_" + CONFIG["BATCH_SIZE"] + "_" + \
     CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
     CONFIG["NB_GPU"] + "_" + CONFIG["K_SHOT"] + "_" + \
     CONFIG["MODEL"] + "_" + CONFIG["LAYERS"] + "_" + \
     CONFIG["DISC_OUT"] + "_" + CONFIG["IN_DISC"] + "_" + \
-    CONFIG["CONCAT"]+"_" + CONFIG["TTUR"]+"/"
+    CONFIG["CONCAT"]+"_" + CONFIG["TTUR"] + "_" + CONFIG["LATENT_SIZE"] + "/"
 
 CONFIG_RL = {"batch_size": str(BATCH_SIZE),
              "lr": str(LEARNING_RATE_RL),
@@ -111,10 +116,8 @@ folder_weights_Rl = CONFIG_RL['batch_size']+'_'+CONFIG_RL['lr']+'_' +\
 # Load parameters
 if not os.path.exists(ROOT_WEIGHTS+folder_weights):
     os.makedirs(ROOT_WEIGHTS + folder_weights)
-    LOAD_EMBEDDINGS = False
     LOAD_PREVIOUS = False
 else:
-    LOAD_EMBEDDINGS = True
     LOAD_PREVIOUS = True
 
 if not os.path.exists(ROOT_WEIGHTS+folder_weights_Rl):
