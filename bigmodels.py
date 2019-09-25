@@ -42,8 +42,8 @@ class BigEmbedder(nn.Module):
         self.residual5 = ResidualBlockDown(256, 512)
         self.residual6 = ResidualBlock(512, LATENT_SIZE)
         self.residual7 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 11024))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 11024))
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 6160))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 6160))
         self.attention1 = Attention(128)
         self.attention2 = Attention(LATENT_SIZE)
         self.relu = nn.ReLU()
@@ -105,7 +105,7 @@ class BigEmbedder(nn.Module):
 
             out = self.residual6(out)  # b, 512, 14, 14
             out = self.relu(out)
-            print(out.size(), layerUp6.size())
+            # print(out.size(), layerUp6.size())
             layerUp6 = torch.add(out, layerUp6)
 
             out = self.attention2(out)  # b, 512, 14, 14
@@ -115,10 +115,10 @@ class BigEmbedder(nn.Module):
             # out = torch.sum(
             #     out.view(out.size(0), out.size(1), -1), dim=2)
             out = self.avgPool(out).squeeze()
-            print(out.size())
+            # print(out.size())
             # b,512
             out = self.relu(out)
-            print(out.size(), temp.size())
+            # print(out.size(), temp.size())
             temp = torch.add(out, temp)
 
         context = torch.div(temp, (x.size(1)//3))
@@ -131,7 +131,7 @@ class BigEmbedder(nn.Module):
 
         paramWeights = self.relu(self.FcWeights(out)).squeeze()
         paramBias = self.relu(self.FcBias(out)).squeeze()
-        print(paramWeights.size())
+        # print(paramWeights.size())
         # layersUp = (layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6)
         layersUp = (layerUp4, layerUp5, layerUp6)
         return context, paramWeights, paramBias, layersUp
@@ -325,7 +325,7 @@ class BigGenerator(nn.Module):
 
         x = self.Res7(x)
         x = self.tanh(x)
-        print("Nb_param   ", i)
+        # print("Nb_param   ", i)
         return x
 
 
@@ -373,6 +373,7 @@ class BigDiscriminator(nn.Module):
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
         self.relu = nn.ReLU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
+        self.sig = nn.Sigmoid()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x, indexes):  # b, 6, 224, 224
@@ -442,4 +443,5 @@ class BigDiscriminator(nn.Module):
         final_out = final_out.view(b.size())
         # print("final_outvv : ", final_out.size())
         final_out += b
+        final_out = self.sig(final_out)
         return final_out, features_maps

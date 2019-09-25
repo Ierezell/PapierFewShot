@@ -165,9 +165,9 @@ class frameLoader(Dataset):
         bad_context = True
         context = self.contexts[index]
         video_files = glob.glob(f"{context}/*")
-        print("get !")
+        # print("get !")
         while bad_context:
-            print("Encore un badContext")
+            # print("Encore un badContext")
             for v in video_files:
                 try:
                     cvVideo = cv2.VideoCapture(v)
@@ -188,9 +188,9 @@ class frameLoader(Dataset):
                 video_files = glob.glob(f"{context}/*")
                 continue
             else:
-                print("Context ok")
+                # print("Context ok")
                 bad_context = False
-        print("Context bon, je loade")
+        # print("Context bon, je loade")
 
         if platform.system() == "Windows":
             itemId = self.id_to_tensor[context.split("\\")[-2]]
@@ -203,7 +203,7 @@ class frameLoader(Dataset):
         else:
             videos = np.random.choice(video_files, self.K_shots + 1,
                                       replace=False)
-        print("N_vidoess")
+        # print("N_vidoess")
         gt_video, *ctx_videos = videos
 
         cvVideo = cv2.VideoCapture(gt_video)
@@ -213,7 +213,7 @@ class frameLoader(Dataset):
                                                       fusion=False)
         cvVideo.release()
 
-        print("Gt ok go for context")
+        # print("Gt ok go for context")
         context_tensors_list = []
         for v in ctx_videos:
             cvVideo = cv2.VideoCapture(v)
@@ -223,7 +223,7 @@ class frameLoader(Dataset):
                                              fusion=True)
             context_tensors_list.append(context_frame)
             cvVideo.release()
-        print("Context ok")
+        # print("Context ok")
         context_tensors = torch.cat(context_tensors_list)
         torch.cuda.empty_cache()
         return gt_im_tensor, gt_landmarks, context_tensors, itemId

@@ -52,7 +52,7 @@ TTUR = True
 
 # Sizes
 LATENT_SIZE = 1024
-K_SHOT = 16
+K_SHOT = 8
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
