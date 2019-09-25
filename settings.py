@@ -20,11 +20,14 @@ if DATASET == "big":
         ROOT_DATASET = '../scratch/dev/mp4/'
     elif "gpu-k" in platform.node():
         ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
+    elif "GATINEAU" in platform.node():
+        ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
     else:
-        ROOT_DATASET = './dataset/mp4'
-        # ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
+        ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
+
 elif DATASET == "small":
     ROOT_DATASET = './dataset/mp4'
+
 
 # Batch
 if "blg" in platform.node():
@@ -48,14 +51,14 @@ LEARNING_RATE_DISC = 5e-5
 TTUR = True
 
 # Sizes
-LATENT_SIZE = 128
+LATENT_SIZE = 64
 K_SHOT = 2
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
 
-PRINT_EVERY = 100
+PRINT_EVERY = 1000
 
 ###############
 # RL SETTINGS #
@@ -72,7 +75,7 @@ TIME = str(datetime.datetime.now().replace(microsecond=0)
            ).replace(" ", "_").replace(":", "-")
 
 CONFIG = {
-    "PLATFORM": str(platform.node()[:4]),
+    "PLATFORM": str(platform.node()[:3]),
     "BATCH_SIZE": str(BATCH_SIZE),
     "LR_GEN": str(LEARNING_RATE_GEN),
     "LR_DISC": str(LEARNING_RATE_DISC),

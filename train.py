@@ -24,9 +24,6 @@ date = datetime.datetime.now().replace(microsecond=0)
 train_id = "_".join(CONFIG.values())
 
 os.environ['WANDB_MODE'] = 'dryrun'
-os.environ['WANDB_PROJECT'] = "papierfewshot"
-os.environ['WANDB_RUN_ID'] = train_id
-os.environ['WANDB_RESUME'] = str(LOAD_PREVIOUS)
 
 wandb.init(project="papierfewshot",
            id=train_id,
@@ -106,50 +103,43 @@ if __name__ == '__main__':
                 gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
             # print("disc ok")
 
-            lossDsc = dscLoss(score_gt, score_synth)
+            lossDsc = dscLoss(score_gt, score_synth).mean()
             lossAdv = advLoss(score_synth, feature_maps_disc_gt,
-                              feature_maps_disc_synth)
-            lossCnt = cntLoss(gt_im, synth_im)
-            lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
+                              feature_maps_disc_synth).mean()
+            lossCnt = cntLoss(gt_im, synth_im).mean()
+            lossMch = mchLoss(embeddings,
+                              disc.module.embeddings(itemIds)).mean()
+
             loss = lossAdv + lossCnt + lossMch
 
             # print("loss ok")
             if TTUR:
                 if i_batch % 3 == 0:
-                    print("DSC  : ", lossDsc, lossDsc.size())
-                    lossDsc.backward(torch.cuda.FloatTensor(
-                        torch.cuda.device_count()).fill_(1))
+                    lossDsc.backward(torch.ones(torch.cuda.device_count(),
+                                                device=DEVICE))
                     optimizerDisc.step()
                 else:
-                    print("LOSS  : ", loss, loss.size())
-                    loss.backward(torch.cuda.FloatTensor(
-                        torch.cuda.device_count()).fill_(1))
+                    loss.backward(torch.ones(torch.cuda.device_count(),
+                                             device=DEVICE))
                     optimizerEmb.step()
                     optimizerGen.step()
             else:
                 loss = loss + lossDsc
-                loss.backward(torch.cuda.FloatTensor(
-                    torch.cuda.device_count()).fill_(1))
+                loss.backward(torch.ones(torch.cuda.device_count(),
+                                         device=DEVICE))
 
                 optimizerDisc.step()
                 optimizerEmb.step()
                 optimizerGen.step()
 
-            check.save("embGen", torch.sum(loss, dim=-1), emb, gen, disc)
-            check.save("disc", torch.sum(lossDsc, dim=-1), emb, gen, disc)
+            check.save("embGen", loss, emb, gen, disc)
+            check.save("disc", lossDsc, emb, gen, disc)
 
-            wandb.log({"Loss_dsc": torch.sum(lossDsc, dim=-1)})
-            wandb.log({"lossCnt": torch.sum(lossCnt, dim=-1)})
-            wandb.log({"lossMch": torch.sum(lossMch, dim=-1)})
-            wandb.log({"lossAdv": torch.sum(lossAdv, dim=-1)})
-            wandb.log({"LossTot": torch.sum(loss, dim=-1)})
-
-            wandb.log({"Loss_dsc": torch.sum(lossDsc)})
-            wandb.log({"lossCnt": torch.sum(lossCnt)})
-            wandb.log({"lossMch": torch.sum(lossMch)})
-            wandb.log({"lossAdv": torch.sum(lossAdv)})
-            wandb.log({"LossTot": torch.sum(loss)})
-            # print("save ok")
+            wandb.log({"Loss_dsc": lossDsc})
+            wandb.log({"lossCnt": lossCnt})
+            wandb.log({"lossMch": lossMch})
+            wandb.log({"lossAdv": lossAdv})
+            wandb.log({"LossTot": loss})
 
             if i_batch % PRINT_EVERY == 0:  # and i_batch != 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,

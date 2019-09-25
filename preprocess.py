@@ -155,135 +155,163 @@ class frameLoader(Dataset):
         torch.cuda.empty_cache()
         return landmark_pts, landmark_tensor.unsqueeze(0).to(DEVICE)
 
-    # def __getitem__(self, index):
-    #     badVideo = True
-    #     while badVideo:
-    #         try:
-    #             mp4File = self.mp4files[np.random.randint(0,
-    #                                                       len(self.mp4files))]
-    #             if platform.system() == "Windows":
-    #                 itemId = self.id_to_tensor[mp4File.split("\\")[-3]]
-    #             else:
-    #                 itemId = self.id_to_tensor[mp4File.split('/')[-3]]
-
-    #             video = cv2.VideoCapture(mp4File)
-    #             total_frame_nb = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    #             gt_im_tensor, gt_landmarks = self.load_random(video,
-    #                                                           total_frame_nb,
-    #                                                           fusion=False)
-    #             badVideo = False
-    #         except ValueError:
-    #             continue
-    #     context_tensors_list = []
-    #     for _ in range(self.K_shots):
-    #         context_frame = self.load_random(video, total_frame_nb,
-    #                                          fusion=True)
-    #         context_tensors_list.append(context_frame)
-
-    #     context_tensors = torch.cat(context_tensors_list)
-    #     video.release()
-
-    #     torch.cuda.empty_cache()
-    #     return gt_im_tensor, gt_landmarks, context_tensors, itemId
-
-    # def __len__(self):
-    #     return len(self.mp4files)
-
     def __getitem__(self, index):
         bad_context = True
         context = self.contexts[index]
         video_files = glob.glob(f"{context}/*")
         while bad_context:
+            for v in video_files:
+                try:
+                    cvVideo = cv2.VideoCapture(v)
+                    total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cvVideo.release()
+
+                    if total_frame_nb == 0:
+                        print("0 Frames CTX")
+                        raise ValueError
+
+                except ValueError:
+                    print("Bad Video !")
+                    video_files.remove(v)
+
             if not video_files:
-                print("No video in this context")
+                print("No video in this context : Loading a new random one.")
                 context = self.contexts[np.random.randint(len(self.contexts))]
                 video_files = glob.glob(f"{context}/*")
+                continue
             else:
-                if platform.system() == "Windows":
-                    itemId = self.id_to_tensor[context.split("\\")[-2]]
-                else:
-                    itemId = self.id_to_tensor[context.split('/')[-2]]
-                if len(video_files) < self.K_shots+1:
-                    videos = np.random.choice(video_files, self.K_shots + 1,
-                                              replace=True)
-                else:
-                    videos = np.random.choice(video_files, self.K_shots + 1,
-                                              replace=False)
-                gt_video, *ctx_videos = videos
+                bad_context = False
 
-                bad_video = True
-                cvVideo = None
-                while bad_video:
-                    try:
-                        cvVideo = cv2.VideoCapture(gt_video)
-                        total_frame_nb = int(
-                            cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+        if platform.system() == "Windows":
+            itemId = self.id_to_tensor[context.split("\\")[-2]]
+        else:
+            itemId = self.id_to_tensor[context.split('/')[-2]]
 
-                        if total_frame_nb == 0:
-                            print("0 Frame GT")
-                            cvVideo.release()
-                            raise ValueError
+        if len(video_files) < self.K_shots+1:
+            videos = np.random.choice(video_files, self.K_shots + 1,
+                                      replace=True)
+        else:
+            videos = np.random.choice(video_files, self.K_shots + 1,
+                                      replace=False)
 
-                        gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
-                                                                      total_frame_nb,
-                                                                      fusion=False)
-                        bad_video = False
-                    except ValueError:
-                        print("Bad GT Video !")
-                        video_files.remove(gt_video)
+        gt_video, *ctx_videos = videos
 
-                        if not video_files:
-                            print("No More video")
-                            bad_video = False
-                            gt_video = None
-                        else:
-                            gt_video = np.random.choice(video_files)
+        cvVideo = cv2.VideoCapture(gt_video)
+        total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+        gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
+                                                      total_frame_nb,
+                                                      fusion=False)
+        cvVideo.release()
 
-                if not gt_video:
-                    print("No gt swithing context")
-                    context = self.contexts[np.random.randint(
-                        len(self.contexts))]
-                    continue
-                else:
-                    cvVideo.release()
-                context_tensors_list = []
-                for v in ctx_videos:
-                    bad_video = True
-                    while bad_video:
-                        try:
-                            cvVideo = cv2.VideoCapture(v)
-                            total_frame_nb = int(
-                                cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
-                            if total_frame_nb == 0:
-                                print("0 Frames CTX")
-                                cvVideo.release()
-                                raise ValueError
+        context_tensors_list = []
+        for v in ctx_videos:
+            cvVideo = cv2.VideoCapture(v)
+            total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+            context_frame = self.load_random(cvVideo,
+                                             total_frame_nb,
+                                             fusion=True)
+            context_tensors_list.append(context_frame)
+            cvVideo.release()
 
-                            context_frame = self.load_random(cvVideo,
-                                                             total_frame_nb,
-                                                             fusion=True)
-                            context_tensors_list.append(context_frame)
-                            bad_video = False
-
-                        except ValueError:
-                            print("Bad CTX Video !")
-                            video_files.remove(v)
-                            # if not video_files:
-                            # bad_video = False
-                            # else:
-                            v = np.random.choice(video_files)
-                    cvVideo.release()
-                # print("Context ok")
-                if len(context_tensors_list) != self.K_shots:
-                    raise AssertionError(f"j'ai pas {self.K_shots} images")
-                    # continue
-                # else:
-                else:
-                    bad_context = False
-                    context_tensors = torch.cat(context_tensors_list)
-                torch.cuda.empty_cache()
+        context_tensors = torch.cat(context_tensors_list)
+        torch.cuda.empty_cache()
         return gt_im_tensor, gt_landmarks, context_tensors, itemId
+
+    # def __getitem__(self, index):
+    #     bad_context = True
+    #     context = self.contexts[index]
+    #     video_files = glob.glob(f"{context}/*")
+    #     while bad_context:
+    #         if not video_files:
+    #             print("No video in this context")
+    #             context = self.contexts[np.random.randint(len(self.contexts))]
+    #             video_files = glob.glob(f"{context}/*")
+    #         else:
+    #             if platform.system() == "Windows":
+    #                 itemId = self.id_to_tensor[context.split("\\")[-2]]
+    #             else:
+    #                 itemId = self.id_to_tensor[context.split('/')[-2]]
+    #             if len(video_files) < self.K_shots+1:
+    #                 videos = np.random.choice(video_files, self.K_shots + 1,
+    #                                           replace=True)
+    #             else:
+    #                 videos = np.random.choice(video_files, self.K_shots + 1,
+    #                                           replace=False)
+    #             gt_video, *ctx_videos = videos
+
+    #             bad_video = True
+    #             cvVideo = None
+    #             while bad_video:
+    #                 try:
+    #                     cvVideo = cv2.VideoCapture(gt_video)
+    #                     total_frame_nb = int(
+    #                         cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    #                     if total_frame_nb == 0:
+    #                         print("0 Frame GT")
+    #                         cvVideo.release()
+    #                         raise ValueError
+
+    #                     gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
+    #                                                                   total_frame_nb,
+    #                                                                   fusion=False)
+    #                     bad_video = False
+    #                 except ValueError:
+    #                     print("Bad GT Video !")
+    #                     video_files.remove(gt_video)
+
+    #                     if not video_files:
+    #                         print("No More video")
+    #                         bad_video = False
+    #                         gt_video = None
+    #                     else:
+    #                         gt_video = np.random.choice(video_files)
+
+    #             if not gt_video:
+    #                 print("No gt swithing context")
+    #                 context = self.contexts[np.random.randint(
+    #                     len(self.contexts))]
+    #                 continue
+    #             else:
+    #                 cvVideo.release()
+
+    #             context_tensors_list = []
+    #             for v in ctx_videos:
+    #                 bad_video = True
+    #                 while bad_video:
+    #                     try:
+    #                         cvVideo = cv2.VideoCapture(v)
+    #                         total_frame_nb = int(
+    #                             cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+    #                         if total_frame_nb == 0:
+    #                             print("0 Frames CTX")
+    #                             cvVideo.release()
+    #                             raise ValueError
+
+    #                         context_frame = self.load_random(cvVideo,
+    #                                                          total_frame_nb,
+    #                                                          fusion=True)
+    #                         context_tensors_list.append(context_frame)
+    #                         bad_video = False
+
+    #                     except ValueError:
+    #                         print("Bad CTX Video !")
+    #                         video_files.remove(v)
+    #                         # if not video_files:
+    #                         # bad_video = False
+    #                         # else:
+    #                         v = np.random.choice(video_files)
+    #                 cvVideo.release()
+    #             # print("Context ok")
+    #             if len(context_tensors_list) != self.K_shots:
+    #                 raise AssertionError(f"j'ai pas {self.K_shots} images")
+    #                 # continue
+    #             # else:
+    #             else:
+    #                 bad_context = False
+    #                 context_tensors = torch.cat(context_tensors_list)
+    #             torch.cuda.empty_cache()
+    #     return gt_im_tensor, gt_landmarks, context_tensors, itemId
 
     def __len__(self):
         return len(self.contexts)

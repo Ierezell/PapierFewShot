@@ -146,15 +146,15 @@ class CheckpointsFewShots:
     def __init__(self):
         self.best_loss_EmbGen = 1e10
         self.best_loss_Disc = 1e10
-        self.last_save_disc = 0
-        self.last_save_emb = 0
+        self.step_disc = 0
+        self.step_EmbGen = 0
 
     def save(self, model, loss, embedder, generator, discriminator):
         loss = loss.detach()
         if model == "disc":
-            self.last_save_disc += 1
-            if loss < self.best_loss_Disc or self.last_save_disc > PRINT_EVERY:
-                self.last_save_disc = 0
+            self.step_disc += 1
+            if loss < self.best_loss_Disc or self.step_disc > PRINT_EVERY:
+                self.step_disc = 0
                 print('\n' + '-' * 25)
                 print("| Poids disc sauvegardes |")
                 print('-'*25)
@@ -164,13 +164,13 @@ class CheckpointsFewShots:
                 copyfile(PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
                          PATH_WEIGHTS_DISCRIMINATOR)
         else:
-            self.last_save_emb += 1
-            if loss < self.best_loss_EmbGen or self.last_save_emb > PRINT_EVERY:
-                self.last_save_emb = 0
+            self.step_EmbGen += 1
+            if loss < self.best_loss_EmbGen or self.step_EmbGen > PRINT_EVERY:
+                self.step_EmbGen = 0
                 print('\n' + '-'*31)
                 print("| Poids Emb & Gen sauvegardes |")
                 print('-'*31)
-                self.best_loss_Emb = loss
+                self.best_loss_EmbGen = loss
 
                 torch.save(embedder.module.state_dict(),
                            PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
