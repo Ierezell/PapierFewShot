@@ -7,9 +7,9 @@ import datetime
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
-MODEL = "small"
+MODEL = "big"
 LAYERS = "big"
-DATASET = "small"
+DATASET = "big"
 CONCAT = True
 
 ROOT_WEIGHTS = './weights/'
@@ -51,8 +51,8 @@ LEARNING_RATE_DISC = 5e-5
 TTUR = True
 
 # Sizes
-LATENT_SIZE = 64
-K_SHOT = 2
+LATENT_SIZE = 1024
+K_SHOT = 16
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
@@ -77,24 +77,25 @@ TIME = str(datetime.datetime.now().replace(microsecond=0)
 CONFIG = {
     "PLATFORM": str(platform.node()[:3]),
     "BATCH_SIZE": str(BATCH_SIZE),
+    "DATASET": str(DATASET),
     "LR_GEN": str(LEARNING_RATE_GEN),
     "LR_DISC": str(LEARNING_RATE_DISC),
     "NB_GPU": str(torch.cuda.device_count()),
     "K_SHOT": str(K_SHOT),
+    "LATENT_SIZE": str(LATENT_SIZE),
     "MODEL": str(MODEL),
     "LAYERS": str(LAYERS),
-    "DISC_OUT": "tanh",
     "IN_DISC": "noisy",
     "CONCAT": str(CONCAT),
     "TTUR": str(TTUR),
     "TIME": TIME,
-    "LATENT_SIZE": str(LATENT_SIZE),
 }
-folder_weights = CONFIG["PLATFORM"] + "_" + CONFIG["BATCH_SIZE"] + "_" + \
+folder_weights = CONFIG["PLATFORM"] + "_"+CONFIG["DATASET"] + "_" + \
+    CONFIG["BATCH_SIZE"] + "_" + \
     CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
     CONFIG["NB_GPU"] + "_" + CONFIG["K_SHOT"] + "_" + \
     CONFIG["MODEL"] + "_" + CONFIG["LAYERS"] + "_" + \
-    CONFIG["DISC_OUT"] + "_" + CONFIG["IN_DISC"] + "_" + \
+    CONFIG["IN_DISC"] + "_" + \
     CONFIG["CONCAT"]+"_" + CONFIG["TTUR"] + "_" + CONFIG["LATENT_SIZE"] + "/"
 
 CONFIG_RL = {"batch_size": str(BATCH_SIZE),

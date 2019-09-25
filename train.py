@@ -151,6 +151,6 @@ if __name__ == '__main__':
                     normalize=True, scale_each=True)
 
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-                wandb.save(PATH_WEIGHTS_EMBEDDER)
-                wandb.save(PATH_WEIGHTS_GENERATOR)
-                wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+                # wandb.save(PATH_WEIGHTS_EMBEDDER)
+                # wandb.save(PATH_WEIGHTS_GENERATOR)
+                # wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
