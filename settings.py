@@ -7,9 +7,9 @@ import datetime
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
-MODEL = "big"
+MODEL = "small"
 LAYERS = "big"
-DATASET = "big"
+DATASET = "small"
 CONCAT = True
 
 ROOT_WEIGHTS = './weights/'
@@ -51,8 +51,8 @@ LEARNING_RATE_DISC = 5e-5
 TTUR = True
 
 # Sizes
-LATENT_SIZE = 1024
-K_SHOT = 16
+LATENT_SIZE = 128
+K_SHOT = 8
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu

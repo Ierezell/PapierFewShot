@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from matplotlib.lines import Line2D
 from torch import nn
+from tqdm import tqdm
 from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
                       LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
@@ -155,9 +156,8 @@ class CheckpointsFewShots:
             self.step_disc += 1
             if loss < self.best_loss_Disc or self.step_disc > PRINT_EVERY:
                 self.step_disc = 0
-                print('\n' + '-' * 25)
-                print("| Poids disc sauvegardes |")
-                print('-'*25)
+                tqdm.write('\n' + '-'*25 + '\n' +
+                           "| Poids disc sauvegardes |" + '\n' + '-'*25)
                 self.best_loss_Disc = loss
                 torch.save(discriminator.module.state_dict(),
                            PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"))
@@ -167,9 +167,8 @@ class CheckpointsFewShots:
             self.step_EmbGen += 1
             if loss < self.best_loss_EmbGen or self.step_EmbGen > PRINT_EVERY:
                 self.step_EmbGen = 0
-                print('\n' + '-'*31)
-                print("| Poids Emb & Gen sauvegardes |")
-                print('-'*31)
+                tqdm.write("\n" + "-" * 31 + '\n' +
+                           "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31)
                 self.best_loss_EmbGen = loss
 
                 torch.save(embedder.module.state_dict(),

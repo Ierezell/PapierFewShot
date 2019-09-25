@@ -1,5 +1,6 @@
 
 
+from tqdm import tqdm, trange
 import datetime
 import os
 import sys
@@ -74,10 +75,9 @@ if __name__ == '__main__':
     # Training #
     # ##########
     # torch.autograd.set_detect_anomaly(True)
-
-    for i_epoch in range(NB_EPOCHS):
+    for i_epoch in trange(NB_EPOCHS):
         print("Epoch ! Epoch ! Epooooooch !!")
-        for i_batch, batch in enumerate(train_loader):
+        for i_batch, batch in enumerate(tqdm(train_loader)):
 
             optimizerEmb.zero_grad()
             optimizerDisc.zero_grad()
@@ -115,18 +115,15 @@ if __name__ == '__main__':
             # print("loss ok")
             if TTUR:
                 if i_batch % 3 == 0:
-                    lossDsc.backward(torch.ones(torch.cuda.device_count(),
-                                                device=DEVICE))
+                    lossDsc.backward()
                     optimizerDisc.step()
                 else:
-                    loss.backward(torch.ones(torch.cuda.device_count(),
-                                             device=DEVICE))
+                    loss.backward()
                     optimizerEmb.step()
                     optimizerGen.step()
             else:
                 loss = loss + lossDsc
-                loss.backward(torch.ones(torch.cuda.device_count(),
-                                         device=DEVICE))
+                loss.backward()
 
                 optimizerDisc.step()
                 optimizerEmb.step()
