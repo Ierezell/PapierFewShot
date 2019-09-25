@@ -10,7 +10,7 @@ import torchvision
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-
+import time
 from settings import (DEVICE, DEVICE_LANDMARKS, K_SHOT, LOAD_BATCH_SIZE,
                       NB_WORKERS, ROOT_DATASET)
 
@@ -23,8 +23,14 @@ class frameLoader(Dataset):
 
         self.K_shots = K_shots
         self.root_dir = root_dir
+        print("Loading ids...")
+        start_time = time.time()
         self.ids = glob.glob(f"{self.root_dir}/*")
+        print(f"Ids loaded in {time.time() - start_time}s")
+        print("Loading contexts...")
+        start_time = time.time()
         self.contexts = glob.glob(f"{self.root_dir}/*/*")
+        print(f"Contexts laoded in {time.time() - start_time}s")
         # self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
 
         if platform.system() == "Windows":
@@ -159,7 +165,9 @@ class frameLoader(Dataset):
         bad_context = True
         context = self.contexts[index]
         video_files = glob.glob(f"{context}/*")
+        print("get !")
         while bad_context:
+            print("Encore un badContext")
             for v in video_files:
                 try:
                     cvVideo = cv2.VideoCapture(v)
@@ -180,7 +188,9 @@ class frameLoader(Dataset):
                 video_files = glob.glob(f"{context}/*")
                 continue
             else:
+                print("Context ok")
                 bad_context = False
+        print("Context bon, je loade")
 
         if platform.system() == "Windows":
             itemId = self.id_to_tensor[context.split("\\")[-2]]
@@ -193,7 +203,7 @@ class frameLoader(Dataset):
         else:
             videos = np.random.choice(video_files, self.K_shots + 1,
                                       replace=False)
-
+        print("N_vidoess")
         gt_video, *ctx_videos = videos
 
         cvVideo = cv2.VideoCapture(gt_video)
@@ -203,6 +213,7 @@ class frameLoader(Dataset):
                                                       fusion=False)
         cvVideo.release()
 
+        print("Gt ok go for context")
         context_tensors_list = []
         for v in ctx_videos:
             cvVideo = cv2.VideoCapture(v)
@@ -212,7 +223,7 @@ class frameLoader(Dataset):
                                              fusion=True)
             context_tensors_list.append(context_frame)
             cvVideo.release()
-
+        print("Context ok")
         context_tensors = torch.cat(context_tensors_list)
         torch.cuda.empty_cache()
         return gt_im_tensor, gt_landmarks, context_tensors, itemId

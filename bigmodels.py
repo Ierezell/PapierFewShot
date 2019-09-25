@@ -40,12 +40,12 @@ class BigEmbedder(nn.Module):
         self.residual3 = ResidualBlock(128, 128)
         self.residual4 = ResidualBlockDown(128, 256)
         self.residual5 = ResidualBlockDown(256, 512)
-        self.residual6 = ResidualBlock(512, 512)
-        self.residual7 = ResidualBlockDown(512, 512)
-        self.FcWeights = spectral_norm(nn.Linear(512, 11024))
-        self.FcBias = spectral_norm(nn.Linear(512, 11024))
+        self.residual6 = ResidualBlock(512, LATENT_SIZE)
+        self.residual7 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 11024))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 11024))
         self.attention1 = Attention(128)
-        self.attention2 = Attention(512)
+        self.attention2 = Attention(LATENT_SIZE)
         self.relu = nn.ReLU()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
@@ -61,33 +61,39 @@ class BigEmbedder(nn.Module):
         """
         temp = torch.tensor(np.zeros(LATENT_SIZE, dtype=np.float),
                             dtype=torch.float, device="cuda")
-        layerUp1 = torch.tensor(np.zeros((64, 112, 112), dtype=np.float),
+        # layerUp1 = torch.tensor(np.zeros((BATCH_SIZE, 64, 112, 112),
+        #                                  dtype=np.float),
+        #                         dtype=torch.float, device="cuda")
+        # layerUp2 = torch.tensor(np.zeros((BATCH_SIZE, 128, 56, 56),
+        #                                  dtype=np.float),
+        #                         dtype=torch.float, device="cuda")
+        # layerUp3 = torch.tensor(np.zeros((BATCH_SIZE, 128, 56, 56),
+        #                                  dtype=np.float),
+        #                         dtype=torch.float, device="cuda")
+        layerUp4 = torch.tensor(np.zeros((BATCH_SIZE, 256, 28, 28),
+                                         dtype=np.float),
                                 dtype=torch.float, device="cuda")
-        layerUp2 = torch.tensor(np.zeros((128, 56, 56), dtype=np.float),
+        layerUp5 = torch.tensor(np.zeros((BATCH_SIZE, 512, 14, 14),
+                                         dtype=np.float),
                                 dtype=torch.float, device="cuda")
-        layerUp3 = torch.tensor(np.zeros((128, 56, 56), dtype=np.float),
-                                dtype=torch.float, device="cuda")
-        layerUp4 = torch.tensor(np.zeros((256, 28, 28), dtype=np.float),
-                                dtype=torch.float, device="cuda")
-        layerUp5 = torch.tensor(np.zeros((512, 14, 14), dtype=np.float),
-                                dtype=torch.float, device="cuda")
-        layerUp6 = torch.tensor(np.zeros((512, 14, 14), dtype=np.float),
+        layerUp6 = torch.tensor(np.zeros((BATCH_SIZE, LATENT_SIZE, 14, 14),
+                                         dtype=np.float),
                                 dtype=torch.float, device="cuda")
 
         for i in range(x.size(1)//3):
             out = self.residual1(x.narrow(1, i*3, 3))  # b, 64, 112, 112
             out = self.relu(out)
-            layerUp1 = torch.add(out, layerUp1)
+            # layerUp1 = torch.add(out, layerUp1)
 
             out = self.residual2(out)  # b, 128, 56, 56
             out = self.relu(out)
-            layerUp2 = torch.add(out, layerUp2)
+            # layerUp2 = torch.add(out, layerUp2)
 
             out = self.attention1(out)  # b, 128, 56, 56
             out = self.relu(out)
             out = self.residual3(out)  # b, 128, 56, 56
             out = self.relu(out)
-            layerUp3 = torch.add(out, layerUp3)
+            # layerUp3 = torch.add(out, layerUp3)
 
             out = self.residual4(out)  # b, 256, 28, 28
             out = self.relu(out)
@@ -99,6 +105,7 @@ class BigEmbedder(nn.Module):
 
             out = self.residual6(out)  # b, 512, 14, 14
             out = self.relu(out)
+            print(out.size(), layerUp6.size())
             layerUp6 = torch.add(out, layerUp6)
 
             out = self.attention2(out)  # b, 512, 14, 14
@@ -111,12 +118,13 @@ class BigEmbedder(nn.Module):
             print(out.size())
             # b,512
             out = self.relu(out)
+            print(out.size(), temp.size())
             temp = torch.add(out, temp)
 
         context = torch.div(temp, (x.size(1)//3))
-        layerUp1 = torch.div(layerUp1, (x.size(1)//3))
-        layerUp2 = torch.div(layerUp2, (x.size(1)//3))
-        layerUp3 = torch.div(layerUp3, (x.size(1)//3))
+        # layerUp1 = torch.div(layerUp1, (x.size(1)//3))
+        # layerUp2 = torch.div(layerUp2, (x.size(1)//3))
+        # layerUp3 = torch.div(layerUp3, (x.size(1)//3))
         layerUp4 = torch.div(layerUp4, (x.size(1)//3))
         layerUp5 = torch.div(layerUp5, (x.size(1)//3))
         layerUp6 = torch.div(layerUp6, (x.size(1)//3))
@@ -124,7 +132,8 @@ class BigEmbedder(nn.Module):
         paramWeights = self.relu(self.FcWeights(out)).squeeze()
         paramBias = self.relu(self.FcBias(out)).squeeze()
         print(paramWeights.size())
-        layersUp = (layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6)
+        # layersUp = (layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6)
+        layersUp = (layerUp4, layerUp5, layerUp6)
         return context, paramWeights, paramBias, layersUp
 
 
@@ -159,12 +168,13 @@ class BigGenerator(nn.Module):
         self.ResBlock_128_2 = ResidualBlock(256, 512)
         self.ResBlock_128_3 = ResidualBlock(512, 512)
         self.attention = Attention(512)
-        self.ResBlock_128_4 = ResidualBlock(512, 512)
-        self.ResDown5 = ResidualBlockDown(512, 512)
+        self.ResBlock_128_4 = ResidualBlock(512, LATENT_SIZE)
+        self.ResDown5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
         # Up
-        self.ResAda1 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
+        self.ResAda1 = spectral_norm(nn.Conv2d(LATENT_SIZE * 2, LATENT_SIZE,
+                                               kernel_size=3,
                                                padding=1, bias=False))
-        self.Res1 = ResidualBlock(512, 512)
+        self.Res1 = ResidualBlock(LATENT_SIZE, 512)
 
         self.ResAda2 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
                                                padding=1, bias=False))
@@ -174,16 +184,16 @@ class BigGenerator(nn.Module):
                                                padding=1, bias=False))
         self.ResUp3 = ResidualBlockUp(256, 128)
 
-        self.ResAda4 = spectral_norm(nn.Conv2d(256, 128, kernel_size=3,
-                                               padding=1, bias=False))
+        # self.ResAda4 = spectral_norm(nn.Conv2d(256, 128, kernel_size=3,
+        #                                        padding=1, bias=False))
         self.Res4 = ResidualBlock(128, 128)
 
-        self.ResAda5 = spectral_norm(nn.Conv2d(128, 64, kernel_size=3,
-                                               padding=1, bias=False))
+        # self.ResAda5 = spectral_norm(nn.Conv2d(128, 64, kernel_size=3,
+        #                                        padding=1, bias=False))
         self.ResUp5 = ResidualBlockUp(128, 64)
 
-        self.ResAda6 = spectral_norm(nn.Conv2d(64, 32, kernel_size=3,
-                                               padding=1, bias=False))
+        # self.ResAda6 = spectral_norm(nn.Conv2d(64, 32, kernel_size=3,
+        #                                        padding=1, bias=False))
         self.ResUp6 = ResidualBlockUp(64, 32)
 
         self.Res7 = ResidualBlock(32, 3)
@@ -205,7 +215,8 @@ class BigGenerator(nn.Module):
         (could be done with loops and be more scalable...
         but I will do it later, it's easier to debug this way)
         """
-        layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6 = layersUp
+        # layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6 = layersUp
+        layerUp4, layerUp5, layerUp6 = layersUp
         x = self.ResDown1(img)
         x = self.relu(x)
         x = self.ResDown2(x)
@@ -354,7 +365,7 @@ class BigDiscriminator(nn.Module):
         self.residual5 = ResidualBlock(256, 256)
         self.residual6 = ResidualBlockDown(256, 512)
         self.residual7 = ResidualBlock(512, 512)
-        self.residual8 = ResidualBlockDown(512, 512)
+        self.residual8 = ResidualBlockDown(512, LATENT_SIZE)
         self.attention1 = Attention(128)
         self.attention2 = Attention(512)
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)

@@ -35,9 +35,11 @@ class Embedder(nn.Module):
         layerUp1 = torch.tensor(np.zeros((BATCH_SIZE, LATENT_SIZE, 14, 14),
                                          dtype=np.float),
                                 dtype=torch.float, device="cuda")
-        layerUp2 = torch.tensor(np.zeros((256, 28, 28), dtype=np.float),
+        layerUp2 = torch.tensor(np.zeros((BATCH_SIZE, 256, 28, 28),
+                                         dtype=np.float),
                                 dtype=torch.float, device="cuda")
-        layerUp3 = torch.tensor(np.zeros((128, 56, 56), dtype=np.float),
+        layerUp3 = torch.tensor(np.zeros((BATCH_SIZE, 128, 56, 56),
+                                         dtype=np.float),
                                 dtype=torch.float, device="cuda")
 
         for i in range(x.size(1) // 3):
