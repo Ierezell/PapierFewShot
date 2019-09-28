@@ -24,7 +24,7 @@ torch.backends.cudnn.enabled = True
 date = datetime.datetime.now().replace(microsecond=0)
 train_id = "_".join(CONFIG.values())
 
-os.environ['WANDB_MODE'] = 'dryrun'
+# os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papierfewshot",
            id=train_id,
@@ -115,15 +115,18 @@ if __name__ == '__main__':
             # print("loss ok")
             if TTUR:
                 if i_batch % 3 == 0:
-                    lossDsc.backward()
+                    lossDsc.backward(torch.ones(torch.cuda.device_count(),
+                                                device=DEVICE))
                     optimizerDisc.step()
                 else:
-                    loss.backward()
+                    loss.backward(torch.ones(torch.cuda.device_count(),
+                                             device=DEVICE))
                     optimizerEmb.step()
                     optimizerGen.step()
             else:
                 loss = loss + lossDsc
-                loss.backward()
+                loss.backward(torch.ones(torch.cuda.device_count(),
+                                         device=DEVICE))
 
                 optimizerDisc.step()
                 optimizerEmb.step()

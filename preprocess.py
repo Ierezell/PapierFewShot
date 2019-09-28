@@ -167,22 +167,23 @@ class frameLoader(Dataset):
         video_files = glob.glob(f"{context}/*")
         # print("get !")
         while bad_context:
+            check_video_files = copy.deepcopy(video_files)
             # print("Encore un badContext")
-            for v in video_files:
+            for v in check_video_files:
                 try:
                     cvVideo = cv2.VideoCapture(v)
                     total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
                     cvVideo.release()
 
-                    if total_frame_nb == 0:
+                    if total_frame_nb < 0:
                         # print("0 Frames CTX")
                         raise ValueError
 
                 except ValueError:
                     # print("Bad Video !")
-                    video_files.remove(v)
+                    check_video_files.remove(v)
 
-            if not video_files:
+            if not check_video_files:
                 # print("No video in this context : Loading a new random one.")
                 context = self.contexts[np.random.randint(len(self.contexts))]
                 video_files = glob.glob(f"{context}/*")
@@ -191,7 +192,7 @@ class frameLoader(Dataset):
                 # print("Context ok")
                 bad_context = False
         # print("Context bon, je loade")
-
+        video_files = check_video_files
         if platform.system() == "Windows":
             itemId = self.id_to_tensor[context.split("\\")[-2]]
         else:

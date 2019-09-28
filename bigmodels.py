@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn.utils import spectral_norm
 
-from settings import BATCH_SIZE, LATENT_SIZE
+from settings import BATCH_SIZE, LATENT_SIZE, CONCAT
 from utils import load_layers
 
 (ResidualBlock,
@@ -171,37 +171,40 @@ class BigGenerator(nn.Module):
         self.ResBlock_128_4 = ResidualBlock(512, LATENT_SIZE)
         self.ResDown5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
         # Up
-        self.ResAda1 = spectral_norm(nn.Conv2d(LATENT_SIZE * 2, LATENT_SIZE,
-                                               kernel_size=3,
-                                               padding=1, bias=False))
+        if CONCAT:
+            self.ResAda1 = spectral_norm(nn.Conv2d(LATENT_SIZE * 2,
+                                                   LATENT_SIZE,
+                                                   kernel_size=3,
+                                                   padding=1, bias=False))
+            self.ResAda2 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
+                                                   padding=1, bias=False))
+            self.ResAda3 = spectral_norm(nn.Conv2d(512, 256, kernel_size=3,
+                                                   padding=1, bias=False))
+
+            # self.ResAda4 = spectral_norm(nn.Conv2d(256, 128, kernel_size=3,
+            #                                        padding=1, bias=False))
+            # self.ResAda5 = spectral_norm(nn.Conv2d(128, 64, kernel_size=3,
+            #                                        padding=1, bias=False))
+            # self.ResAda6 = spectral_norm(nn.Conv2d(64, 32, kernel_size=3,
+            #                                        padding=1, bias=False))
+
         self.Res1 = ResidualBlock(LATENT_SIZE, 512)
 
-        self.ResAda2 = spectral_norm(nn.Conv2d(512 * 2, 512, kernel_size=3,
-                                               padding=1, bias=False))
         self.ResUp2 = ResidualBlockUp(512, 256)
 
-        self.ResAda3 = spectral_norm(nn.Conv2d(512, 256, kernel_size=3,
-                                               padding=1, bias=False))
         self.ResUp3 = ResidualBlockUp(256, 128)
 
-        # self.ResAda4 = spectral_norm(nn.Conv2d(256, 128, kernel_size=3,
-        #                                        padding=1, bias=False))
         self.Res4 = ResidualBlock(128, 128)
 
-        # self.ResAda5 = spectral_norm(nn.Conv2d(128, 64, kernel_size=3,
-        #                                        padding=1, bias=False))
         self.ResUp5 = ResidualBlockUp(128, 64)
 
-        # self.ResAda6 = spectral_norm(nn.Conv2d(64, 32, kernel_size=3,
-        #                                        padding=1, bias=False))
         self.ResUp6 = ResidualBlockUp(64, 32)
 
         self.Res7 = ResidualBlock(32, 3)
         self.attentionUp = Attention(64)
 
-        self.relu = nn.ReLU()
+        self.relu = nn.SELU()
         self.tanh = nn.Tanh()
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, img, pWeights, pBias, layersUp):
         """
@@ -260,9 +263,10 @@ class BigGenerator(nn.Module):
         x = self.ResDown5(x)
         x = self.relu(x)
 
-        x = torch.cat((x, layerUp6), dim=1)
-        x = self.ResAda1(x)
-        x = self.relu(x)
+        if CONCAT:
+            x = torch.cat((x, layerUp6), dim=1)
+            x = self.ResAda1(x)
+            x = self.relu(x)
 
         nb_params = self.Res1.params
         x = self.Res1(x, w=pWeights.narrow(-1, i, nb_params),
@@ -270,9 +274,10 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        x = torch.cat((x, layerUp5), dim=1)
-        x = self.ResAda2(x)
-        x = self.relu(x)
+        if CONCAT:
+            x = torch.cat((x, layerUp5), dim=1)
+            x = self.ResAda2(x)
+            x = self.relu(x)
 
         nb_params = self.ResUp2.params
         x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
@@ -280,9 +285,10 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        x = torch.cat((x, layerUp4), dim=1)
-        x = self.ResAda3(x)
-        x = self.relu(x)
+        if CONCAT:
+            x = torch.cat((x, layerUp4), dim=1)
+            x = self.ResAda3(x)
+            x = self.relu(x)
 
         nb_params = self.ResUp3.params
         x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
@@ -290,9 +296,10 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        # x = torch.cat((x, layerUp3), dim=1)
-        # x = self.ResAda4(x)
-        # x = self.relu(x)
+        # if CONCAT:
+        #    x = torch.cat((x, layerUp3), dim=1)
+        #    x = self.ResAda4(x)
+        #    x = self.relu(x)
 
         nb_params = self.Res4.params
         x = self.Res4(x, w=pWeights.narrow(-1, i, nb_params),
@@ -300,9 +307,10 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        # x = torch.cat((x, layerUp2), dim=1)
-        # x = self.ResAda5(x)
-        # x = self.relu(x)
+        # if CONCAT
+        #   x = torch.cat((x, layerUp2), dim=1)
+        #   x = self.ResAda5(x)
+        #   x = self.relu(x)
 
         nb_params = self.ResUp5.params
         x = self.ResUp5(x, w=pWeights.narrow(-1, i, nb_params),
@@ -313,9 +321,10 @@ class BigGenerator(nn.Module):
         x = self.attentionUp(x)
         x = self.relu(x)
 
-        # x = torch.cat((x, layerUp1), dim=1)
-        # x = self.ResAda6(x)
-        # x = self.relu(x)
+        # if CONCAT:
+        #    x = torch.cat((x, layerUp1), dim=1)
+        #    x = self.ResAda6(x)
+        #    x = self.relu(x)
 
         nb_params = self.ResUp6.params
         x = self.ResUp6(x, w=pWeights.narrow(-1, i, nb_params),
