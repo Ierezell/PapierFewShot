@@ -495,9 +495,7 @@ class BigDiscriminator(nn.Module):
         out = self.relu(out)
         features_maps.append(out)
 
-        # out = torch.sum(out.view(out.size(0), out.size(1), -1), dim=2)
-        # b,512
-        out = self.avgPool(out).squeeze()
+        out = self.avgPool(out).squeeze()  # b,512
         out = self.relu(out)
         final_out = self.fc(out)
         features_maps.append(out)
@@ -505,20 +503,12 @@ class BigDiscriminator(nn.Module):
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
 
-        # print("out : ", out.size())
-        # print("final_out : ", final_out.size())
-        # print("w0 : ", w0.size())
-        # print("b : ", b.size())
-        # print("self.embeddings(indexes) : ", self.embeddings(indexes).size())
-
         condition = torch.bmm(
             self.embeddings(indexes).view(-1, 1, LATENT_SIZE),
             (out+w0).view(BATCH_SIZE, LATENT_SIZE, 1)
         )
         final_out += condition.view(final_out.size())
-        # print("final_out : ", final_out.size())
         final_out = final_out.view(b.size())
-        # print("final_outvv : ", final_out.size())
         final_out += b
         final_out = self.sig(final_out)
         return final_out, features_maps
