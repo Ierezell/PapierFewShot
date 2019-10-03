@@ -77,7 +77,12 @@ class Embedder(nn.Module):
             temp = torch.add(out, temp)
 
         context = torch.div(temp, (x.size(1) // 3))
-        # print("Context ", context.size())
+
+        layerUp0 = torch.div(layerUp0, (x.size(1) // 3))
+        layerUp1 = torch.div(layerUp1, (x.size(1) // 3))
+        layerUp2 = torch.div(layerUp2, (x.size(1) // 3))
+        layerUp3 = torch.div(layerUp3, (x.size(1) // 3))
+
         paramWeights = self.FcWeights(context)
         paramBias = self.FcBias(context)
         layersUp = (layerUp0, layerUp1, layerUp2, layerUp3)

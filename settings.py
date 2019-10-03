@@ -7,7 +7,7 @@ import datetime
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
-MODEL = "small"
+MODEL = "big"
 LAYERS = "big"
 DATASET = "small"
 CONCAT = ["first"]
@@ -31,19 +31,16 @@ elif DATASET == "small":
 
 # Batch
 if "blg" in platform.node():
-    nb_batch_per_gpu = 6
+    BATCH_SIZE = 6
 elif "gpu-k" in platform.node():
-    nb_batch_per_gpu = 4
+    BATCH_SIZE = 4
 elif "GATINEAU" in platform.node():
-    nb_batch_per_gpu = 2
+    BATCH_SIZE = 2
 else:
-    nb_batch_per_gpu = 2
+    BATCH_SIZE = 2
 
 
-LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
-# BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
-BATCH_SIZE = nb_batch_per_gpu
-
+LOAD_BATCH_SIZE = torch.cuda.device_count() * BATCH_SIZE
 # LR
 LEARNING_RATE_EMB = 5e-6
 LEARNING_RATE_GEN = 5e-6
@@ -51,14 +48,14 @@ LEARNING_RATE_DISC = 5e-5
 TTUR = True
 
 # Sizes
-LATENT_SIZE = 128
-K_SHOT = 4
+LATENT_SIZE = 512
+K_SHOT = 6
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
 
-PRINT_EVERY = 2000
+PRINT_EVERY = 200
 
 ###############
 # RL SETTINGS #
