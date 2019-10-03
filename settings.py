@@ -9,8 +9,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
 MODEL = "small"
 LAYERS = "big"
-DATASET = "big"
-CONCAT = True
+DATASET = "small"
+CONCAT = ["first"]
 
 ROOT_WEIGHTS = './weights/'
 
@@ -52,13 +52,13 @@ TTUR = True
 
 # Sizes
 LATENT_SIZE = 128
-K_SHOT = 8
+K_SHOT = 4
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
 
-PRINT_EVERY = 100
+PRINT_EVERY = 2000
 
 ###############
 # RL SETTINGS #

@@ -220,16 +220,24 @@ class BigGenerator(nn.Module):
         """
         # layerUp1, layerUp2, layerUp3, layerUp4, layerUp5, layerUp6 = layersUp
         layerUp4, layerUp5, layerUp6 = layersUp
+        print(layerUp4.size())
+        print(layerUp5.size())
+        print(layerUp6.size())
         x = self.ResDown1(img)
         x = self.relu(x)
+        print(x.size())
         x = self.ResDown2(x)
         x = self.relu(x)
+        print(x.size())
         x = self.ResDown3(x)
         x = self.relu(x)
+        print(x.size())
         x = self.ResDown4(x)
         x = self.relu(x)
+        print(x.size())
         x = self.attentionDown(x)
         x = self.relu(x)
+        print(x.size())
 
         i = 0
 
@@ -263,7 +271,7 @@ class BigGenerator(nn.Module):
         x = self.ResDown5(x)
         x = self.relu(x)
 
-        if CONCAT:
+        if CONCAT == "last":
             x = torch.cat((x, layerUp6), dim=1)
             x = self.ResAda1(x)
             x = self.relu(x)
@@ -274,7 +282,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        if CONCAT:
+        if CONCAT == "last":
             x = torch.cat((x, layerUp5), dim=1)
             x = self.ResAda2(x)
             x = self.relu(x)
@@ -285,7 +293,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        if CONCAT:
+        if CONCAT == "last":
             x = torch.cat((x, layerUp4), dim=1)
             x = self.ResAda3(x)
             x = self.relu(x)
@@ -296,7 +304,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        # if CONCAT:
+        # if CONCAT == "last":
         #    x = torch.cat((x, layerUp3), dim=1)
         #    x = self.ResAda4(x)
         #    x = self.relu(x)
@@ -307,7 +315,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         i += nb_params
 
-        # if CONCAT
+        # if CONCAT == "last"
         #   x = torch.cat((x, layerUp2), dim=1)
         #   x = self.ResAda5(x)
         #   x = self.relu(x)
@@ -321,7 +329,7 @@ class BigGenerator(nn.Module):
         x = self.attentionUp(x)
         x = self.relu(x)
 
-        # if CONCAT:
+        # if CONCAT == "last":
         #    x = torch.cat((x, layerUp1), dim=1)
         #    x = self.ResAda6(x)
         #    x = self.relu(x)

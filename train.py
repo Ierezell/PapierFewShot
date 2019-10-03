@@ -24,7 +24,7 @@ torch.backends.cudnn.enabled = True
 date = datetime.datetime.now().replace(microsecond=0)
 train_id = "_".join(CONFIG.values())
 
-# os.environ['WANDB_MODE'] = 'dryrun'
+os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papierfewshot",
            id=train_id,
