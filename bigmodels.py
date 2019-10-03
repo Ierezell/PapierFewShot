@@ -45,8 +45,8 @@ class BigEmbedder(nn.Module):
         self.residual7 = ResidualBlockDown(512, LATENT_SIZE)
         self.attention2 = Attention(LATENT_SIZE)
         self.residual8 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 7342))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 7342))
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8014))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8014))
         self.relu = nn.ReLU()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
@@ -180,19 +180,19 @@ class BigGenerator(nn.Module):
 
         self.Res1 = ResidualBlock(LATENT_SIZE, 512)
 
-        self.ResUp2 = ResidualBlockUp(512, 256)
+        self.ResUp2 = ResidualBlockUp(512, 512)
 
-        self.ResUp3 = ResidualBlockUp(256, 128)
+        self.ResUp3 = ResidualBlock(512, 256)
+
+        self.Res4 = ResidualBlock(256, 128)
         self.attentionUp = Attention(128)
-
-        self.Res4 = ResidualBlock(128, 128)
 
         self.ResUp5 = ResidualBlockUp(128, 64)
 
         self.ResUp6 = ResidualBlockUp(64, 32)
 
         self.ResUp7 = ResidualBlockUp(32, 3)
-        self.Res8 = ResidualBlock(3, 3)
+        self.Res8 = ResidualBlockUp(3, 3)
 
         self.relu = nn.SELU()
         self.tanh = nn.Tanh()
@@ -210,10 +210,10 @@ class BigGenerator(nn.Module):
         but I will do it later, it's easier to debug this way)
         """
         layerUp0, layerUp1, layerUp2, layerUp3 = layersUp
-        # print("L3 ", layerUp3.size())
-        # print("L2 ", layerUp2.size())
-        # print("L1 ", layerUp1.size())
-        # print("L0 ", layerUp0.size())
+        print("L3 ", layerUp3.size())
+        print("L2 ", layerUp2.size())
+        print("L1 ", layerUp1.size())
+        print("L0 ", layerUp0.size())
         # print("IMG ", img.size())
 
         # ######
@@ -328,39 +328,50 @@ class BigGenerator(nn.Module):
         x = self.Res1(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("Res1  ", x.size())
+        print("Res1  ", x.size())
         i += nb_params
+
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp0), dim=1)
+            x = self.Ada0(x)
+            x = self.relu(x)
 
         nb_params = self.ResUp2.params
         x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResUp2  ", x.size())
+        print("ResUp2  ", x.size())
         i += nb_params
+
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp1), dim=1)
+            x = self.Ada1(x)
+            x = self.relu(x)
 
         nb_params = self.ResUp3.params
         x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResUp3  ", x.size())
+        print("ResUp3  ", x.size())
         i += nb_params
 
-        # if CONCAT == "last":
-        #    x = torch.cat((x, layerUp3), dim=1)
-        #    x = self.ResAda4(x)
-        #    x = self.relu(x)
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp2), dim=1)
+            x = self.Ada2(x)
+            x = self.relu(x)
 
         nb_params = self.Res4.params
         x = self.Res4(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("Res4  ", x.size())
+        print("Res4  ", x.size())
         i += nb_params
 
-        # if CONCAT == "last"
-        #   x = torch.cat((x, layerUp2), dim=1)
-        #   x = self.ResAda5(x)
-        #   x = self.relu(x)
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp3), dim=1)
+            x = self.Ada3(x)
+            x = self.relu(x)
+
         x = self.attentionUp(x)
         x = self.relu(x)
 
@@ -368,35 +379,30 @@ class BigGenerator(nn.Module):
         x = self.ResUp5(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResUp5  ", x.size())
+        print("ResUp5  ", x.size())
         i += nb_params
-
-        # if CONCAT == "last":
-        #    x = torch.cat((x, layerUp1), dim=1)
-        #    x = self.ResAda6(x)
-        #    x = self.relu(x)
 
         nb_params = self.ResUp6.params
         x = self.ResUp6(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResUp6  ", x.size())
+        print("ResUp6  ", x.size())
         i += nb_params
 
         nb_params = self.ResUp7.params
         x = self.ResUp7(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResUp7  ", x.size())
+        print("ResUp7  ", x.size())
         i += nb_params
 
         nb_params = self.Res8.params
         x = self.Res8(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
         x = self.tanh(x)
-        # print("Res8  ", x.size())
+        print("Res8  ", x.size())
         i += nb_params
-        # print("Nb_param   ", i)
+        print("Nb_param   ", i)
         return x
 
 

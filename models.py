@@ -23,8 +23,8 @@ class Embedder(nn.Module):
         self.residual4 = ResidualBlockDown(128, 256)
         self.residual5 = ResidualBlockDown(256, LATENT_SIZE)
         # self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 1960))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 1960))
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 2632))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 2632))
         self.attention = Attention(64)
         self.avgPool = torch.nn.AvgPool2d(7)
         self.relu = nn.SELU()
@@ -177,6 +177,10 @@ class Generator(nn.Module):
         x = self.ResDown5(x)
         x = self.relu(x)
 
+        if "first" in CONCAT:
+            x = torch.cat((x, layerUp0), dim=1)
+            x = self.Ada0(x)
+            x = self.relu(x)
         # ##########
         # CONSTANT #
         # ##########
@@ -188,11 +192,6 @@ class Generator(nn.Module):
         x = self.relu(x)
         i += nb_params
         # print("ResBlock3", x.size())    # b, 128, 55, 55
-
-        if "middle" in CONCAT:
-            x = torch.cat((x, layerUp0), dim=1)
-            x = self.Ada0(x)
-            x = self.relu(x)
 
         # ####
         # Up #
@@ -251,7 +250,7 @@ class Generator(nn.Module):
         i += nb_params
         # print("ResUp5", x.size())
 
-        # print("Nb_param   ", i)
+        print("Nb_param   ", i)
         return x
 
 

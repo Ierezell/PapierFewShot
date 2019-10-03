@@ -1,16 +1,16 @@
 import os
 import platform
 import torch
-from pathlib import Path
 import datetime
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NB_EPOCHS = 40
-MODEL = "big"
+MODEL = "small"
 LAYERS = "big"
 DATASET = "small"
-CONCAT = ["first"]
+# "first", "last"
+CONCAT = ["last"]
 
 ROOT_WEIGHTS = './weights/'
 
@@ -22,6 +22,8 @@ if DATASET == "big":
         ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
     elif "GATINEAU" in platform.node():
         ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
+    elif "coigne" in platform.node():
+        ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
     else:
         ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
 
@@ -36,6 +38,8 @@ elif "gpu-k" in platform.node():
     BATCH_SIZE = 4
 elif "GATINEAU" in platform.node():
     BATCH_SIZE = 2
+elif "coigne" in platform.node():
+    BATCH_SIZE = 2
 else:
     BATCH_SIZE = 2
 
@@ -48,14 +52,21 @@ LEARNING_RATE_DISC = 5e-5
 TTUR = True
 
 # Sizes
-LATENT_SIZE = 512
-K_SHOT = 6
+if "ArchPierre" in platform.node():
+    LATENT_SIZE = 512
+else:
+    LATENT_SIZE = 1024
+
+if "ArchPierre" in platform.node():
+    K_SHOT = 6
+else:
+    K_SHOT = 8
 
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
 
-PRINT_EVERY = 200
+PRINT_EVERY = 500
 
 ###############
 # RL SETTINGS #

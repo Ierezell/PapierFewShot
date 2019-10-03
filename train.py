@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # ##########
     # Training #
     # ##########
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True)
     for i_epoch in trange(NB_EPOCHS):
         print("Epoch ! Epoch ! Epooooooch !!")
         for i_batch, batch in enumerate(tqdm(train_loader)):
