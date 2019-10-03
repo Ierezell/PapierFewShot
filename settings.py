@@ -2,27 +2,38 @@ import os
 import platform
 import torch
 import datetime
+import wandb
 
+# os.environ['WANDB_MODE'] = 'dryrun'
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-NB_EPOCHS = 40
-MODEL = "small"
-LAYERS = "big"
-DATASET = "small"
-# "first", "last"
-CONCAT = ["last"]
+wandb.init(project="papierfewshot")
+
+PLATFORM = platform.node()[:3]
+wandb.run.config['PLATFORM'] = PLATFORM
+
+NB_EPOCHS = wandb.config.NB_EPOCHS
+MODEL = wandb.config.MODEL
+LAYERS = wandb.config.LAYERS
+DATASET = wandb.config.DATASET
+CONCAT = wandb.config.CONCAT
+LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
+LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
+LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
+TTUR = wandb.config.TTUR
+
 
 ROOT_WEIGHTS = './weights/'
 
 # Dataset
 if DATASET == "big":
-    if "blg" in platform.node():
+    if "blg" in PLATFORM:
         ROOT_DATASET = '../scratch/dev/mp4/'
-    elif "gpu-k" in platform.node():
+    elif "gpu" in PLATFORM:
         ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
-    elif "GATINEAU" in platform.node():
+    elif "GAT" in PLATFORM:
         ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
-    elif "coigne" in platform.node():
+    elif "coi" in PLATFORM:
         ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
     else:
         ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
@@ -30,34 +41,28 @@ if DATASET == "big":
 elif DATASET == "small":
     ROOT_DATASET = './dataset/mp4'
 
-
 # Batch
-if "blg" in platform.node():
+if "blg" in PLATFORM:
     BATCH_SIZE = 6
-elif "gpu-k" in platform.node():
+elif "gpu" in PLATFORM:
     BATCH_SIZE = 4
-elif "GATINEAU" in platform.node():
+elif "GAT" in PLATFORM:
     BATCH_SIZE = 2
-elif "coigne" in platform.node():
+elif "coi" in PLATFORM:
     BATCH_SIZE = 2
 else:
     BATCH_SIZE = 2
 
 
 LOAD_BATCH_SIZE = torch.cuda.device_count() * BATCH_SIZE
-# LR
-LEARNING_RATE_EMB = 5e-6
-LEARNING_RATE_GEN = 5e-6
-LEARNING_RATE_DISC = 5e-5
-TTUR = True
 
 # Sizes
-if "ArchPierre" in platform.node():
+if "Arc" in PLATFORM:
     LATENT_SIZE = 512
 else:
     LATENT_SIZE = 1024
 
-if "ArchPierre" in platform.node():
+if "Arc" in PLATFORM:
     K_SHOT = 6
 else:
     K_SHOT = 8

@@ -210,10 +210,10 @@ class BigGenerator(nn.Module):
         but I will do it later, it's easier to debug this way)
         """
         layerUp0, layerUp1, layerUp2, layerUp3 = layersUp
-        print("L3 ", layerUp3.size())
-        print("L2 ", layerUp2.size())
-        print("L1 ", layerUp1.size())
-        print("L0 ", layerUp0.size())
+        # print("L3 ", layerUp3.size())
+        # print("L2 ", layerUp2.size())
+        # print("L1 ", layerUp1.size())
+        # print("L0 ", layerUp0.size())
         # print("IMG ", img.size())
 
         # ######
@@ -328,7 +328,7 @@ class BigGenerator(nn.Module):
         x = self.Res1(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("Res1  ", x.size())
+        # print("Res1  ", x.size())
         i += nb_params
 
         if CONCAT == "last":
@@ -340,7 +340,7 @@ class BigGenerator(nn.Module):
         x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("ResUp2  ", x.size())
+        # print("ResUp2  ", x.size())
         i += nb_params
 
         if CONCAT == "last":
@@ -352,7 +352,7 @@ class BigGenerator(nn.Module):
         x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("ResUp3  ", x.size())
+        # print("ResUp3  ", x.size())
         i += nb_params
 
         if CONCAT == "last":
@@ -364,7 +364,7 @@ class BigGenerator(nn.Module):
         x = self.Res4(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("Res4  ", x.size())
+        # print("Res4  ", x.size())
         i += nb_params
 
         if CONCAT == "last":
@@ -379,30 +379,30 @@ class BigGenerator(nn.Module):
         x = self.ResUp5(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("ResUp5  ", x.size())
+        # print("ResUp5  ", x.size())
         i += nb_params
 
         nb_params = self.ResUp6.params
         x = self.ResUp6(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("ResUp6  ", x.size())
+        # print("ResUp6  ", x.size())
         i += nb_params
 
         nb_params = self.ResUp7.params
         x = self.ResUp7(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        print("ResUp7  ", x.size())
+        # print("ResUp7  ", x.size())
         i += nb_params
 
         nb_params = self.Res8.params
         x = self.Res8(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
         x = self.tanh(x)
-        print("Res8  ", x.size())
+        # print("Res8  ", x.size())
         i += nb_params
-        print("Nb_param   ", i)
+        # print("Nb_param   ", i)
         return x
 
 

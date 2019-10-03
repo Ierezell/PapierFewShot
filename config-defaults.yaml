@@ -1,0 +1,20 @@
+NB_EPOCHS:
+  value : 200
+MODEL:
+  value : "big"
+LAYERS:
+  value: "big"
+DATASET:
+  value : "big"
+CONCAT:
+  # "first", "last"
+  value: []
+
+LEARNING_RATE_EMB:
+  value: 0.000005
+LEARNING_RATE_GEN:
+  value: 0.000005
+LEARNING_RATE_DISC:
+  value: 0.00005
+TTUR:
+  value : True
