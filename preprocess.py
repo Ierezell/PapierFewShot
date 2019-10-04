@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import time
 from settings import (DEVICE, DEVICE_LANDMARKS, K_SHOT, LOAD_BATCH_SIZE,
-                      NB_WORKERS, ROOT_DATASET)
+                      NB_WORKERS, ROOT_DATASET, HALF)
 
 
 class frameLoader(Dataset):
@@ -175,7 +175,7 @@ class frameLoader(Dataset):
                     total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
                     cvVideo.release()
 
-                    if total_frame_nb < 0:
+                    if total_frame_nb < 1:
                         # print("0 Frames CTX")
                         raise ValueError
 
@@ -227,8 +227,11 @@ class frameLoader(Dataset):
         # print("Context ok")
         context_tensors = torch.cat(context_tensors_list)
         torch.cuda.empty_cache()
-        return gt_im_tensor, gt_landmarks, context_tensors, itemId
-
+        if HALF:
+            return (gt_im_tensor.half(), gt_landmarks.half(),
+                    context_tensors.half(), itemId)
+        else:
+            return (gt_im_tensor, gt_landmarks, context_tensors, itemId)
     # def __getitem__(self, index):
     #     bad_context = True
     #     context = self.contexts[index]

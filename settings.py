@@ -21,6 +21,7 @@ LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
 LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 TTUR = wandb.config.TTUR
+HALF = wandb.config.HALF
 
 
 ROOT_WEIGHTS = './weights/'
