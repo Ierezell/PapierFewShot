@@ -21,6 +21,7 @@ LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
 LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 TTUR = wandb.config.TTUR
+PRINT_EVERY = wandb.config.PRINT_EVERY
 
 
 ROOT_WEIGHTS = './weights/'
@@ -33,7 +34,7 @@ if DATASET == "big":
         ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
     elif "GAT" in PLATFORM:
         ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
-    elif "coi" in PLATFORM:
+    elif "co" in PLATFORM:
         ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
     else:
         ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
@@ -48,7 +49,7 @@ elif "gpu" in PLATFORM:
     BATCH_SIZE = 4
 elif "GAT" in PLATFORM:
     BATCH_SIZE = 2
-elif "coi" in PLATFORM:
+elif "co" in PLATFORM:
     BATCH_SIZE = 2
 else:
     BATCH_SIZE = 2
@@ -71,7 +72,6 @@ else:
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
 
-PRINT_EVERY = 500
 
 ###############
 # RL SETTINGS #
