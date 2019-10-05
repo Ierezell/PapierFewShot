@@ -1,7 +1,7 @@
 from torchvision.models.vgg import vgg19
 import torch.nn as nn
 import torch
-from settings import BATCH_SIZE, LATENT_SIZE, DEVICE
+from settings import BATCH_SIZE, LATENT_SIZE, DEVICE, HALF
 """
 
 For the calculation of LCNT, we evaluate L1 loss between activations of
@@ -60,9 +60,11 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        one = torch.tensor((), device=DEVICE, dtype=torch.float)
+        one = torch.tensor((), device=DEVICE,
+                           dtype=(torch.half if HALF else torch.float))
         one = one.new_ones(score_gt.size())
-        zero = torch.tensor((), device=DEVICE, dtype=torch.float)
+        zero = torch.tensor((), device=DEVICE,
+                            dtype=(torch.half if HALF else torch.float))
         zero = zero.new_zeros(score_gt.size())
         loss = torch.max(zero, one + score_synth) +\
             torch.max(zero, one - score_gt)

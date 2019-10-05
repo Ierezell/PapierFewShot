@@ -12,7 +12,7 @@ from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, TTUR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_DISCRIMINATOR,)
+                      PATH_WEIGHTS_DISCRIMINATOR, HALF)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
@@ -96,12 +96,16 @@ if __name__ == '__main__':
 
             if TTUR:
                 if i_batch % 3 == 0:
-                    lossDsc.backward(torch.ones(torch.cuda.device_count(),
-                                                device=DEVICE))
+                    lossDsc.backward(torch.ones(
+                        torch.cuda.device_count(),
+                        dtype=(torch.half if HALF else torch.float),
+                        device=DEVICE))
                     optimizerDisc.step()
                 else:
-                    loss.backward(torch.ones(torch.cuda.device_count(),
-                                             device=DEVICE))
+                    loss.backward(torch.ones(
+                        torch.cuda.device_count(),
+                        dtype=(torch.half if HALF else torch.float),
+                        device=DEVICE))
                     optimizerEmb.step()
                     optimizerGen.step()
             else:

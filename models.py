@@ -1,4 +1,4 @@
-from settings import LATENT_SIZE, BATCH_SIZE, CONCAT, DEVICE
+from settings import LATENT_SIZE, BATCH_SIZE, CONCAT, DEVICE, HALF
 from torch.nn.utils import spectral_norm
 from torch import nn
 import torch
@@ -30,16 +30,22 @@ class Embedder(nn.Module):
         self.relu = nn.SELU()
 
     def forward(self, x):  # b, 12, 224, 224
-        temp = torch.zeros(LATENT_SIZE, dtype=torch.float, device=DEVICE)
+        temp = torch.zeros(LATENT_SIZE,
+                           dtype=(torch.half if HALF else torch.float),
+                           device=DEVICE)
 
         layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
-                               dtype=torch.float, device=DEVICE)
+                               dtype=(torch.half if HALF else torch.float),
+                               device=DEVICE)
         layerUp1 = torch.zeros((BATCH_SIZE, 256, 14, 14),
-                               dtype=torch.float, device=DEVICE)
+                               dtype=(torch.half if HALF else torch.float),
+                               device=DEVICE)
         layerUp2 = torch.zeros((BATCH_SIZE, 128, 28, 28),
-                               dtype=torch.float, device=DEVICE)
+                               dtype=(torch.half if HALF else torch.float),
+                               device=DEVICE)
         layerUp3 = torch.zeros((BATCH_SIZE, 64, 56, 56),
-                               dtype=torch.float, device=DEVICE)
+                               dtype=(torch.half if HALF else torch.float),
+                               device=DEVICE)
 
         for i in range(x.size(1) // 3):
             # print("x  ", x.size())

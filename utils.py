@@ -13,7 +13,7 @@ from tqdm import tqdm
 from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
                       LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_POLICY, PRINT_EVERY)
+                      PATH_WEIGHTS_POLICY, PRINT_EVERY, HALF)
 
 mplstyle.use(['dark_background', 'fast'])
 
@@ -37,6 +37,11 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
         embedder = BigEmbedder()
         generator = BigGenerator()
         discriminator = BigDiscriminator(nb_pers)
+
+    if HALF:
+        embedder = embedder.half()
+        generator = generator.half()
+        discriminator = discriminator.half()
 
     embedder = nn.DataParallel(
         embedder, device_ids=range(torch.cuda.device_count()))
@@ -112,6 +117,12 @@ def load_losses():
     cntLoss = contentLoss()
     dscLoss = discriminatorLoss()
 
+    if HALF:
+        advLoss = advLoss.half()
+        mchLoss = mchLoss.half()
+        cntLoss = cntLoss.half()
+        dscLoss = dscLoss.half()
+
     advLoss = nn.DataParallel(
         advLoss, device_ids=range(torch.cuda.device_count()))
     mchLoss = nn.DataParallel(
@@ -145,8 +156,8 @@ def load_layers(size=LAYERS):
 
 class CheckpointsFewShots:
     def __init__(self):
-        self.best_loss_EmbGen = 1e10
-        self.best_loss_Disc = 1e10
+        self.best_loss_EmbGen = 1000
+        self.best_loss_Disc = 1000
         self.step_disc = 0
         self.step_EmbGen = 0
 

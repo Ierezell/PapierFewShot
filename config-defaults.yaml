@@ -5,7 +5,7 @@ MODEL:
 LAYERS:
   value: "big"
 DATASET:
-  value : "big"
+  value : "small"
 CONCAT:
   # "first", "last"
   value: ["last"]
@@ -20,3 +20,5 @@ TTUR:
   value : True
 PRINT_EVERY:
   value: 500
+HALF:
+  value : True
