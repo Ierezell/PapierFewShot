@@ -19,17 +19,19 @@ def parse_args():
 
 def get_frames(context_path):
     """
-    Return the frames of all the videos in the given path
+    Return the landmarks of all the frames of all the videos in the given path
+    and the frames of all the videos
 
     Arguments:
         context_path {str} -- The path containing the videos
 
     Returns:
-        [list] -- list of the frames of all the videos in context_path
+        [list, list] -- list of the frames and of the landmarks
     """
 
     videos = glob.glob(f"{context_path}/*")
     frames_landmarks = []
+    frames = []
 
     for v in videos:
 
@@ -61,6 +63,7 @@ def get_frames(context_path):
                     landmark_pts[:, 1] = (
                         landmark_pts[:, 1] / max(landmark_pts[:, 1]))*224
 
+                    frames.append(image)
                     frames_landmarks.append(landmark_pts)
                 except TypeError:
                     continue
@@ -68,7 +71,7 @@ def get_frames(context_path):
         except ValueError:
             continue
 
-    return frames_landmarks
+    return frames, frames_landmarks
 
 
 def get_similarity(frames_landmarks):
@@ -84,7 +87,7 @@ def get_similarity(frames_landmarks):
 
     N = len(frames_landmarks)
 
-    similarity_matrix = np.zeros(N)
+    similarity_matrix = np.zeros((N, N))
 
     for i, ldmk in enumerate(frames_landmarks):
         for j in range(i+1, N):
@@ -94,12 +97,33 @@ def get_similarity(frames_landmarks):
     return similarity_matrix
 
 
-def process(global_path, total_frame_nb):
-    context_list = glob.glob(f"{global_path}/*")
+def select_images(similarity_matrix, total_frame_nb):
+
+    N = len(similarity_matrix)
+    score_of_images = []
+    total_matrix = similarity_matrix + similarity_matrix.T
+
+    for i in range(N):
+        score_of_images.append((np.linalg.norm(total_matrix[i]), i))
+
+    if N > total_frame_nb:
+        score_of_images.sort()
+        score_of_images.reverse()
+        return score_of_images[:total_frame_nb]
+
+    else:
+        return score_of_images
+
+
+def process(global_video_path, global_image_path, total_frame_nb):
+    context_list = glob.glob(f"{global_video_path}/*")
     for context in context_list:
-        frames_landmarks = get_frames(
-            os.path.join(global_path, context))
+        frames, frames_landmarks = get_frames(
+            os.path.join(global_video_path, context))
         similarity_matrix = get_similarity(frames_landmarks)
+        score_of_images = select_images(similarity_matrix, total_frame_nb)
+        for i, score in enumerate(score_of_images):
+            cv2.imwrite("frames{:04d}".format(i), frames[score[1]])
 
 
 if __name__ == "__main__":
