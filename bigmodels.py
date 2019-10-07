@@ -189,10 +189,10 @@ class BigGenerator(nn.Module):
 
         self.ResUp3 = ResidualBlock(512, 256)
 
-        self.Res4 = ResidualBlock(256, 128)
+        self.Res4 = ResidualBlockUp(256, 128)
         self.attentionUp = Attention(128)
 
-        self.ResUp5 = ResidualBlockUp(128, 64)
+        self.ResUp5 = ResidualBlock(128, 64)
 
         self.ResUp6 = ResidualBlockUp(64, 32)
 

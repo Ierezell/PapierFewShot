@@ -2,7 +2,7 @@ NB_EPOCHS:
   value : 200
 MODEL:
   # "big", "small"
-  value : "big"
+  value : "small"
 LAYERS:
   # "big", "small"
   value: "big"
@@ -11,7 +11,7 @@ DATASET:
   value : "small"
 CONCAT:
   # "first", "last"
-  value: ["last"]
+  value: "last"
 
 LEARNING_RATE_EMB:
   value: 0.000005
