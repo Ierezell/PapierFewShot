@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
-    optimizerDisc = SGD(disc.parameters(), lr=LEARNING_RATE_DISC)
+    optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
 
     check = CheckpointsFewShots()
 

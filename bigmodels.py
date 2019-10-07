@@ -45,9 +45,13 @@ class BigEmbedder(nn.Module):
         self.residual7 = ResidualBlockDown(512, LATENT_SIZE)
         self.attention2 = Attention(LATENT_SIZE)
         self.residual8 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 13390))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 13390))
-        self.relu = nn.ReLU()
+        if LATENT_SIZE == 512:
+            self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8014))
+            self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8014))
+        elif LATENT_SIZE == 1024:
+            self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 13390))
+            self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 13390))
+        self.relu = nn.SELU()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x):  # b, 12, 224, 224
@@ -440,67 +444,83 @@ class BigDiscriminator(nn.Module):
             on one unknown person (variables are differents).
         """
         super(BigDiscriminator, self).__init__()
-        self.residual1 = ResidualBlockDown(6, 64)
-        self.residual2 = ResidualBlockDown(64, 128)
-        self.residual3 = ResidualBlock(128, 128)
-        self.residual4 = ResidualBlockDown(128, 256)
-        self.residual5 = ResidualBlock(256, 256)
-        self.residual6 = ResidualBlockDown(256, 512)
-        self.residual7 = ResidualBlock(512, 512)
-        self.residual8 = ResidualBlockDown(512, LATENT_SIZE)
+        self.residual1 = ResidualBlockDown(6, 32)
+        self.residual2 = ResidualBlockDown(32, 64)
+        self.residual3 = ResidualBlockDown(64, 128)
+        self.residual4 = ResidualBlock(128, 128)
         self.attention1 = Attention(128)
+        self.residual5 = ResidualBlockDown(128, 256)
+        self.residual6 = ResidualBlock(256, 256)
+        self.residual7 = ResidualBlockDown(256, 512)
         self.attention2 = Attention(512)
+        self.residual8 = ResidualBlock(512, LATENT_SIZE)
+        self.residual9 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
-        self.relu = nn.ReLU()
+        self.relu = nn.SELU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
         self.sig = nn.Sigmoid()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
-    def forward(self, x, indexes):  # b, 6, 224, 224
+    def forward(self, x, indexes):
         features_maps = []
-        out = self.residual1(x)  # b, 64, 112, 112
+        out = self.residual1(x)
         out = self.relu(out)
+        # print("Out 1 ", out.size())
         features_maps.append(out)
 
-        out = self.residual2(out)  # 2, 128, 56, 56
+        out = self.residual2(out)
         out = self.relu(out)
+        # print("Out 2 ", out.size())
         features_maps.append(out)
 
-        out = self.attention1(out)  # 2, 128, 56, 56
+        out = self.residual3(out)
         out = self.relu(out)
+        # print("Out 3 ", out.size())
         features_maps.append(out)
 
-        out = self.residual3(out)  # 2, 256, 28, 28
+        out = self.residual4(out)
         out = self.relu(out)
+        # print("Out 4 ", out.size())
         features_maps.append(out)
 
-        out = self.residual4(out)  # 2, 512, 14, 14
+        out = self.attention1(out)
         out = self.relu(out)
+        # print("Out 11 ", out.size())
         features_maps.append(out)
 
-        out = self.residual5(out)  # 2, 512, 7,7
+        out = self.residual5(out)
         out = self.relu(out)
+        # print("Out 5 ", out.size())
         features_maps.append(out)
 
-        out = self.residual6(out)  # 2, 512, 7,7
+        out = self.residual6(out)
         out = self.relu(out)
+        # print("Out 6 ", out.size())
         features_maps.append(out)
 
-        out = self.residual7(out)  # 2, 512, 7,7
+        out = self.residual7(out)
         out = self.relu(out)
+        # print("Out 7 ", out.size())
         features_maps.append(out)
 
-        out = self.attention2(out)  # 2, 128, 56, 56
+        out = self.attention2(out)
         out = self.relu(out)
+        # print("Out 22 ", out.size())
         features_maps.append(out)
 
-        out = self.residual8(out)  # 2, 512, 7,7
+        out = self.residual8(out)
         out = self.relu(out)
+        # print("Out 8 ", out.size())
         features_maps.append(out)
 
-        out = self.avgPool(out).squeeze()  # b,512
+        out = self.residual9(out)
+        out = self.relu(out)
+        # print("Out 9 ", out.size())
+        features_maps.append(out)
+
+        out = self.avgPool(out).squeeze()
         out = self.relu(out)
         final_out = self.fc(out)
         features_maps.append(out)

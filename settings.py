@@ -23,7 +23,8 @@ LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 TTUR = wandb.config.TTUR
 PRINT_EVERY = wandb.config.PRINT_EVERY
 HALF = wandb.config.HALF
-
+K_SHOT = wandb.config.K_SHOT
+LATENT_SIZE = wandb.config.LATENT_SIZE
 
 ROOT_WEIGHTS = './weights/'
 
@@ -51,7 +52,7 @@ elif "gpu" in PLATFORM:
 elif "GAT" in PLATFORM:
     BATCH_SIZE = 2
 elif "co" in PLATFORM:
-    BATCH_SIZE = 2
+    BATCH_SIZE = 6
 else:
     BATCH_SIZE = 2
 
@@ -61,14 +62,9 @@ LOAD_BATCH_SIZE = torch.cuda.device_count() * BATCH_SIZE
 # Sizes
 if "Arc" in PLATFORM:
     LATENT_SIZE = 512
-else:
-    LATENT_SIZE = 1024
 
 if "Arc" in PLATFORM:
     K_SHOT = 6
-else:
-    K_SHOT = 8
-
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 NB_WORKERS = 0
@@ -149,3 +145,5 @@ PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
 PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
+
+print(folder_weights)
