@@ -4,12 +4,17 @@ import torch
 import datetime
 import wandb
 
-# os.environ['WANDB_MODE'] = 'dryrun'
+
+PLATFORM = platform.node()[:3]
+# Batch
+if "blg" in PLATFORM:
+    os.environ['WANDB_MODE'] = 'dryrun'
+elif "gpu" in PLATFORM:
+    os.environ['WANDB_MODE'] = 'dryrun'
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 wandb.init(project="papierfewshot")
 
-PLATFORM = platform.node()[:3]
 wandb.run.config['PLATFORM'] = PLATFORM
 
 NB_EPOCHS = wandb.config.NB_EPOCHS

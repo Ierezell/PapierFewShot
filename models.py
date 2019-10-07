@@ -157,7 +157,7 @@ class Generator(nn.Module):
         x = self.attentionDown(x)
         x = self.relu(x)
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp3), dim=1)
             # print("cat3", x.size())
             x = self.Ada3(x)
@@ -166,7 +166,7 @@ class Generator(nn.Module):
         x = self.relu(x)
         # print("resdown3", x.size())
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp2), dim=1)
             # print("cat2", x.size())
             x = self.Ada2(x)
@@ -175,7 +175,7 @@ class Generator(nn.Module):
         x = self.relu(x)
         # print("resdown3", x.size())
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp1), dim=1)
             # print("cat1", x.size())
             x = self.Ada1(x)
@@ -183,7 +183,7 @@ class Generator(nn.Module):
         x = self.ResDown5(x)
         x = self.relu(x)
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp0), dim=1)
             x = self.Ada0(x)
             x = self.relu(x)
@@ -209,7 +209,7 @@ class Generator(nn.Module):
         x = self.relu(x)
         i += nb_params
         # print("ResUp1", x.size())
-        if "last" in CONCAT:
+        if CONCAT == "last":
             x = torch.cat((x, layerUp1), dim=1)
             x = self.Ada1(x)
             x = self.relu(x)
@@ -221,7 +221,7 @@ class Generator(nn.Module):
         i += nb_params
         # print("ResUp2", x.size())
 
-        if "last" in CONCAT:
+        if CONCAT == "last":
             x = torch.cat((x, layerUp2), dim=1)
             x = self.Ada2(x)
             x = self.relu(x)
@@ -233,7 +233,7 @@ class Generator(nn.Module):
         i += nb_params
         # print("ResUp3", x.size())
 
-        if "last" in CONCAT:
+        if CONCAT == "last":
             x = torch.cat((x, layerUp3), dim=1)
             x = self.Ada3(x)
             x = self.relu(x)
@@ -256,7 +256,7 @@ class Generator(nn.Module):
         i += nb_params
         # print("ResUp5", x.size())
 
-        print("Nb_param   ", i)
+        # print("Nb_param   ", i)
         return x
 
 

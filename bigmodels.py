@@ -241,7 +241,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         # print("ResDown4  ", x.size())
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp3), dim=1)
             # print("cat3", x.size())
             x = self.Ada3(x)
@@ -254,7 +254,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         # print("ResDown5  ", x.size())
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp2), dim=1)
             # print("cat2", x.size())
             x = self.Ada2(x)
@@ -263,7 +263,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         # print("ResDown6  ", x.size())
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp1), dim=1)
             # print("cat1", x.size())
             x = self.Ada1(x)
@@ -272,7 +272,7 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         # print("ResDown7  ", x.size())
 
-        if "first" in CONCAT:
+        if CONCAT == "first":
             x = torch.cat((x, layerUp0), dim=1)
             # print("cat0", x.size())
             x = self.Ada0(x)
