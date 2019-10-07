@@ -181,9 +181,9 @@ class frameLoader(Dataset):
 
                 except ValueError:
                     # print("Bad Video !")
-                    check_video_files.remove(v)
+                    video_files.remove(v)
 
-            if not check_video_files:
+            if not video_files:
                 # print("No video in this context : Loading a new random one.")
                 context = self.contexts[np.random.randint(len(self.contexts))]
                 video_files = glob.glob(f"{context}/*")
@@ -192,7 +192,6 @@ class frameLoader(Dataset):
                 # print("Context ok")
                 bad_context = False
         # print("Context bon, je loade")
-        video_files = check_video_files
         if platform.system() == "Windows":
             itemId = self.id_to_tensor[context.split("\\")[-2]]
         else:

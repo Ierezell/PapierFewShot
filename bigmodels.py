@@ -45,8 +45,8 @@ class BigEmbedder(nn.Module):
         self.residual7 = ResidualBlockDown(512, LATENT_SIZE)
         self.attention2 = Attention(LATENT_SIZE)
         self.residual8 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8014))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8014))
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 13390))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 13390))
         self.relu = nn.ReLU()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 

@@ -11,7 +11,7 @@ DATASET:
   value : "small"
 CONCAT:
   # "first", "last"
-  value: ""
+  value: ["last"]
 
 LEARNING_RATE_EMB:
   value: 0.000005
@@ -21,5 +21,7 @@ LEARNING_RATE_DISC:
   value: 0.00005
 TTUR:
   value : True
+PRINT_EVERY:
+  value: 500
 HALF:
   value : True
