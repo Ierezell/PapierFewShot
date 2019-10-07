@@ -5,9 +5,11 @@ MODEL:
   value : "big"
 
 LAYERS:
+  # "big", "small"
   value: "big"
 
 DATASET:
+  # "big", "small"
   value : "small"
 
 CONCAT:
