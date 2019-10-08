@@ -60,12 +60,8 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        one = torch.tensor((), device=DEVICE,
-                           dtype=(torch.half if HALF else torch.float))
-        one = one.new_ones(score_gt.size())
-        zero = torch.tensor((), device=DEVICE,
-                            dtype=(torch.half if HALF else torch.float))
-        zero = zero.new_zeros(score_gt.size())
+        one = torch.ones_like(score_gt)
+        zero = torch.zeros_like(score_gt)
         loss = torch.max(zero, one + score_synth) +\
             torch.max(zero, one - score_gt)
         return loss.sum(dim=0)
@@ -122,15 +118,16 @@ class contentLoss(nn.Module):
         gtVggFace = gt.clone()
         synthVggFace = synth.clone()
 
-        lossVgg19 = 0
-        lossVggFace = 0
+        lossVgg19 = torch.zeros(1, requires_grad=True)
+        lossVggFace = torch.zeros(1, requires_grad=True)
 
         with torch.no_grad():
             for name, module in self.vgg_layers._modules.items():
                 gtVgg19 = module(gtVgg19)
                 synthVgg19 = module(synthVgg19)
                 if name in self.layer_name_mapping_vgg19:
-                    lossVgg19 += self.l1(gtVgg19, synthVgg19)
+                    lossVgg19 = torch.add(lossVgg19,
+                                          self.l1(gtVgg19, synthVgg19))
                     # If needed, output can be dictionaries of vgg feature for
                     # each layer :
                     # output_gt[self.layer_name_mapping[name]] = gt
@@ -141,7 +138,8 @@ class contentLoss(nn.Module):
                 gtVggFace = module(gtVggFace)
                 synthVggFace = module(synthVggFace)
                 if name in self.layer_name_mapping_vggFace.values():
-                    lossVggFace += self.l1(gtVggFace, synthVggFace)
+                    lossVggFace = torch.add(lossVggFace,
+                                            self.l1(gtVggFace, synthVggFace))
                 if name == "conv5_2":
                     break
         return 25e-2 * lossVggFace + 15e-1*lossVgg19
