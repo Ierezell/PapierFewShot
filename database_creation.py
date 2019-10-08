@@ -1,16 +1,25 @@
-import sys
-import glob
 import argparse
+import glob
 import os
+import platform
+import sys
 
 import cv2
 import numpy as np
 import torch
-
 from face_alignment import FaceAlignment, LandmarksType
 
+SIZE = (224, 224)
 
 face_landmarks = FaceAlignment(LandmarksType._2D, device="cuda")
+slash = "/"
+if "Windows" in platform.system():
+    slash = "\\"
+
+
+#TODO : frames + ldmk + (frame + ldmk)
+# TODO : gérer les / et \\ pour windows
+# if Windows in platform.system()
 
 
 def parse_args():
@@ -51,6 +60,37 @@ def progress(count, total, in_progress=""):
     sys.stdout.flush()
 
 
+def write_landmarks_on_image(image, landmarks):
+        # Machoire
+    cv2.polylines(image, [np.int32(landmarks[0:17])],
+                  isClosed=False, color=(0, 255, 0))
+    # Sourcil Gauche
+    cv2.polylines(image, [np.int32(landmarks[17:22])],
+                  isClosed=False, color=(255, 0, 0))
+    # Sourcil droit
+    cv2.polylines(image, [np.int32(landmarks[22:27])],
+                  isClosed=False, color=(255, 0, 0))
+    # Nez arrete
+    cv2.polylines(image, [np.int32(landmarks[27:31])],
+                  isClosed=False, color=(255, 0, 255))
+    # Nez narine
+    cv2.polylines(image, [np.int32(landmarks[31:36])],
+                  isClosed=False, color=(255, 0, 255))
+    # Oeil gauche
+    cv2.polylines(image, [np.int32(landmarks[36:42])],
+                  isClosed=True, color=(0, 0, 255))
+    # oeil droit
+    cv2.polylines(image, [np.int32(landmarks[42:48])],
+                  isClosed=True, color=(0, 0, 255))
+    # Bouche exterieur
+    cv2.polylines(image, [np.int32(landmarks[48:60])],
+                  isClosed=True, color=(255, 255, 0))
+    # Bouche interieur
+    cv2.polylines(image, [np.int32(landmarks[60:68])],
+                  isClosed=True, color=(255, 255, 0))
+    return image
+
+
 def get_frames(context_path):
     """
     Return the landmarks of all the frames of all the videos in the given path
@@ -80,8 +120,6 @@ def get_frames(context_path):
 
                 image = cv2.flip(image, 1)
                 image = cv2.resize(image, (224, 224))
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
                 with torch.no_grad():
                     landmark_pts = face_landmarks.get_landmarks_from_image(
                         image)
@@ -169,7 +207,7 @@ def process(global_video_path, global_image_path, total_frame_nb):
         print()
         print(f"Progression : {i+1}/{N}")
 
-        person_name = person.split("/")[-1]
+        person_name = person.split(slash)[-1]
         context_list = glob.glob(f"{person}/*")
 
         for j, context in enumerate(context_list):
@@ -177,7 +215,7 @@ def process(global_video_path, global_image_path, total_frame_nb):
             context_nb = len(context_list)
             progress(j+1, context_nb, context)
 
-            context_name = context.split("/")[-1]
+            context_name = context.split(slash)[-1]
             res_path = os.path.join(
                 global_image_path, person_name, context_name)
 
@@ -187,10 +225,17 @@ def process(global_video_path, global_image_path, total_frame_nb):
             similarity_matrix = get_similarity(frames_landmarks)
             score_of_images = select_images(similarity_matrix, total_frame_nb)
             for k, score in enumerate(score_of_images):
+                black_im = np.zeros(SIZE, np.float32)
+                ldmk_im = write_landmarks_on_image(
+                    black_im, frames_landmarks[score[1]])
+                cplt_im = write_landmarks_on_image(
+                    frames[score[1]], frames_landmarks[score[1]])
                 cv2.imwrite(os.path.join(
                     res_path, f"frames{k:04d}.jpg"), frames[score[1]])
                 cv2.imwrite(os.path.join(
-                    res_path, f"frames{k:04d}_ldmk.jpg"), frames_landmarks[score[1]])
+                    res_path, f"frames{k:04d}_ldmk.jpg"), ldmk_im)
+                cv2.imwrite(os.path.join(
+                    res_path, f"frames{k:04d}_cplt.jpg"), cplt_im)
 
 
 if __name__ == "__main__":
