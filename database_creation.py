@@ -14,7 +14,41 @@ face_landmarks = FaceAlignment(LandmarksType._2D, device="cuda")
 
 
 def parse_args():
-    pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument("global_video_path",
+                        help="Path to the contexts containing the videos")
+    parser.add_argument("global_image_path",
+                        help="Path to the contexts containing the images")
+    parser.add_argument("total_frame_nb", type=int,
+                        help="Number of frames we want to extract per context")
+    args = parser.parse_args()
+
+    error_flag = 0
+
+    if not os.path.exists(args.global_video_path):
+        print("The path " + args.global_video_path + " does not exist")
+        error_flag = 1
+
+    if not os.path.exists(args.global_image_path):
+        print("The path " + args.global_image_path + " does not exist")
+        error_flag = 1
+
+    if error_flag:
+        sys.exit(1)
+
+    return args
+
+
+def progress(count, total, in_progress=""):
+    """
+    Progress of the algorithm : display the percentage of the progress,
+    and the file which is in treatment
+    """
+
+    percents = count / total * 100
+
+    sys.stdout.write(f"{percents:.1f}% Context : {in_progress}\r")
+    sys.stdout.flush()
 
 
 def get_frames(context_path):
@@ -79,7 +113,7 @@ def get_similarity(frames_landmarks):
 
     Arguments:
         frames_landmarks {list} -- A list of landmarks
-
+final_path
     Returns:
         [numpy.array] -- matrix of the similarity between all the landmarks of 
         frames_landmarks
@@ -89,15 +123,25 @@ def get_similarity(frames_landmarks):
 
     similarity_matrix = np.zeros((N, N))
 
-    for i, ldmk in enumerate(frames_landmarks):
-        for j in range(i+1, N):
+    for i, ldmk_1 in enumerate(frames_landmarks):
+        for j, lmdk_2 in enumerate(frames_landmarks[i+1:]):
             similarity_matrix[i, j] = np.linalg.norm(
-                ldmk - frames_landmarks[j])
+                ldmk_1 - lmdk_2)
 
     return similarity_matrix
 
 
 def select_images(similarity_matrix, total_frame_nb):
+    """ Compute the similarity score of each image and returns the ranking
+
+    Arguments:
+        similarity_matrix {numpy.array} -- Matrix of the similarity between
+        all the frames of the context
+        total_frame_nb -- The number of frames we want
+
+    Returns:
+        [type] -- [description]
+    """
 
     N = len(similarity_matrix)
     score_of_images = []
@@ -116,16 +160,39 @@ def select_images(similarity_matrix, total_frame_nb):
 
 
 def process(global_video_path, global_image_path, total_frame_nb):
-    context_list = glob.glob(f"{global_video_path}/*")
-    for context in context_list:
-        frames, frames_landmarks = get_frames(
-            os.path.join(global_video_path, context))
-        similarity_matrix = get_similarity(frames_landmarks)
-        score_of_images = select_images(similarity_matrix, total_frame_nb)
-        for i, score in enumerate(score_of_images):
-            cv2.imwrite("frames{:04d}".format(i), frames[score[1]])
+
+    person_list = glob.glob(f"{global_video_path}/*")
+    N = len(person_list)
+
+    for i, person in enumerate(person_list):
+
+        print()
+        print(f"Progression : {i+1}/{N}")
+
+        person_name = person.split("/")[-1]
+        context_list = glob.glob(f"{person}/*")
+
+        for j, context in enumerate(context_list):
+
+            context_nb = len(context_list)
+            progress(j+1, context_nb, context)
+
+            context_name = context.split("/")[-1]
+            res_path = os.path.join(
+                global_image_path, person_name, context_name)
+
+            if not os.path.exists(res_path):
+                os.mkdir(res_path)
+            frames, frames_landmarks = get_frames(context)
+            similarity_matrix = get_similarity(frames_landmarks)
+            score_of_images = select_images(similarity_matrix, total_frame_nb)
+            for k, score in enumerate(score_of_images):
+                cv2.imwrite(os.path.join(
+                    res_path, f"frames{k:04d}.jpg"), frames[score[1]])
+                cv2.imwrite(os.path.join(
+                    res_path, f"frames{k:04d}_ldmk.jpg"), frames_landmarks[score[1]])
 
 
 if __name__ == "__main__":
     args = parse_args()
-    process()
+    process(args.global_video_path, args.global_image_path, args.total_frame_nb)
