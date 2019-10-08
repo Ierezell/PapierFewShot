@@ -210,6 +210,10 @@ def process(global_video_path, global_image_path, total_frame_nb):
         person_name = person.split(slash)[-1]
         context_list = glob.glob(f"{person}/*")
 
+        person_path = os.path.join(global_image_path, person_name)
+        if not os.path.exists(person_path):
+            os.mkdir(person_path)
+
         for j, context in enumerate(context_list):
 
             context_nb = len(context_list)
@@ -221,15 +225,16 @@ def process(global_video_path, global_image_path, total_frame_nb):
 
             if not os.path.exists(res_path):
                 os.mkdir(res_path)
+
             frames, frames_landmarks = get_frames(context)
             similarity_matrix = get_similarity(frames_landmarks)
             score_of_images = select_images(similarity_matrix, total_frame_nb)
             for k, score in enumerate(score_of_images):
                 black_im = np.zeros(SIZE, np.float32)
-                ldmk_im = write_landmarks_on_image(
-                    black_im, frames_landmarks[score[1]])
-                cplt_im = write_landmarks_on_image(
-                    frames[score[1]], frames_landmarks[score[1]])
+                ldmk_im = write_landmarks_on_image(black_im,
+                                                   frames_landmarks[score[1]])
+                cplt_im = write_landmarks_on_image(frames[score[1]],
+                                                   frames_landmarks[score[1]])
                 cv2.imwrite(os.path.join(
                     res_path, f"frames{k:04d}.jpg"), frames[score[1]])
                 cv2.imwrite(os.path.join(
