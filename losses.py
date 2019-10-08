@@ -121,27 +121,25 @@ class contentLoss(nn.Module):
         lossVgg19 = torch.zeros(1, requires_grad=True)
         lossVggFace = torch.zeros(1, requires_grad=True)
 
-        with torch.no_grad():
-            for name, module in self.vgg_layers._modules.items():
-                gtVgg19 = module(gtVgg19)
-                synthVgg19 = module(synthVgg19)
-                if name in self.layer_name_mapping_vgg19:
-                    lossVgg19 = torch.add(lossVgg19,
-                                          self.l1(gtVgg19, synthVgg19))
-                    # If needed, output can be dictionaries of vgg feature for
-                    # each layer :
-                    # output_gt[self.layer_name_mapping[name]] = gt
-                    # output_synth[self.layer_name_mapping[name]] = synth
+        # with torch.no_grad():
+        for name, module in self.vgg_layers._modules.items():
+            gtVgg19 = module(gtVgg19)
+            synthVgg19 = module(synthVgg19)
+            if name in self.layer_name_mapping_vgg19:
+                lossVgg19 += self.l1(gtVgg19, synthVgg19)
+                # If needed, output can be dictionaries of vgg feature for
+                # each layer :
+                # output_gt[self.layer_name_mapping[name]] = gt
+                # output_synth[self.layer_name_mapping[name]] = synth
 
-        with torch.no_grad():
-            for name, module in self.vgg_Face.named_children():
-                gtVggFace = module(gtVggFace)
-                synthVggFace = module(synthVggFace)
-                if name in self.layer_name_mapping_vggFace.values():
-                    lossVggFace = torch.add(lossVggFace,
-                                            self.l1(gtVggFace, synthVggFace))
-                if name == "conv5_2":
-                    break
+        # with torch.no_grad():
+        for name, module in self.vgg_Face.named_children():
+            gtVggFace = module(gtVggFace)
+            synthVggFace = module(synthVggFace)
+            if name in self.layer_name_mapping_vggFace.values():
+                lossVggFace += self.l1(gtVggFace, synthVggFace)
+            if name == "conv5_2":
+                break
         return 25e-2 * lossVggFace + 15e-1*lossVgg19
 
 

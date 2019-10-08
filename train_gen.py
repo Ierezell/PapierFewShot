@@ -46,7 +46,7 @@ if __name__ == '__main__':
     print_device(cntLoss)
 
     wandb.watch((gen, emb))
-
+    l1 = torch.nn.L1Loss()
     # ##########
     # Training #
     # ##########
@@ -65,24 +65,25 @@ if __name__ == '__main__':
             context = context.to(DEVICE)
             itemIds = itemIds.to(DEVICE)
 
-            print("gt_im ", gt_im.requires_grad)
-            print("gt_landmarks ", gt_landmarks.requires_grad)
-            print("context ", context.requires_grad)
-            print("itemIds ", itemIds.requires_grad)
-
             embeddings, paramWeights, paramBias, layersUp = emb(context)
             synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
 
             lossCnt = cntLoss(gt_im, synth_im).mean()
-            print(lossCnt)
-            lossCnt.backward()
+            lossL1 = l1(gt_im, synth_im).mean()*120
+            loss = lossCnt + lossL1
 
+            loss.backward(torch.ones(
+                torch.cuda.device_count(),
+                dtype=(torch.half if HALF else torch.float),
+                device=DEVICE))
             optimizerEmb.step()
             optimizerGen.step()
 
-            check.save("embGen", lossCnt, emb, gen, disc)
+            check.save("embGen", loss, emb, gen, disc)
 
+            wandb.log({"loss": loss})
             wandb.log({"lossCnt": lossCnt})
+            wandb.log({"lossL1": lossL1})
 
             if i_batch % PRINT_EVERY == 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
