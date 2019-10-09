@@ -71,6 +71,7 @@ if __name__ == '__main__':
             lossCnt = cntLoss(gt_im, synth_im).mean()
             lossL1 = l1(gt_im, synth_im).mean()*120
             loss = lossCnt + lossL1
+            # loss = lossCnt
 
             loss.backward(torch.ones(
                 torch.cuda.device_count(),

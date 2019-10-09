@@ -1,6 +1,8 @@
 #!/bin/bash
-echo "Chargement des poids de Helios"
+echo "-_-_-_-_- Rapatriement des poids de Helios -_-_-_-_-"
 rsync -zav "$1@helios.calculquebec.ca:PapierFewShot/weights/" "./weights"
+echo "-_-_-_-_-_-_-_-_-_-_-   DONE   -_-_-_-_-_-_-_-_-_-_-"
 
-echo "Chargement des poids de Beluga"
+echo "-_-_-_-_- Rapatriement des poids de Beluga -_-_-_-_-"
 rsync -zav "$1@beluga.calculcanada.ca:PapierFewShot/weights/" "./weights"
+echo "-_-_-_-_-_-_-_-_-_-_-   DONE   -_-_-_-_-_-_-_-_-_-_-"

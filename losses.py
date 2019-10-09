@@ -125,10 +125,10 @@ class contentLoss(nn.Module):
         lossVgg19 = 0
         lossVggFace = 0
 
-        # with torch.no_grad():
         for name, module in self.vgg_layers._modules.items():
-            gtVgg19 = module(gtVgg19)
-            synthVgg19 = module(synthVgg19)
+            with torch.no_grad():
+                gtVgg19 = module(gtVgg19)
+                synthVgg19 = module(synthVgg19)
             if name in self.layer_name_mapping_vgg19:
                 lossVgg19 += self.l1(gtVgg19, synthVgg19)
                 # If needed, output can be dictionaries of vgg feature for
@@ -136,7 +136,6 @@ class contentLoss(nn.Module):
                 # output_gt[self.layer_name_mapping[name]] = gt
                 # output_synth[self.layer_name_mapping[name]] = synth
 
-        # with torch.no_grad():
         for name, module in self.vgg_Face.named_children():
             gtVggFace = module(gtVggFace)
             synthVggFace = module(synthVggFace)

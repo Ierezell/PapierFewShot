@@ -95,7 +95,7 @@ if __name__ == '__main__':
             loss = lossAdv + lossCnt + lossMch
 
             if TTUR:
-                if i_batch % 3 == 0:
+                if i_batch % 3 == 0 or i_batch % 3 == 1:
                     lossDsc.backward(torch.ones(
                         torch.cuda.device_count(),
                         dtype=(torch.half if HALF else torch.float),

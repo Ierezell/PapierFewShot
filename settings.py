@@ -4,32 +4,35 @@ import torch
 import datetime
 import wandb
 
-
 PLATFORM = platform.node()[:3]
-# Batch
+
 if "blg" in PLATFORM:
     os.environ['WANDB_MODE'] = 'dryrun'
 elif "gpu" in PLATFORM:
     os.environ['WANDB_MODE'] = 'dryrun'
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 wandb.init(project="papierfewshot")
 
 wandb.run.config['PLATFORM'] = PLATFORM
 
-NB_EPOCHS = wandb.config.NB_EPOCHS
-MODEL = wandb.config.MODEL
-LAYERS = wandb.config.LAYERS
-DATASET = wandb.config.DATASET
-CONCAT = wandb.config.CONCAT
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+DEVICE_LANDMARKS = "cuda"  # cuda or cpu
+NB_WORKERS = 0
+
+LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
 LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
-LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
-TTUR = wandb.config.TTUR
-PRINT_EVERY = wandb.config.PRINT_EVERY
-HALF = wandb.config.HALF
-K_SHOT = wandb.config.K_SHOT
 LATENT_SIZE = wandb.config.LATENT_SIZE
+PRINT_EVERY = wandb.config.PRINT_EVERY
+NB_EPOCHS = wandb.config.NB_EPOCHS
+DATASET = wandb.config.DATASET
+LAYERS = wandb.config.LAYERS
+CONCAT = wandb.config.CONCAT
+K_SHOT = wandb.config.K_SHOT
+MODEL = wandb.config.MODEL
+TTUR = wandb.config.TTUR
+HALF = wandb.config.HALF
 
 ROOT_WEIGHTS = './weights/'
 
@@ -45,7 +48,6 @@ if DATASET == "big":
         ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
     else:
         ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
-
 elif DATASET == "small":
     ROOT_DATASET = './dataset/mp4'
 
@@ -61,19 +63,14 @@ elif "co" in PLATFORM:
 else:
     BATCH_SIZE = 2
 
-
-LOAD_BATCH_SIZE = torch.cuda.device_count() * BATCH_SIZE
+LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
+                                if torch.cuda.is_available()
+                                else 1)
 
 # Sizes
 if "Arc" in PLATFORM:
     LATENT_SIZE = 512
-
-if "Arc" in PLATFORM:
-    K_SHOT = 6
-
-DEVICE_LANDMARKS = "cuda"  # cuda or cpu
-NB_WORKERS = 0
-
+    K_SHOT = 4
 
 ###############
 # RL SETTINGS #
@@ -105,6 +102,7 @@ CONFIG = {
     "TTUR": str(TTUR),
     "TIME": TIME,
 }
+
 folder_weights = CONFIG["PLATFORM"] + "_"+CONFIG["DATASET"] + "_" + \
     CONFIG["BATCH_SIZE"] + "_" + \
     CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
@@ -126,11 +124,6 @@ folder_weights_Rl = CONFIG_RL['batch_size']+'_'+CONFIG_RL['lr']+'_' +\
     CONFIG_RL['decay_start']+'_'+CONFIG_RL['decay_end']+'_' +\
     CONFIG_RL['decay']+'_'+CONFIG_RL['max_iter_person'] + '_' +\
     CONFIG_RL['max_deque']+'/'
-
-# ##########
-# Override #
-# ##########
-# folder_weights = "/Beluga/"
 
 # Load parameters
 if not os.path.exists(ROOT_WEIGHTS+folder_weights):

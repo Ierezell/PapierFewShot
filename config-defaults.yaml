@@ -10,7 +10,7 @@ LAYERS:
 
 DATASET:
   # "big", "small"
-  value : "small"
+  value : "big"
 
 CONCAT:
   # "first", "last"
@@ -34,8 +34,8 @@ PRINT_EVERY:
 HALF:
   value : False
 
-K_SHOT: 
+K_SHOT:
   value : 8
 
-LATENT_SIZE : 
+LATENT_SIZE :
   value: 512
