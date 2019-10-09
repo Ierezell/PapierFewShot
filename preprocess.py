@@ -226,6 +226,10 @@ class frameLoader(Dataset):
         # print("Context ok")
         context_tensors = torch.cat(context_tensors_list)
         torch.cuda.empty_cache()
+
+        context_tensors.requires_grad = True
+        gt_im_tensor.requires_grad = True
+        gt_landmarks.requires_grad = True
         if HALF:
             return (gt_im_tensor.half(), gt_landmarks.half(),
                     context_tensors.half(), itemId)

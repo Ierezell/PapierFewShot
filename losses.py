@@ -60,12 +60,8 @@ class discriminatorLoss(nn.Module):
         super(discriminatorLoss, self).__init__()
 
     def forward(self, score_gt, score_synth):
-        one = torch.tensor((), device=DEVICE,
-                           dtype=(torch.half if HALF else torch.float))
-        one = one.new_ones(score_gt.size())
-        zero = torch.tensor((), device=DEVICE,
-                            dtype=(torch.half if HALF else torch.float))
-        zero = zero.new_zeros(score_gt.size())
+        one = torch.ones_like(score_gt)
+        zero = torch.zeros_like(score_gt)
         loss = torch.max(zero, one + score_synth) +\
             torch.max(zero, one - score_gt)
         return loss.sum(dim=0)
@@ -122,8 +118,8 @@ class contentLoss(nn.Module):
         gtVggFace = gt.clone()
         synthVggFace = synth.clone()
 
-        lossVgg19 = 0
-        lossVggFace = 0
+        lossVgg19 = torch.zeros(1, requires_grad=True)
+        lossVggFace = torch.zeros(1, requires_grad=True)
 
         for name, module in self.vgg_layers._modules.items():
             with torch.no_grad():

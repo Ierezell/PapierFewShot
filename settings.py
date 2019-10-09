@@ -59,7 +59,7 @@ elif "gpu" in PLATFORM:
 elif "GAT" in PLATFORM:
     BATCH_SIZE = 2
 elif "co" in PLATFORM:
-    BATCH_SIZE = 6
+    BATCH_SIZE = 4
 else:
     BATCH_SIZE = 2
 
