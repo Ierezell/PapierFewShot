@@ -1,7 +1,10 @@
 import argparse
+import base64
 import glob
+import json
 import os
 import platform
+import pickle
 import sys
 
 import cv2
@@ -15,11 +18,6 @@ face_landmarks = FaceAlignment(LandmarksType._2D, device="cuda")
 slash = "/"
 if "Windows" in platform.system():
     slash = "\\"
-
-
-#TODO : frames + ldmk + (frame + ldmk)
-# TODO : gérer les / et \\ pour windows
-# if Windows in platform.system()
 
 
 def parse_args():
@@ -93,18 +91,16 @@ def write_landmarks_on_image(image, landmarks):
 
 def get_frames(context_path):
     """
-    Return the landmarks of all the frames of all the videos in the given path
-    and the frames of all the videos
+    Return all the frames of the videos of context_path
 
     Arguments:
         context_path {str} -- The path containing the videos
 
     Returns:
-        [list, list] -- list of the frames and of the landmarks
+        [list] -- list of the frames
     """
 
     videos = glob.glob(f"{context_path}/*")
-    frames_landmarks = []
     frames = []
 
     for v in videos:
@@ -120,81 +116,62 @@ def get_frames(context_path):
 
                 image = cv2.flip(image, 1)
                 image = cv2.resize(image, (224, 224))
-                with torch.no_grad():
-                    landmark_pts = face_landmarks.get_landmarks_from_image(
-                        image)
 
-                try:
-                    landmark_pts = landmark_pts[0]
-                    landmark_pts[:, 0] = landmark_pts[:, 0] - \
-                        min(landmark_pts[:, 0])
-                    landmark_pts[:, 1] = landmark_pts[:, 1] - \
-                        min(landmark_pts[:, 1])
-                    landmark_pts[:, 0] = (
-                        landmark_pts[:, 0] / max(landmark_pts[:, 1]))*224
-                    landmark_pts[:, 1] = (
-                        landmark_pts[:, 1] / max(landmark_pts[:, 1]))*224
-
-                    frames.append(image)
-                    frames_landmarks.append(landmark_pts)
-                except TypeError:
-                    continue
+                frames.append(image)
 
         except ValueError:
             continue
 
-    return frames, frames_landmarks
+    return frames
 
 
-def get_similarity(frames_landmarks):
-    """ Create the similarity matrix
-
-    Arguments:
-        frames_landmarks {list} -- A list of landmarks
-final_path
-    Returns:
-        [numpy.array] -- matrix of the similarity between all the landmarks of 
-        frames_landmarks
-    """
-
-    N = len(frames_landmarks)
-
-    similarity_matrix = np.zeros((N, N))
-
-    for i, ldmk_1 in enumerate(frames_landmarks):
-        for j, lmdk_2 in enumerate(frames_landmarks[i+1:]):
-            similarity_matrix[i, j] = np.linalg.norm(
-                ldmk_1 - lmdk_2)
-
-    return similarity_matrix
-
-
-def select_images(similarity_matrix, total_frame_nb):
+def select_images(frames, total_frame_nb):
     """ Compute the similarity score of each image and returns the ranking
 
     Arguments:
-        similarity_matrix {numpy.array} -- Matrix of the similarity between
-        all the frames of the context
+        frames {list of np.array} -- list of frames
         total_frame_nb -- The number of frames we want
 
     Returns:
-        [type] -- [description]
+        [list] -- a list of total_frame_nb frames
     """
 
-    N = len(similarity_matrix)
-    score_of_images = []
-    total_matrix = similarity_matrix + similarity_matrix.T
-
-    for i in range(N):
-        score_of_images.append((np.linalg.norm(total_matrix[i]), i))
+    N = len(frames)
+    res = []
 
     if N > total_frame_nb:
-        score_of_images.sort()
-        score_of_images.reverse()
-        return score_of_images[:total_frame_nb]
+        choice = np.random.choice(N, total_frame_nb, replace=False)
+        for i in choice:
+            res.append(frames[i])
+        return res
 
     else:
-        return score_of_images
+        return frames
+
+
+def get_ldmk(frames):
+    """ Gete the landmarks of a list of frames
+
+    Arguments:
+        frames {list of np.array} -- list of frames
+
+    Returns:
+        [list] -- a list of landmarks
+    """
+
+    frames_landmarks = []
+
+    for f in frames:
+        with torch.no_grad():
+            landmark_pts = face_landmarks.get_landmarks_from_image(f)
+
+        try:
+            landmark_pts = landmark_pts[0]
+            frames_landmarks.append(landmark_pts)
+        except TypeError:
+            frames.append(np.array([]))
+
+    return frames_landmarks
 
 
 def process(global_video_path, global_image_path, total_frame_nb):
@@ -226,21 +203,25 @@ def process(global_video_path, global_image_path, total_frame_nb):
             if not os.path.exists(res_path):
                 os.mkdir(res_path)
 
-            frames, frames_landmarks = get_frames(context)
-            similarity_matrix = get_similarity(frames_landmarks)
-            score_of_images = select_images(similarity_matrix, total_frame_nb)
-            for k, score in enumerate(score_of_images):
-                black_im = np.zeros(SIZE, np.float32)
-                ldmk_im = write_landmarks_on_image(black_im,
-                                                   frames_landmarks[score[1]])
-                cplt_im = write_landmarks_on_image(frames[score[1]],
-                                                   frames_landmarks[score[1]])
-                cv2.imwrite(os.path.join(
-                    res_path, f"frames{k:04d}.jpg"), frames[score[1]])
-                cv2.imwrite(os.path.join(
-                    res_path, f"frames{k:04d}_ldmk.jpg"), ldmk_im)
-                cv2.imwrite(os.path.join(
-                    res_path, f"frames{k:04d}_cplt.jpg"), cplt_im)
+            frames = get_frames(context)
+            images_list = select_images(frames, total_frame_nb)
+            images_ldmk = get_ldmk(images_list)
+
+            data = {}
+            data['frames'] = []
+
+            for k in range(len(images_list)):
+
+                imdata = pickle.dumps(images_list[k])
+
+                data['frames'].append({
+                    'frame': base64.b64encode(imdata).decode('ascii'),
+                    # 'frame': k,
+                    'ldmk': images_ldmk[k].tolist()
+                })
+
+            with open(os.path.join(res_path, "frames.json"), 'w') as file:
+                json.dump(data, file)
 
 
 if __name__ == "__main__":
