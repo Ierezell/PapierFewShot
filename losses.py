@@ -118,8 +118,8 @@ class contentLoss(nn.Module):
         gtVggFace = gt.clone()
         synthVggFace = synth.clone()
 
-        lossVgg19 = torch.zeros(1, requires_grad=True)
-        lossVggFace = torch.zeros(1, requires_grad=True)
+        lossVgg19 = torch.zeros(1, device=DEVICE)
+        lossVggFace = torch.zeros(1, device=DEVICE)
 
         for name, module in self.vgg_layers._modules.items():
             with torch.no_grad():
@@ -271,6 +271,5 @@ def vgg_face_dag(freeze=True, weights_path="./weights/vgg_face_dag.pth"):
     if freeze:
         for p in model.parameters():
             p.requires_grad = False
-    model = model.to(DEVICE)
     model.load_state_dict(torch.load(weights_path))
     return model

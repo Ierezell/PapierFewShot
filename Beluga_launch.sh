@@ -4,7 +4,7 @@
 #SBATCH --job-name=TrainFewShot
 #SBATCH --gres=gpu:2
 #SBATCH --mem=8000M
-#SBATCH --output=/home/piersnel/PapierFewShot/00trainFewShot.out
+###SBATCH --output=/home/piersnel/PapierFewShot/00trainFewShot.out
 
 echo "" > /home/piersnel/PapierFewShot/00trainFewShot.out
 
