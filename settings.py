@@ -11,7 +11,7 @@ if "blg" in PLATFORM:
 elif "gpu" in PLATFORM:
     os.environ['WANDB_MODE'] = 'dryrun'
 
-wandb.init(project="papierfewshot")
+wandb.init(project="papier_few_shot")
 
 wandb.run.config['PLATFORM'] = PLATFORM
 

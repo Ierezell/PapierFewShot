@@ -10,11 +10,11 @@ LAYERS:
 
 DATASET:
   # "big", "small"
-  value : "big"
+  value : "small"
 
 CONCAT:
   # "first", "last"
-  value: "last"
+  value: "first"
 
 LEARNING_RATE_EMB:
   value: 0.000005

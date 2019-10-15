@@ -73,10 +73,11 @@ if __name__ == '__main__':
             loss = lossCnt + lossL1
             # loss = lossCnt
 
-            loss.backward(torch.ones(
-                torch.cuda.device_count(),
-                dtype=(torch.half if HALF else torch.float),
-                device=DEVICE))
+            # loss.backward(torch.ones(
+            #     torch.cuda.device_count(),
+            #     dtype=(torch.half if HALF else torch.float),
+            #     device=DEVICE))
+            loss.backward()
             optimizerEmb.step()
             optimizerGen.step()
 
