@@ -1,0 +1,41 @@
+NB_EPOCHS:
+  value : 200
+
+MODEL:
+  value : "big"
+
+LAYERS:
+  # "big", "small"
+  value: "big"
+
+DATASET:
+  # "big", "small"
+  value : "small"
+
+CONCAT:
+  # "first", "last"
+  value: "first"
+
+LEARNING_RATE_EMB:
+  value: 0.000005
+
+LEARNING_RATE_GEN:
+  value: 0.000005
+
+LEARNING_RATE_DISC:
+  value: 0.00005
+
+TTUR:
+  value : True
+
+PRINT_EVERY:
+  value: 500
+
+HALF:
+  value : False
+
+K_SHOT:
+  value : 8
+
+LATENT_SIZE :
+  value: 512
