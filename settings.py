@@ -15,9 +15,10 @@ wandb.init(project="papier_few_shot")
 
 wandb.run.config['PLATFORM'] = PLATFORM
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cpu")
 
-DEVICE_LANDMARKS = "cuda"  # cuda or cpu
+DEVICE_LANDMARKS = "cpu"  # cuda or cpu
 NB_WORKERS = 0
 
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
@@ -59,7 +60,7 @@ elif "gpu" in PLATFORM:
 elif "GAT" in PLATFORM:
     BATCH_SIZE = 2
 elif "co" in PLATFORM:
-    BATCH_SIZE = 4
+    BATCH_SIZE = 2
 else:
     BATCH_SIZE = 2
 
@@ -71,6 +72,7 @@ LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
 if "Arc" in PLATFORM:
     LATENT_SIZE = 512
     K_SHOT = 4
+K_SHOT = 2
 
 ###############
 # RL SETTINGS #

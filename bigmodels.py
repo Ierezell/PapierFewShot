@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn.utils import spectral_norm
 
-from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF
+from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF, DEVICE
 from utils import load_layers
 
 (ResidualBlock,
@@ -66,19 +66,19 @@ class BigEmbedder(nn.Module):
         """
         temp = torch.zeros(LATENT_SIZE,
                            dtype=(torch.half if HALF else torch.float),
-                           device="cuda")
+                           device=DEVICE)
         layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
                                dtype=(torch.half if HALF else torch.float),
-                               device="cuda")
+                               device=DEVICE)
         layerUp1 = torch.zeros((BATCH_SIZE, 512, 14, 14),
                                dtype=(torch.half if HALF else torch.float),
-                               device="cuda")
+                               device=DEVICE)
         layerUp2 = torch.zeros((BATCH_SIZE, 256, 14, 14),
                                dtype=(torch.half if HALF else torch.float),
-                               device="cuda")
+                               device=DEVICE)
         layerUp3 = torch.zeros((BATCH_SIZE, 128, 28, 28),
                                dtype=(torch.half if HALF else torch.float),
-                               device="cuda")
+                               device=DEVICE)
 
         for i in range(x.size(1)//3):
             out = self.residual1(x.narrow(1, i*3, 3))  # b, 64, 112, 112

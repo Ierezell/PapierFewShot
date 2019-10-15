@@ -23,6 +23,7 @@ if __name__ == '__main__':
 
     print("Python : ", sys.version)
     print("Torch version : ", torch.__version__)
+    print("Torch CuDNN version : ", torch.backends.cudnn.version())
     print("Device : ", DEVICE)
 
     print("Loading Dataset")

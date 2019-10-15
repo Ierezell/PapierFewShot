@@ -2,7 +2,7 @@ NB_EPOCHS:
   value : 200
 
 MODEL:
-  value : "big"
+  value : "small"
 
 LAYERS:
   # "big", "small"
