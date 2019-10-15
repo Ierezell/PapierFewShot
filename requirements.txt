@@ -1,7 +1,10 @@
+cython>=0.29.13
+numpy>=1.16.4
 torch>=1.1.0
 torchvision>=0.3.0
-face-alignment>=1.0.0
-numpy>=1.16.4
 opencv-python>=4.1.0.25
+face-alignment>=1.0.0
 matplotlib>=3.1.0
 wandb>=0.8.9
+fastparquet>=0.3.2
+setuptools>=41.4.0
