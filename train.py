@@ -106,8 +106,8 @@ if __name__ == '__main__':
                         device=DEVICE))
                     optimizerDisc.step()
 
-                    check.save("disc", lossDsc, emb, gen, disc)
-                    wandb.log({"Loss_dsc": lossDsc})
+                    check.save("disc", lossDsc.mean(), emb, gen, disc)
+                    wandb.log({"Loss_dsc": lossDsc.mean()})
                 else:
 
                     loss.backward(torch.ones(
@@ -117,11 +117,11 @@ if __name__ == '__main__':
                     optimizerEmb.step()
                     optimizerGen.step()
 
-                    check.save("embGen", loss, emb, gen, disc)
-                    wandb.log({"lossCnt": lossCnt})
-                    wandb.log({"lossMch": lossMch})
-                    wandb.log({"lossAdv": lossAdv})
-                    wandb.log({"LossTot": loss})
+                    check.save("embGen", loss.mean(), emb, gen, disc)
+                    wandb.log({"lossCnt": lossCnt.mean()})
+                    wandb.log({"lossMch": lossMch.mean()})
+                    wandb.log({"lossAdv": lossAdv.mean()})
+                    wandb.log({"LossTot": loss.mean()})
             else:
                 loss = loss + lossDsc
                 loss.backward(torch.ones(
@@ -133,14 +133,14 @@ if __name__ == '__main__':
                 optimizerEmb.step()
                 optimizerGen.step()
 
-                check.save("embGen", loss, emb, gen, disc)
-                check.save("disc", lossDsc, emb, gen, disc)
+                check.save("embGen", loss.mean(), emb, gen, disc)
+                check.save("disc", loss.mean(), emb, gen, disc)
 
-                wandb.log({"Loss_dsc": lossDsc})
-                wandb.log({"lossCnt": lossCnt})
-                wandb.log({"lossMch": lossMch})
-                wandb.log({"lossAdv": lossAdv})
-                wandb.log({"LossTot": loss})
+                wandb.log({"Loss_dsc": lossDsc.mean()})
+                wandb.log({"lossCnt": lossCnt.mean()})
+                wandb.log({"lossMch": lossMch.mean()})
+                wandb.log({"lossAdv": lossAdv.mean()})
+                wandb.log({"LossTot": loss.mean()})
 
             if i_batch % PRINT_EVERY == 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
