@@ -28,9 +28,17 @@ def parse_args():
                         help="Path to the contexts containing the images")
     parser.add_argument("total_frame_nb", type=int,
                         help="Number of frames we want to extract per context")
+    parser.add_argument("from_i", type=int,
+                        help="index where we want to start")
+    parser.add_argument("to_i", type=int, help="index where we want to stop")
+
     args = parser.parse_args()
 
     error_flag = 0
+
+    if args.from_i > args.to_i:
+        print("The value of from must be smaller than the value of to")
+        error_flag = 1
 
     if not os.path.exists(args.global_video_path):
         print("The path " + args.global_video_path + " does not exist")
@@ -174,12 +182,12 @@ def get_ldmk(frames):
     return frames_landmarks
 
 
-def process(global_video_path, global_image_path, total_frame_nb):
+def process(global_video_path, global_image_path, total_frame_nb, from_i, to_i):
 
     person_list = glob.glob(f"{global_video_path}/*")
     N = len(person_list)
 
-    for i, person in enumerate(person_list):
+    for i, person in enumerate(person_list[from_i:to_i]):
 
         print()
         print(f"Progression : {i+1}/{N}")
@@ -215,8 +223,8 @@ def process(global_video_path, global_image_path, total_frame_nb):
                 imdata = pickle.dumps(images_list[k])
 
                 data['frames'].append({
-                    'frame': base64.b64encode(imdata).decode('ascii'),
-                    # 'frame': k,
+                    # 'frame': base64.b64encode(imdata).decode('ascii'),
+                    'frame': k,
                     'ldmk': images_ldmk[k].tolist()
                 })
 
@@ -226,4 +234,5 @@ def process(global_video_path, global_image_path, total_frame_nb):
 
 if __name__ == "__main__":
     args = parse_args()
-    process(args.global_video_path, args.global_image_path, args.total_frame_nb)
+    process(args.global_video_path, args.global_image_path, args.total_frame_nb,
+            args.from_i, args.to_i)
