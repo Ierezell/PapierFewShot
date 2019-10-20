@@ -185,7 +185,7 @@ def get_ldmk(frames):
 def process(global_video_path, global_image_path, total_frame_nb, from_i, to_i):
 
     person_list = glob.glob(f"{global_video_path}/*")
-    N = len(person_list)
+    N = to_i - from_i
 
     for i, person in enumerate(person_list[from_i:to_i]):
 
