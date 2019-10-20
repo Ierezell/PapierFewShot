@@ -1,5 +1,7 @@
 import copy
 import glob
+import json
+import os
 import platform
 
 import cv2
@@ -137,6 +139,44 @@ class frameLoader(Dataset):
             return transforms.ToTensor()(image)
         else:
             return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
+
+    def load_random_2(self, video, frames):
+
+        i = 0
+        gt_index = frames[0]["frames"]
+        # the first index of the list is used for the gt
+
+        index_list = [x["frame"] for x in frames[1]]
+        # all the indexes of the repertoried landmarks
+
+        ldmk_list = []
+
+        while(video.isOpened()):
+
+            ret, gt_im = video.read()
+            if ret == False:
+                break
+
+            if i == gt_index:
+                # if it's the index of the gt, we need to save the image and the ldmk
+                gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
+                gt_lmdk = np.array(frames[index_list.index(i)]["ldmk"])
+            if i in index_list:
+                # else, we only save the gt, we don't need the image
+                ldmk_list.append(np.array(frames[index_list.index(i)]["ldmk"]))
+
+        final_ldmk = []  # the list of ldkms on a black background
+        for ldmk in ldmk_list:
+            image = np.zeros(gt_im.shape, np.float32)
+            image = self.write_landmarks_on_image(image, ldmk)
+            final_ldmk.append(transforms.ToTensor()(image))
+
+        gt_image = self.write_landmarks_on_image(
+            gt_im, gt_lmdk)  # the gt with ldmks
+
+        torch.cuda.empty_cache()
+
+        return transforms.ToTensor()(gt_im), transforms.ToTensor()(gt_image), final_ldmk
 
     def get_landmarks_from_webcam(self):
         cam = cv2.VideoCapture(0)
@@ -324,6 +364,69 @@ class frameLoader(Dataset):
     #                 context_tensors = torch.cat(context_tensors_list)
     #             torch.cuda.empty_cache()
     #     return gt_im_tensor, gt_landmarks, context_tensors, itemId
+
+    '''
+    def __getitem__(self, index):
+        bad_context = True
+        context = self.contexts[index]
+        video_file = os.path.join(context, "output.mp4")
+        while bad_context:
+
+            if os.path.exists(video_file):  # we check if the video exists
+                try:
+                    cvVideo = cv2.VideoCapture(video_file)
+                    total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cvVideo.release()
+
+                    if total_frame_nb < 0 or not os.path.exists(os.path.join(context, "frames.json")):
+                        # if the video is empty or the frames.json was not created, raise ValueError
+                        raise ValueError
+
+                    bad_context = False
+
+                except ValueError:
+                    # print("Bad Video !")
+                    context = self.contexts[np.random.randint(
+                        len(self.contexts))]
+                    video_file = os.path.join(context, "output.mp4")
+                    continue
+
+        # print("Context bon, je loade")
+
+        json_path = os.path.join(context, "frames.json")
+        with open(json_path, "r") as json_file:
+            ldmks_list = json.load(json_file)['frames']  # we read the json
+
+        if platform.system() == "Windows":
+            itemId = self.id_to_tensor[context.split("\\")[-2]]
+        else:
+            itemId = self.id_to_tensor[context.split('/')[-2]]
+
+        if len(ldmks_list) < self.K_shots+1:
+            frames = np.random.choice(ldmks_list, self.K_shots + 1,
+                                      replace=True)
+        else:
+            frames = np.random.choice(ldmks_list, self.K_shots + 1,
+                                      replace=False)
+        # print("N_vidoess")
+
+        cvVideo = cv2.VideoCapture(video_file)
+
+        """ /!\ le load_random_2 renvoie maintenant directement trois éléments :
+        - l'image gt sans ldmks
+        - l'image gt avec les ldmks
+        - une liste de tenseurs de ldmks
+        """
+
+        gt_im_tensor, gt_landmarks, context_tensors_list = self.load_random_2(
+            cvVideo, frames)
+
+        cvVideo.release()
+
+        context_tensors = torch.cat(context_tensors_list)
+        torch.cuda.empty_cache()
+        return gt_im_tensor, gt_landmarks, context_tensors, itemId
+    '''
 
     def __len__(self):
         return len(self.contexts)
