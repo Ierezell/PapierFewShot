@@ -22,7 +22,7 @@ for person in person_list:
             with open(path, "w") as myfile:
                 myfile.write("".join(res))
             try:
-                output_path = os.path.join(context, "")
+                output_path = os.path.join(context, CONCAT_VIDEO_NAME)
                 command = "ffmpeg -f concat -i " + path + " -c copy " + output_path
                 os.system(command)
                 os.remove(path)
