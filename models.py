@@ -30,7 +30,7 @@ class Embedder(nn.Module):
         self.relu = nn.SELU()
 
     def forward(self, x):  # b, 12, 224, 224
-        temp = torch.zeros(LATENT_SIZE,
+        temp = torch.zeros((BATCH_SIZE, LATENT_SIZE),
                            dtype=(torch.half if HALF else torch.float),
                            device=DEVICE)
 
