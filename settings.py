@@ -6,25 +6,24 @@ import wandb
 
 PLATFORM = platform.node()[:3]
 
-if "blg" in PLATFORM:
-    os.environ['WANDB_MODE'] = 'dryrun'
-elif "gpu" in PLATFORM:
+if "blg" in PLATFORM or "gpu" in PLATFORM:
     os.environ['WANDB_MODE'] = 'dryrun'
 
-wandb.init(project="papier_few_shot")
+wandb.init(project="papier_few_shot", entity="plop")
 
 wandb.run.config['PLATFORM'] = PLATFORM
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
-NB_WORKERS = 0
 
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
 LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
+ROOT_WEIGHTS = wandb.config.ROOT_WEIGHTS
 LATENT_SIZE = wandb.config.LATENT_SIZE
 PRINT_EVERY = wandb.config.PRINT_EVERY
+NB_WORKERS = wandb.config.NB_WORKERS
 NB_EPOCHS = wandb.config.NB_EPOCHS
 DATASET = wandb.config.DATASET
 LAYERS = wandb.config.LAYERS
@@ -34,7 +33,6 @@ MODEL = wandb.config.MODEL
 TTUR = wandb.config.TTUR
 HALF = wandb.config.HALF
 
-ROOT_WEIGHTS = './weights/'
 
 # Dataset
 if DATASET == "big":
@@ -53,13 +51,25 @@ elif DATASET == "small":
 
 # Batch
 if "blg" in PLATFORM:
-    BATCH_SIZE = 6
+    if MODEL == "small":
+        BATCH_SIZE = 12
+    elif MODEL == "big":
+        BATCH_SIZE = 6
 elif "gpu" in PLATFORM:
-    BATCH_SIZE = 4
+    if MODEL == "small":
+        BATCH_SIZE = 8
+    elif MODEL == "big":
+        BATCH_SIZE = 4
 elif "GAT" in PLATFORM:
-    BATCH_SIZE = 2
+    if MODEL == "small":
+        BATCH_SIZE = 8
+    elif MODEL == "big":
+        BATCH_SIZE = 4
 elif "co" in PLATFORM:
-    BATCH_SIZE = 4
+    if MODEL == "small":
+        BATCH_SIZE = 8
+    elif MODEL == "big":
+        BATCH_SIZE = 4
 else:
     BATCH_SIZE = 2
 

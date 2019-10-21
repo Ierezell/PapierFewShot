@@ -12,7 +12,7 @@ from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, TTUR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_DISCRIMINATOR, HALF)
+                      PATH_WEIGHTS_DISCRIMINATOR, HALF, BATCH_SIZE)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
@@ -100,20 +100,23 @@ if __name__ == '__main__':
 
             if TTUR:
                 if i_batch % 3 == 0 or i_batch % 3 == 1:
-                    lossDsc.backward(torch.ones(
-                        torch.cuda.device_count(),
-                        dtype=(torch.half if HALF else torch.float),
-                        device=DEVICE))
+                    ones_grad = torch.ones(torch.cuda.device_count(),
+                                           dtype=(torch.half if HALF
+                                                  else torch.float),
+                                           device=DEVICE)
+                    lossDsc = lossDsc.view(torch.cuda.device_count())
+                    lossDsc.backward(ones_grad)
                     optimizerDisc.step()
 
                     check.save("disc", lossDsc.mean(), emb, gen, disc)
                     wandb.log({"Loss_dsc": lossDsc.mean()})
                 else:
-
-                    loss.backward(torch.ones(
-                        torch.cuda.device_count(),
-                        dtype=(torch.half if HALF else torch.float),
-                        device=DEVICE))
+                    ones_grad = torch.ones(torch.cuda.device_count(),
+                                           dtype=(torch.half if HALF
+                                                  else torch.float),
+                                           device=DEVICE)
+                    loss = loss.view(torch.cuda.device_count())
+                    loss.backward(ones_grad)
                     optimizerEmb.step()
                     optimizerGen.step()
 
@@ -123,11 +126,13 @@ if __name__ == '__main__':
                     wandb.log({"lossAdv": lossAdv.mean()})
                     wandb.log({"LossTot": loss.mean()})
             else:
+                ones_grad = torch.ones(torch.cuda.device_count(),
+                                       dtype=(torch.half if HALF
+                                              else torch.float),
+                                       device=DEVICE)
                 loss = loss + lossDsc
-                loss.backward(torch.ones(
-                    torch.cuda.device_count(),
-                    dtype=(torch.half if HALF else torch.float),
-                    device=DEVICE))
+                loss = loss.view(torch.cuda.device_count())
+                loss.backward(ones_grad)
 
                 optimizerDisc.step()
                 optimizerEmb.step()

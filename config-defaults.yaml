@@ -1,6 +1,10 @@
 NB_EPOCHS:
   value : 999
 
+ROOT_WEIGHTS:
+  value : './weights/'
+
+
 MODEL:
   value : "small"
 
@@ -39,3 +43,7 @@ K_SHOT:
 
 LATENT_SIZE :
   value: 512
+
+
+NUM_WORKERS:
+  value : 12
