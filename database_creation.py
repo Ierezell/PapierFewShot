@@ -35,10 +35,10 @@ def parse_args():
     args = parser.parse_args()
 
     error_flag = 0
-
-    if args.from_i > args.to_i:
-        print("The value of from must be smaller than the value of to")
-        error_flag = 1
+    if args.to_i != -1:
+        if args.from_i > args.to_i:
+            print("The value of from must be smaller than the value of to")
+            error_flag = 1
 
     if not os.path.exists(args.global_video_path):
         print("The path " + args.global_video_path + " does not exist")
@@ -108,7 +108,7 @@ def get_frames(context_path):
         [list] -- list of the frames
     """
 
-    videos = glob.glob(f"{context_path}/*")
+    videos = glob.glob(f"{context_path}/*.mp4")
     frames = []
 
     for v in videos:
@@ -185,7 +185,10 @@ def get_ldmk(frames):
 def process(global_video_path, global_image_path, total_frame_nb, from_i, to_i):
 
     person_list = glob.glob(f"{global_video_path}/*")
-    N = to_i - from_i
+    if to_i != -1:
+        N = to_i - from_i
+    else:
+        N = len(person_list) - from_i
 
     for i, person in enumerate(person_list[from_i:to_i]):
 
