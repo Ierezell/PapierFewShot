@@ -4,6 +4,8 @@ NB_EPOCHS:
 ROOT_WEIGHTS:
   value : './weights/'
 
+LOADER:
+  value : "json"
 
 MODEL:
   value : "small"
@@ -18,7 +20,7 @@ DATASET:
 
 CONCAT:
   # "first", "last"
-  value: "first"
+  value: ""
 
 LEARNING_RATE_EMB:
   value: 0.000005
@@ -46,4 +48,4 @@ LATENT_SIZE :
 
 
 NB_WORKERS:
-  value : 0
+  value : 12

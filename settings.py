@@ -28,6 +28,7 @@ NB_EPOCHS = wandb.config.NB_EPOCHS
 DATASET = wandb.config.DATASET
 LAYERS = wandb.config.LAYERS
 CONCAT = wandb.config.CONCAT
+LOADER = wandb.config.LOADER
 K_SHOT = wandb.config.K_SHOT
 MODEL = wandb.config.MODEL
 TTUR = wandb.config.TTUR
@@ -49,6 +50,9 @@ if DATASET == "big":
 elif DATASET == "small":
     ROOT_DATASET = './dataset/mp4'
 
+
+if LOADER == "json":
+    ROOT_DATASET = './test_db'
 # Batch
 if "blg" in PLATFORM:
     if MODEL == "small":
@@ -81,7 +85,6 @@ LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
 if "Arc" in PLATFORM:
     LATENT_SIZE = 512
     K_SHOT = 4
-K_SHOT = 2
 
 ###############
 # RL SETTINGS #
