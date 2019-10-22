@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import time
 from settings import (DEVICE, DEVICE_LANDMARKS, K_SHOT, LOAD_BATCH_SIZE,
-                      NB_WORKERS, ROOT_DATASET)
+                      NB_WORKERS, ROOT_DATASET, HALF)
 
 
 class frameLoader(Dataset):
@@ -215,15 +215,15 @@ class frameLoader(Dataset):
                     total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
                     cvVideo.release()
 
-                    if total_frame_nb < 0:
+                    if total_frame_nb < 1:
                         # print("0 Frames CTX")
                         raise ValueError
 
                 except ValueError:
                     # print("Bad Video !")
-                    check_video_files.remove(v)
+                    video_files.remove(v)
 
-            if not check_video_files:
+            if not video_files:
                 # print("No video in this context : Loading a new random one.")
                 context = self.contexts[np.random.randint(len(self.contexts))]
                 video_files = glob.glob(f"{context}/*")
@@ -232,7 +232,6 @@ class frameLoader(Dataset):
                 # print("Context ok")
                 bad_context = False
         # print("Context bon, je loade")
-        video_files = check_video_files
         if platform.system() == "Windows":
             itemId = self.id_to_tensor[context.split("\\")[-2]]
         else:
@@ -267,8 +266,15 @@ class frameLoader(Dataset):
         # print("Context ok")
         context_tensors = torch.cat(context_tensors_list)
         torch.cuda.empty_cache()
-        return gt_im_tensor, gt_landmarks, context_tensors, itemId
 
+        context_tensors.requires_grad = True
+        gt_im_tensor.requires_grad = True
+        gt_landmarks.requires_grad = True
+        if HALF:
+            return (gt_im_tensor.half(), gt_landmarks.half(),
+                    context_tensors.half(), itemId)
+        else:
+            return (gt_im_tensor, gt_landmarks, context_tensors, itemId)
     # def __getitem__(self, index):
     #     bad_context = True
     #     context = self.contexts[index]

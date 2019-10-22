@@ -1,64 +1,87 @@
 import os
 import platform
 import torch
-from pathlib import Path
 import datetime
+import wandb
 
+PLATFORM = platform.node()[:3]
+
+if "blg" in PLATFORM or "gpu" in PLATFORM:
+    os.environ['WANDB_MODE'] = 'dryrun'
+
+wandb.init(project="papier_few_shot", entity="plop")
+
+wandb.run.config['PLATFORM'] = PLATFORM
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-NB_EPOCHS = 40
-MODEL = "small"
-LAYERS = "big"
-DATASET = "big"
-CONCAT = True
 
-ROOT_WEIGHTS = './weights/'
+DEVICE_LANDMARKS = "cuda"  # cuda or cpu
+
+LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
+LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
+LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
+ROOT_WEIGHTS = wandb.config.ROOT_WEIGHTS
+LATENT_SIZE = wandb.config.LATENT_SIZE
+PRINT_EVERY = wandb.config.PRINT_EVERY
+NB_WORKERS = wandb.config.NB_WORKERS
+NB_EPOCHS = wandb.config.NB_EPOCHS
+DATASET = wandb.config.DATASET
+LAYERS = wandb.config.LAYERS
+CONCAT = wandb.config.CONCAT
+K_SHOT = wandb.config.K_SHOT
+MODEL = wandb.config.MODEL
+TTUR = wandb.config.TTUR
+HALF = wandb.config.HALF
+
 
 # Dataset
 if DATASET == "big":
-    if "blg" in platform.node():
+    if "blg" in PLATFORM:
         ROOT_DATASET = '../scratch/dev/mp4/'
-    elif "gpu-k" in platform.node():
+    elif "gpu" in PLATFORM:
         ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
-    elif "GATINEAU" in platform.node():
+    elif "GAT" in PLATFORM:
         ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
+    elif "co" in PLATFORM:
+        ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
     else:
         ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
-
 elif DATASET == "small":
     ROOT_DATASET = './dataset/mp4'
 
-
 # Batch
-if "blg" in platform.node():
-    nb_batch_per_gpu = 6
-elif "gpu-k" in platform.node():
-    nb_batch_per_gpu = 4
-elif "GATINEAU" in platform.node():
-    nb_batch_per_gpu = 2
+if "blg" in PLATFORM:
+    if MODEL == "small":
+        BATCH_SIZE = 12
+    elif MODEL == "big":
+        BATCH_SIZE = 6
+elif "gpu" in PLATFORM:
+    if MODEL == "small":
+        BATCH_SIZE = 8
+    elif MODEL == "big":
+        BATCH_SIZE = 4
+elif "GAT" in PLATFORM:
+    if MODEL == "small":
+        BATCH_SIZE = 8
+    elif MODEL == "big":
+        BATCH_SIZE = 4
+elif "co" in PLATFORM:
+    if MODEL == "small":
+        BATCH_SIZE = 4
+    elif MODEL == "big":
+        BATCH_SIZE = 2
 else:
-    nb_batch_per_gpu = 2
+    BATCH_SIZE = 2
 
-
-LOAD_BATCH_SIZE = torch.cuda.device_count() * nb_batch_per_gpu
-# BATCH_SIZE = LOAD_BATCH_SIZE//torch.cuda.device_count()
-BATCH_SIZE = nb_batch_per_gpu
-
-# LR
-LEARNING_RATE_EMB = 5e-6
-LEARNING_RATE_GEN = 5e-6
-LEARNING_RATE_DISC = 5e-5
-TTUR = True
+LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
+                                if torch.cuda.is_available()
+                                else 1)
 
 # Sizes
-LATENT_SIZE = 128
-K_SHOT = 8
-
-
-DEVICE_LANDMARKS = "cuda"  # cuda or cpu
-NB_WORKERS = 0
-
-PRINT_EVERY = 100
+if "Arc" in PLATFORM:
+    LATENT_SIZE = 512
+    K_SHOT = 4
+K_SHOT = 2
 
 ###############
 # RL SETTINGS #
@@ -90,6 +113,7 @@ CONFIG = {
     "TTUR": str(TTUR),
     "TIME": TIME,
 }
+
 folder_weights = CONFIG["PLATFORM"] + "_"+CONFIG["DATASET"] + "_" + \
     CONFIG["BATCH_SIZE"] + "_" + \
     CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
@@ -112,11 +136,6 @@ folder_weights_Rl = CONFIG_RL['batch_size']+'_'+CONFIG_RL['lr']+'_' +\
     CONFIG_RL['decay']+'_'+CONFIG_RL['max_iter_person'] + '_' +\
     CONFIG_RL['max_deque']+'/'
 
-# ##########
-# Override #
-# ##########
-# folder_weights = "/Beluga/"
-
 # Load parameters
 if not os.path.exists(ROOT_WEIGHTS+folder_weights):
     os.makedirs(ROOT_WEIGHTS + folder_weights)
@@ -135,3 +154,5 @@ PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
 PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
+
+print(folder_weights)

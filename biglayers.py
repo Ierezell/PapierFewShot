@@ -253,7 +253,6 @@ class BigResidualBlockUp(nn.Module):
                       self.temp_channels, self.temp_channels)
         b4 = b.narrow(-1, self.in_channels+2 *
                       self.temp_channels, self.temp_channels)
-
         x = F.instance_norm(x)
         residual = x
         residual = self.adaDim(self.upsample(residual))
