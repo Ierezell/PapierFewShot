@@ -66,37 +66,6 @@ def progress(count, total, in_progress=""):
     sys.stdout.flush()
 
 
-def write_landmarks_on_image(image, landmarks):
-        # Machoire
-    cv2.polylines(image, [np.int32(landmarks[0:17])],
-                  isClosed=False, color=(0, 255, 0))
-    # Sourcil Gauche
-    cv2.polylines(image, [np.int32(landmarks[17:22])],
-                  isClosed=False, color=(255, 0, 0))
-    # Sourcil droit
-    cv2.polylines(image, [np.int32(landmarks[22:27])],
-                  isClosed=False, color=(255, 0, 0))
-    # Nez arrete
-    cv2.polylines(image, [np.int32(landmarks[27:31])],
-                  isClosed=False, color=(255, 0, 255))
-    # Nez narine
-    cv2.polylines(image, [np.int32(landmarks[31:36])],
-                  isClosed=False, color=(255, 0, 255))
-    # Oeil gauche
-    cv2.polylines(image, [np.int32(landmarks[36:42])],
-                  isClosed=True, color=(0, 0, 255))
-    # oeil droit
-    cv2.polylines(image, [np.int32(landmarks[42:48])],
-                  isClosed=True, color=(0, 0, 255))
-    # Bouche exterieur
-    cv2.polylines(image, [np.int32(landmarks[48:60])],
-                  isClosed=True, color=(255, 255, 0))
-    # Bouche interieur
-    cv2.polylines(image, [np.int32(landmarks[60:68])],
-                  isClosed=True, color=(255, 255, 0))
-    return image
-
-
 def get_frames(context_path):
     """
     Return all the frames of the videos of context_path
@@ -208,8 +177,9 @@ def process(global_video_path, global_image_path, total_frame_nb, from_i, to_i):
             progress(j+1, context_nb, context)
 
             context_name = context.split(slash)[-1]
-            res_path = os.path.join(
-                global_image_path, person_name, context_name)
+            # res_path = os.path.join(
+            #     global_image_path, person_name, context_name)
+            res_path = os.path.join(person_path, context_name)
 
             if not os.path.exists(res_path):
                 os.mkdir(res_path)
@@ -237,5 +207,5 @@ def process(global_video_path, global_image_path, total_frame_nb, from_i, to_i):
 
 if __name__ == "__main__":
     args = parse_args()
-    process(args.global_video_path, args.global_image_path, args.total_frame_nb,
-            args.from_i, args.to_i)
+    process(args.global_video_path, args.global_image_path,
+            args.total_frame_nb, args.from_i, args.to_i)

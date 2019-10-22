@@ -45,5 +45,5 @@ LATENT_SIZE :
   value: 512
 
 
-NUM_WORKERS:
-  value : 12
+NB_WORKERS:
+  value : 0

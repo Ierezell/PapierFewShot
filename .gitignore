@@ -28,3 +28,5 @@ weights_helios
 weights_beluga
 
 wandb/
+
+test_db/
