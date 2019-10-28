@@ -6,10 +6,10 @@ import wandb
 
 PLATFORM = platform.node()[:3]
 
-if "blg" in PLATFORM or "gpu" in PLATFORM or True:
+if "blg" in PLATFORM or "gpu" in PLATFORM:
     os.environ['WANDB_MODE'] = 'dryrun'
 
-wandb.init(project="papier_few_shot", entity="plop")
+wandb.init(project="papier_few_shot", entity="plop", reinit=True)
 wandb.run.config['PLATFORM'] = PLATFORM
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

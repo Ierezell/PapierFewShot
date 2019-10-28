@@ -11,7 +11,7 @@ from torch.optim import SGD, Adam
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, TTUR,
-                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
+                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, PLATFORM,
                       PATH_WEIGHTS_DISCRIMINATOR, HALF, BATCH_SIZE, PARALLEL)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
@@ -160,6 +160,7 @@ if __name__ == '__main__':
                     normalize=True, scale_each=True)
 
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-                wandb.save(PATH_WEIGHTS_EMBEDDER)
-                wandb.save(PATH_WEIGHTS_GENERATOR)
-                wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+                if "GAT" not in PLATFORM:
+                    wandb.save(PATH_WEIGHTS_EMBEDDER)
+                    wandb.save(PATH_WEIGHTS_GENERATOR)
+                    wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
