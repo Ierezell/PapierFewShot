@@ -399,13 +399,13 @@ def print_parameters(model):
 
 def print_device(model):
     try:
-        name = model.module.__class__.__name__
-        device_param = next(model.module.parameters()).device
-    except AttributeError:
-        name = model.__class__.__name__
-        device_param = next(model.parameters()).device
+        try:
+            name = model.module.__class__.__name__
+            device_param = next(model.module.parameters()).device
+        except AttributeError:
+            name = model.__class__.__name__
+            device_param = next(model.parameters()).device
 
-    try:
         print(f"{name} est sur {device_param}")
     except StopIteration:
         print(f"{name} n'as pas de parametres")

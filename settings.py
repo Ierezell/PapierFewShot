@@ -52,7 +52,10 @@ if LOADER == "ldmk":
 
 
 if LOADER == "json":
-    ROOT_DATASET = './test_db'
+    # if "GAT" in PLATFORM:
+    #     ROOT_DATASET = " U:\\Projects\\PapierFewShot\\dataset\\jsonDataset"
+    # else:
+    ROOT_DATASET = './dataset/jsonDataset'
 # Batch
 if "blg" in PLATFORM:
     if MODEL == "small":

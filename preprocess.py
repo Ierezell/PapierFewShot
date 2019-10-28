@@ -138,13 +138,16 @@ class jsonLoader(Dataset):
         start_time = time.time()
         self.context_names = [video[:-5] for video in
                               glob.glob(f"{self.root_dir}/*/*.json")]
-
+        print(self.root_dir)
+        # print(glob.glob(f"{self.root_dir}\\*\\*.json"))
+        # print(self.context_names)
         print(f"videos loaded in {time.time() - start_time}s")
 
         torch.cuda.empty_cache()
 
     def __getitem__(self, index):
         context_name = self.context_names[index]
+        print(context_name)
         itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]))
 
         with open(f"{context_name}.json", "r") as file:
