@@ -117,6 +117,9 @@ def get_ldmk(frames):
     for index, f in frames:
         with torch.no_grad():
             # start = time.time()
+            print(type(f))
+            print(f.shape)
+            print(f)
             landmark_pts = face_landmarks.get_landmarks_from_image(f)
             # print(f"Time Ldmk : {time.time()-start}s")
         try:

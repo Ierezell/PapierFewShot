@@ -13,7 +13,7 @@ from tqdm import tqdm
 from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
                       LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_POLICY, PRINT_EVERY, HALF)
+                      PATH_WEIGHTS_POLICY, PRINT_EVERY, HALF, PARALLEL)
 
 mplstyle.use(['dark_background', 'fast'])
 
@@ -22,8 +22,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
     if model == "small":
         from models import Discriminator, Embedder, Generator
-        print("Loading Small Models (pretrained)" if LOAD_PREVIOUS
-              else "Loading Small Models (no pretrained)")
+        print("Loading Small Models (load previous)" if LOAD_PREVIOUS
+              else "Loading Small Models (no load previous)")
 
         embedder = Embedder()
         generator = Generator()
@@ -31,8 +31,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
     elif model == "big":
         from bigmodels import BigDiscriminator, BigEmbedder, BigGenerator
-        print("Loading Big Models (pretrained)" if LOAD_PREVIOUS
-              else "Loading Big Models (no pretrained)")
+        print("Loading Big Models (load previous)" if LOAD_PREVIOUS
+              else "Loading Big Models (no load previous)")
 
         embedder = BigEmbedder()
         generator = BigGenerator()
@@ -43,28 +43,45 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
         generator = generator.half()
         discriminator = discriminator.half()
 
-    embedder = nn.DataParallel(
-        embedder, device_ids=range(torch.cuda.device_count()))
-    generator = nn.DataParallel(
-        generator, device_ids=range(torch.cuda.device_count()))
-    discriminator = nn.DataParallel(
-        discriminator, device_ids=range(torch.cuda.device_count()))
+    if PARALLEL:
+        embedder = nn.DataParallel(
+            embedder, device_ids=range(torch.cuda.device_count()))
+        generator = nn.DataParallel(
+            generator, device_ids=range(torch.cuda.device_count()))
+        discriminator = nn.DataParallel(
+            discriminator, device_ids=range(torch.cuda.device_count()))
 
     if load_previous_state:
         try:
-            embedder.module.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
+            if PARALLEL:
+                embedder.module.load_state_dict(
+                    torch.load(PATH_WEIGHTS_EMBEDDER))
+            else:
+                embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
         except RuntimeError:
-            embedder.module.load_state_dict(
-                torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+            if PARALLEL:
+                embedder.module.load_state_dict(
+                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+            else:
+                embedder.load_state_dict(
+                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
         except FileNotFoundError:
             print("File not found, not loading weights embedder...")
-
         try:
-            generator.module.load_state_dict(
-                torch.load(PATH_WEIGHTS_GENERATOR))
+            if PARALLEL:
+                generator.module.load_state_dict(
+                    torch.load(PATH_WEIGHTS_GENERATOR))
+            else:
+                generator.load_state_dict(
+                    torch.load(PATH_WEIGHTS_GENERATOR))
+
         except RuntimeError:
-            generator.module.load_state_dict(
-                torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+            if PARALLEL:
+                generator.module.load_state_dict(
+                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+            else:
+                generator.load_state_dict(
+                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
         except FileNotFoundError:
             print("File not found, not loading weights generator...")
 
@@ -81,13 +98,22 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
         if weight_disc:
             try:
-                discriminator.module.load_state_dict(state_dict_discriminator)
+                if PARALLEL:
+                    discriminator.module.load_state_dict(
+                        state_dict_discriminator)
+                else:
+                    discriminator.load_state_dict(
+                        state_dict_discriminator)
             except RuntimeError:
                 print("Pas le bon dataset, different nombre de personnes")
                 print("Chargement du disc sans les embeddings ")
                 state_dict_discriminator.pop("embeddings.weight")
-                discriminator.module.load_state_dict(state_dict_discriminator,
-                                                     strict=False)
+                if PARALLEL:
+                    discriminator.module.load_state_dict(state_dict_discriminator,
+                                                         strict=False)
+                else:
+                    discriminator.load_state_dict(state_dict_discriminator,
+                                                  strict=False)
 
     embedder = embedder.to(DEVICE)
     generator = generator.to(DEVICE)

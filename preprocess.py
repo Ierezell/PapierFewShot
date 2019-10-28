@@ -48,203 +48,74 @@ def write_landmarks_on_image(image, landmarks):
     return image
 
 
-# ##############
-# FRAME LOADER #
-# ##############
+def get_landmarks_from_webcam(self):
+    cam = cv2.VideoCapture(0)
+    bad_image = True
+    while bad_image:
+        _, image = cam.read()
+        image = cv2.flip(image, 1)
+        image = cv2.resize(image, (224, 224))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        with torch.no_grad():
+            landmark_pts = self.face_landmarks.get_landmarks_from_image(
+                image)
+        image = np.zeros(image.shape, np.float32)
+        try:
+            landmark_pts = landmark_pts[0]
+            write_landmarks_on_image(image, landmark_pts)
+            landmark_tensor = transforms.ToTensor()(image)
+            bad_image = False
+        except TypeError:
+            continue
+    cam.release()
+    torch.cuda.empty_cache()
+    return landmark_pts, landmark_tensor.unsqueeze(0).to(DEVICE)
 
-class frameLoader(Dataset):
-    def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
-        super(frameLoader, self).__init__()
-        self.face_landmarks = FaceAlignment(
-            LandmarksType._2D, device=DEVICE_LANDMARKS)
 
-        self.K_shots = K_shots
-        self.root_dir = root_dir
-        print("Loading ids...")
-        start_time = time.time()
-        self.ids = glob.glob(f"{self.root_dir}/*")
-        print(f"Ids loaded in {time.time() - start_time}s")
-        print("Loading contexts...")
-        start_time = time.time()
-        self.contexts = glob.glob(f"{self.root_dir}/*/*")
-        print(f"Contexts laoded in {time.time() - start_time}s")
-        # self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
+def load_someone():
+    if platform.system() == "Windows":
+        slash = "\\"
+    else:
+        slash = "/"
+    userid = np.random.choice(glob.glob(f"{ROOT_DATASET}/*"))
+    filename = np.random.choice(glob.glob(f"{userid}/*.json"))[:-5]
+    itemId = torch.tensor(int(filename.split(slash)[-2][2:]))
 
-        if platform.system() == "Windows":
-            self.id_to_tensor = {name.split("\\")[-1]: torch.tensor(i).view(1)
-                                 for i, name in enumerate(self.ids)}
-        else:
-            self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
-                                 for i, name in enumerate(self.ids)}
-        torch.cuda.empty_cache()
+    with open(f"{filename}.json", "r") as file:
+        dict_ldmk = json.load(file, object_pairs_hook=lambda x:
+                              {int(k): v for k, v in x})
 
-    def load_someone(self, limit=200):
-        userid = np.random.choice(glob.glob(f"{self.root_dir}/*"))
-        context = np.random.choice(glob.glob(f"{userid}/*"))
-        mp4file = np.random.choice(glob.glob(f"{context}/*"))
+    frames = list(dict_ldmk.keys())
 
-        if platform.system() == "Windows":
-            index_user = self.id_to_tensor[mp4file.split("\\")[-3]].to(DEVICE)
-        else:
-            index_user = self.id_to_tensor[mp4file.split('/')[-3]].to(DEVICE)
+    cvVideo = cv2.VideoCapture(f"{filename}.mp4")
 
-        video = cv2.VideoCapture(mp4file)
+    cvVideo.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
+    _, gt_im = cvVideo.read()
+    gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
 
-        context_tensors_list = []
-        first_image_landmarks = None
-        i = 0
-        while True:
-            video_continue, image = video.read()
-            if (not video_continue) or (i > limit):
-                break
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            with torch.no_grad():
-                landmarks = self.face_landmarks.get_landmarks_from_image(image)
-            try:
-                landmarks = landmarks[0]
-                if i == 0:
-                    first_image_landmarks = copy.deepcopy(landmarks)
-                image = write_landmarks_on_image(image, landmarks)
-                context_tensors_list.append(transforms.ToTensor()(image))
-                i += 1
-            except TypeError:
-                continue
+    gt_ldmk = dict_ldmk[frames[0]]
+    gt_ldmk_im = np.zeros(gt_im.shape, np.float32)
+    gt_ldmk_im = write_landmarks_on_image(gt_ldmk_im, gt_ldmk)
 
-        video.release()
-        all_frames = torch.cat(context_tensors_list).unsqueeze(0).to(DEVICE)
+    context_tensors_list = []
+    for frame in frames:
+        cvVideo.set(cv2.CAP_PROP_POS_FRAMES, frame)
+        _, ctx_img = cvVideo.read()
+        ctx_img = cv2.cvtColor(ctx_img, cv2.COLOR_BGR2RGB)
+        ctx_ldmk = dict_ldmk[frame]
+        ctx_img = write_landmarks_on_image(ctx_img, ctx_ldmk)
+        ctx_img = transforms.ToTensor()(ctx_img)
+        context_tensors_list.append(ctx_img)
 
-        torch.cuda.empty_cache()
-        return all_frames, first_image_landmarks, index_user
+    cvVideo.release()
 
-    def load_random(self, video, total_frame_nb, fusion):
-        badLandmarks = True
-        while badLandmarks:
-            frameIndex = np.random.randint(0, total_frame_nb)
-            video.set(cv2.CAP_PROP_POS_FRAMES, frameIndex)
-            _, gt_im = video.read()
-            gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
-            with torch.no_grad():
-                landmarks = self.face_landmarks.get_landmarks_from_image(gt_im)
-            try:
-                landmarks = landmarks[0]
-                badLandmarks = False
-            except TypeError:
-                continue
+    gt_im_tensor = transforms.ToTensor()(gt_im)
+    context_tensors = torch.cat(context_tensors_list).unsqueeze(0)
+    gt_im_tensor = gt_im_tensor.to(DEVICE)
+    context_tensors = context_tensors.to(DEVICE)
+    itemId = itemId.to(DEVICE)
+    return gt_im_tensor, gt_ldmk, context_tensors, itemId
 
-        if fusion:
-            image = gt_im
-        else:
-            image = np.zeros(gt_im.shape, np.float32)
-
-        image = write_landmarks_on_image(image, landmarks)
-
-        torch.cuda.empty_cache()
-
-        if fusion:
-            return transforms.ToTensor()(image)
-        else:
-            return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
-
-    def get_landmarks_from_webcam(self):
-        cam = cv2.VideoCapture(0)
-        bad_image = True
-        while bad_image:
-            _, image = cam.read()
-            image = cv2.flip(image, 1)
-            image = cv2.resize(image, (224, 224))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            with torch.no_grad():
-                landmark_pts = self.face_landmarks.get_landmarks_from_image(
-                    image)
-            image = np.zeros(image.shape, np.float32)
-            try:
-                landmark_pts = landmark_pts[0]
-                write_landmarks_on_image(image, landmark_pts)
-                landmark_tensor = transforms.ToTensor()(image)
-                bad_image = False
-            except TypeError:
-                continue
-        cam.release()
-        torch.cuda.empty_cache()
-        return landmark_pts, landmark_tensor.unsqueeze(0).to(DEVICE)
-
-    def __getitem__(self, index):
-        bad_context = True
-        context = self.contexts[index]
-        video_files = glob.glob(f"{context}/*")
-        # print("get !")
-        while bad_context:
-            check_video_files = copy.deepcopy(video_files)
-            # print("Encore un badContext")
-            for v in check_video_files:
-                try:
-                    cvVideo = cv2.VideoCapture(v)
-                    total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
-                    cvVideo.release()
-
-                    if total_frame_nb < 1:
-                        # print("0 Frames CTX")
-                        raise ValueError
-
-                except ValueError:
-                    # print("Bad Video !")
-                    video_files.remove(v)
-
-            if not video_files:
-                # print("No video in this context : Loading a new random one.")
-                context = self.contexts[np.random.randint(len(self.contexts))]
-                video_files = glob.glob(f"{context}/*")
-                continue
-            else:
-                # print("Context ok")
-                bad_context = False
-        # print("Context bon, je loade")
-        if platform.system() == "Windows":
-            itemId = self.id_to_tensor[context.split("\\")[-2]]
-        else:
-            itemId = self.id_to_tensor[context.split('/')[-2]]
-
-        if len(video_files) < self.K_shots+1:
-            videos = np.random.choice(video_files, self.K_shots + 1,
-                                      replace=True)
-        else:
-            videos = np.random.choice(video_files, self.K_shots + 1,
-                                      replace=False)
-        # print("N_vidoess")
-        gt_video, *ctx_videos = videos
-
-        cvVideo = cv2.VideoCapture(gt_video)
-        total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
-        gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
-                                                      total_frame_nb,
-                                                      fusion=False)
-        cvVideo.release()
-
-        # print("Gt ok go for context")
-        context_tensors_list = []
-        for v in ctx_videos:
-            cvVideo = cv2.VideoCapture(v)
-            total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
-            context_frame = self.load_random(cvVideo,
-                                             total_frame_nb,
-                                             fusion=True)
-            context_tensors_list.append(context_frame)
-            cvVideo.release()
-        # print("Context ok")
-        context_tensors = torch.cat(context_tensors_list)
-        torch.cuda.empty_cache()
-
-        context_tensors.requires_grad = True
-        gt_im_tensor.requires_grad = True
-        gt_landmarks.requires_grad = True
-        if HALF:
-            return (gt_im_tensor.half(), gt_landmarks.half(),
-                    context_tensors.half(), itemId)
-        else:
-            return (gt_im_tensor, gt_landmarks, context_tensors, itemId)
-
-    def __len__(self):
-        return len(self.contexts)
 
 # #############
 # JSON LOADER #
@@ -265,19 +136,16 @@ class jsonLoader(Dataset):
         print(f"Ids loaded in {time.time() - start_time}s")
         print("Loading videos...")
         start_time = time.time()
-        self.context_names = [video[:-4] for video in
-                              glob.glob(f"{self.root_dir}/*/*.mp4")]
+        self.context_names = [video[:-5] for video in
+                              glob.glob(f"{self.root_dir}/*/*.json")]
 
         print(f"videos loaded in {time.time() - start_time}s")
 
-        self.id_to_tensor = {name.split(self.slash)[-1]:
-                             torch.tensor(i).view(1)
-                             for i, name in enumerate(self.ids)}
         torch.cuda.empty_cache()
 
     def __getitem__(self, index):
         context_name = self.context_names[index]
-        itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
+        itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]))
 
         with open(f"{context_name}.json", "r") as file:
             dict_ldmk = json.load(file,
@@ -311,6 +179,11 @@ class jsonLoader(Dataset):
         gt_im_tensor = transforms.ToTensor()(gt_im)
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
+
+        gt_im_tensor = gt_im_tensor.to(DEVICE)
+        gt_ldmk_im_tensor = gt_ldmk_im_tensor.to(DEVICE)
+        context_tensors = context_tensors.to(DEVICE)
+        itemId = itemId.to(DEVICE)
 
         return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId
 
@@ -349,40 +222,140 @@ def view_batch(loader):
     plt.imshow(np.transpose(grid))
     plt.show()
 
-#    def load_random_2(self, video, frames):
 
-#         i = 0
-#         gt_index = frames[0]["frames"]
-#         # the first index of the list is used for the gt
+# ##############
+# FRAME LOADER #
+# ##############
 
-#         index_list = [x["frame"] for x in frames[1]]
-#         # all the indexes of the repertoried landmarks
+# class frameLoader(Dataset):
+#     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
+#         super(frameLoader, self).__init__()
+#         self.face_landmarks = FaceAlignment(
+#             LandmarksType._2D, device=DEVICE_LANDMARKS)
 
-#         ldmk_list = []
+#         self.K_shots = K_shots
+#         self.root_dir = root_dir
+#         print("Loading ids...")
+#         start_time = time.time()
+#         self.ids = glob.glob(f"{self.root_dir}/*")
+#         print(f"Ids loaded in {time.time() - start_time}s")
+#         print("Loading contexts...")
+#         start_time = time.time()
+#         self.contexts = glob.glob(f"{self.root_dir}/*/*")
+#         print(f"Contexts laoded in {time.time() - start_time}s")
+#         # self.mp4files = glob.glob(f"{self.root_dir}/*/*/*")
 
-#         while(video.isOpened()):
+#         if platform.system() == "Windows":
+#             self.id_to_tensor = {name.split("\\")[-1]: torch.tensor(i).view(1)
+#                                  for i, name in enumerate(self.ids)}
+#         else:
+#             self.id_to_tensor = {name.split('/')[-1]: torch.tensor(i).view(1)
+#                                  for i, name in enumerate(self.ids)}
+#         torch.cuda.empty_cache()
 
-#             ret, gt_im = video.read()
-#             if ret == False:
-#                 break
+#     def load_random(self, video, total_frame_nb, fusion):
+#         badLandmarks = True
+#         while badLandmarks:
+#             frameIndex = np.random.randint(0, total_frame_nb)
+#             video.set(cv2.CAP_PROP_POS_FRAMES, frameIndex)
+#             _, gt_im = video.read()
+#             gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
+#             with torch.no_grad():
+#                 landmarks = self.face_landmarks.get_landmarks_from_image(gt_im)
+#             try:
+#                 landmarks = landmarks[0]
+#                 badLandmarks = False
+#             except TypeError:
+#                 continue
 
-#             if i == gt_index:
-#                 # if it's the index of the gt, we need to save the image and the ldmk
-#                 gt_im = cv2.cvtColor(gt_im, cv2.COLOR_BGR2RGB)
-#                 gt_lmdk = np.array(frames[index_list.index(i)]["ldmk"])
-#             if i in index_list:
-#                 # else, we only save the gt, we don't need the image
-#                 ldmk_list.append(np.array(frames[index_list.index(i)]["ldmk"]))
-
-#         final_ldmk = []  # the list of ldkms on a black background
-#         for ldmk in ldmk_list:
+#         if fusion:
+#             image = gt_im
+#         else:
 #             image = np.zeros(gt_im.shape, np.float32)
-#             image = self.write_landmarks_on_image(image, ldmk)
-#             final_ldmk.append(transforms.ToTensor()(image))
 
-#         gt_image = self.write_landmarks_on_image(
-#             gt_im, gt_lmdk)  # the gt with ldmks
+#         image = write_landmarks_on_image(image, landmarks)
 
 #         torch.cuda.empty_cache()
 
-#         return transforms.ToTensor()(gt_im), transforms.ToTensor()(gt_image), final_ldmk
+#         if fusion:
+#             return transforms.ToTensor()(image)
+#         else:
+#             return transforms.ToTensor()(gt_im), transforms.ToTensor()(image)
+
+#     def __getitem__(self, index):
+#         bad_context = True
+#         context = self.contexts[index]
+#         video_files = glob.glob(f"{context}/*")
+#         # print("get !")
+#         while bad_context:
+#             check_video_files = copy.deepcopy(video_files)
+#             # print("Encore un badContext")
+#             for v in check_video_files:
+#                 try:
+#                     cvVideo = cv2.VideoCapture(v)
+#                     total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+#                     cvVideo.release()
+
+#                     if total_frame_nb < 1:
+#                         # print("0 Frames CTX")
+#                         raise ValueError
+
+#                 except ValueError:
+#                     # print("Bad Video !")
+#                     video_files.remove(v)
+
+#             if not video_files:
+#                 # print("No video in this context : Loading a new random one.")
+#                 context = self.contexts[np.random.randint(len(self.contexts))]
+#                 video_files = glob.glob(f"{context}/*")
+#                 continue
+#             else:
+#                 # print("Context ok")
+#                 bad_context = False
+#         # print("Context bon, je loade")
+#         if platform.system() == "Windows":
+#             itemId = self.id_to_tensor[context.split("\\")[-2]]
+#         else:
+#             itemId = self.id_to_tensor[context.split('/')[-2]]
+
+#         if len(video_files) < self.K_shots+1:
+#             videos = np.random.choice(video_files, self.K_shots + 1,
+#                                       replace=True)
+#         else:
+#             videos = np.random.choice(video_files, self.K_shots + 1,
+#                                       replace=False)
+#         # print("N_vidoess")
+#         gt_video, *ctx_videos = videos
+
+#         cvVideo = cv2.VideoCapture(gt_video)
+#         total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+#         gt_im_tensor, gt_landmarks = self.load_random(cvVideo,
+#                                                       total_frame_nb,
+#                                                       fusion=False)
+#         cvVideo.release()
+
+#         # print("Gt ok go for context")
+#         context_tensors_list = []
+#         for v in ctx_videos:
+#             cvVideo = cv2.VideoCapture(v)
+#             total_frame_nb = int(cvVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+#             context_frame = self.load_random(cvVideo,
+#                                              total_frame_nb,
+#                                              fusion=True)
+#             context_tensors_list.append(context_frame)
+#             cvVideo.release()
+#         # print("Context ok")
+#         context_tensors = torch.cat(context_tensors_list)
+#         torch.cuda.empty_cache()
+
+#         context_tensors.requires_grad = True
+#         gt_im_tensor.requires_grad = True
+#         gt_landmarks.requires_grad = True
+#         if HALF:
+#             return (gt_im_tensor.half(), gt_landmarks.half(),
+#                     context_tensors.half(), itemId)
+#         else:
+#             return (gt_im_tensor, gt_landmarks, context_tensors, itemId)
+
+#     def __len__(self):
+#         return len(self.contexts)

@@ -6,7 +6,7 @@ import wandb
 
 PLATFORM = platform.node()[:3]
 
-if "blg" in PLATFORM or "gpu" in PLATFORM:
+if "blg" in PLATFORM or "gpu" in PLATFORM or True:
     os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papier_few_shot", entity="plop")
@@ -16,7 +16,6 @@ wandb.run.config['PLATFORM'] = PLATFORM
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
-
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
 LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
@@ -25,6 +24,7 @@ LATENT_SIZE = wandb.config.LATENT_SIZE
 PRINT_EVERY = wandb.config.PRINT_EVERY
 NB_WORKERS = wandb.config.NB_WORKERS
 NB_EPOCHS = wandb.config.NB_EPOCHS
+PARALLEL = wandb.config.PARALLEL
 DATASET = wandb.config.DATASET
 LAYERS = wandb.config.LAYERS
 CONCAT = wandb.config.CONCAT
@@ -36,19 +36,20 @@ HALF = wandb.config.HALF
 
 
 # Dataset
-if DATASET == "big":
-    if "blg" in PLATFORM:
-        ROOT_DATASET = '../scratch/dev/mp4/'
-    elif "gpu" in PLATFORM:
-        ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
-    elif "GAT" in PLATFORM:
-        ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
-    elif "co" in PLATFORM:
-        ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
-    else:
-        ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
-elif DATASET == "small":
-    ROOT_DATASET = './dataset/mp4'
+if LOADER == "ldmk":
+    if DATASET == "big":
+        if "blg" in PLATFORM:
+            ROOT_DATASET = '../scratch/dev/mp4/'
+        elif "gpu" in PLATFORM:
+            ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
+        elif "GAT" in PLATFORM:
+            ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
+        elif "co" in PLATFORM:
+            ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
+        else:
+            ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
+    elif DATASET == "small":
+        ROOT_DATASET = './dataset/mp4'
 
 
 if LOADER == "json":
@@ -84,18 +85,22 @@ LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
 # Sizes
 if "Arc" in PLATFORM:
     LATENT_SIZE = 512
-    K_SHOT = 4
+    K_SHOT = 8
 
 ###############
 # RL SETTINGS #
 ###############
-GAMMA = 0.999
-LEARNING_RATE_RL = 0.01
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 200
-MAX_DEQUE_LANDMARKS = 1000
-MAX_ITER_PERSON = 50
+GAMMA = wandb.config.GAMMA
+LEARNING_RATE_RL = wandb.config.LEARNING_RATE_RL
+EPS_START = wandb.config.EPS_START
+EPS_END = wandb.config.EPS_END
+EPS_DECAY = wandb.config.EPS_DECAY
+MAX_DEQUE_LANDMARKS = wandb.config.MAX_DEQUE_LANDMARKS
+MAX_ITER_PERSON = wandb.config.MAX_ITER_PERSON
+TRAIN_RL = wandb.config.TRAIN_RL
+
+if TRAIN_RL:
+    BATCH_SIZE = 1
 
 TIME = str(datetime.datetime.now().replace(microsecond=0)
            ).replace(" ", "_").replace(":", "-")
