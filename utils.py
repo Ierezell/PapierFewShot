@@ -390,14 +390,20 @@ def make_light_dataset(path_dataset, new_path):
 def print_parameters(model):
     trainParamModel = sum([np.prod(p.size()) if p.requires_grad else 0
                            for p in model.parameters()])
-
-    print(f"Nombre de parametres {model.module.__class__.__name__ }: ",
-          f"{trainParamModel:,}")
+    try:
+        name = model.module.__class__.__name__
+    except AttributeError:
+        name = model.__class__.__name__
+    print(f"Nombre de parametres {name}: {trainParamModel:,}")
 
 
 def print_device(model):
     try:
-        print(f"{model.module.__class__.__name__ } est sur ",
-              next(model.module.parameters()).device)
+        name = model.module.__class__.__name__
+    except AttributeError:
+        name = model.__class__.__name__
+
+    try:
+        print(f"{name} est sur ", next(model.module.parameters()).device)
     except StopIteration:
-        print(f"{model.module.__class__.__name__ } n'as pas de parametres")
+        print(f"{name} n'as pas de parametres")

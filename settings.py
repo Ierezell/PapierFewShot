@@ -10,7 +10,6 @@ if "blg" in PLATFORM or "gpu" in PLATFORM or True:
     os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papier_few_shot", entity="plop")
-
 wandb.run.config['PLATFORM'] = PLATFORM
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

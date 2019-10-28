@@ -58,7 +58,7 @@ LATENT_SIZE :
   value: 512
 
 NB_WORKERS:
-  value : 12
+  value : 0
 
 # #############
 # RL SETTINGS #
