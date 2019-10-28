@@ -63,8 +63,8 @@ def progress(count, total, in_progress=""):
 
     percents = count / total * 100
 
-    # sys.stdout.write(f"{percents:.1f}% Context : {in_progress}\r")
-    # sys.stdout.flush()
+    sys.stdout.write(f"{percents:.1f}% Context : {in_progress}\r")
+    sys.stdout.flush()
 
 
 def get_frames(context_video, nb_frame_to_keep, dict_ldmk):
@@ -157,7 +157,7 @@ def process(global_video_path, global_image_path, nb_frame_to_keep, from_i, to_i
 
         for j, context in enumerate(context_list):
             context_nb = len(context_list)
-            progress(j+1, context_nb, context)
+            # progress(j+1, context_nb, context)
 
             context_name = context.split(slash)[-1]
 
@@ -184,7 +184,7 @@ def process(global_video_path, global_image_path, nb_frame_to_keep, from_i, to_i
             else:
                 with open(json_path, "r") as file:
                     dict_ldmk = json.load(file)
-            print(context_video_path, nb_frame_to_keep, dict_ldmk)
+            # print(context_video_path, nb_frame_to_keep, dict_ldmk)
             frames = get_frames(context_video_path,
                                 nb_frame_to_keep, dict_ldmk)
             # print(frames)
