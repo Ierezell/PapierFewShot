@@ -2,7 +2,7 @@
 # GLOBAL SETTINGS #
 # #################
 TRAIN_RL :
-  value : True
+  value : False
 
 PARALLEL :
   value : False

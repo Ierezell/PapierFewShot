@@ -71,6 +71,11 @@ if __name__ == '__main__':
 
             gt_im, gt_landmarks, context, itemIds = batch
 
+            gt_im = gt_im.to(DEVICE)
+            gt_landmarks = gt_landmarks.to(DEVICE)
+            context = context.to(DEVICE)
+            itemIds = itemIds.to(DEVICE)
+
             embeddings, paramWeights, paramBias, layersUp = emb(context)
             synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
 

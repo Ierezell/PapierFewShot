@@ -125,9 +125,9 @@ def load_someone():
 class jsonLoader(Dataset):
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(jsonLoader, self).__init__()
-        if platform.system() == "Windows":
-            self.slash = "\\"
         self.slash = "/"
+        if "Windows" in platform.system():
+            self.slash = "\\"
         self.K_shots = K_shots
         self.root_dir = root_dir
         print("Loading ids...")
@@ -147,7 +147,6 @@ class jsonLoader(Dataset):
 
     def __getitem__(self, index):
         context_name = self.context_names[index]
-        print(context_name)
         itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]))
 
         with open(f"{context_name}.json", "r") as file:
@@ -182,11 +181,6 @@ class jsonLoader(Dataset):
         gt_im_tensor = transforms.ToTensor()(gt_im)
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
-
-        gt_im_tensor = gt_im_tensor.to(DEVICE)
-        gt_ldmk_im_tensor = gt_ldmk_im_tensor.to(DEVICE)
-        context_tensors = context_tensors.to(DEVICE)
-        itemId = itemId.to(DEVICE)
 
         return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId
 
