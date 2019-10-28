@@ -10,9 +10,9 @@ from torch.optim import SGD, Adam
 
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, TTUR,
+                      LEARNING_RATE_GEN, NB_EPOCHS, TTUR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_DISCRIMINATOR, HALF, BATCH_SIZE, PARALLEL)
+                      PATH_WEIGHTS_DISCRIMINATOR, HALF, PARALLEL)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
@@ -150,7 +150,7 @@ if __name__ == '__main__':
                 wandb.log({"lossAdv": lossAdv.mean()})
                 wandb.log({"LossTot": loss.mean()})
 
-            if i_batch % PRINT_EVERY == 0:
+            if i_batch % len(train_loader)//2 == 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
                                            dim=1).view(-1, 3, 224, 224)
