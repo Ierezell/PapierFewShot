@@ -12,7 +12,7 @@ from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
                       LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, TTUR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_DISCRIMINATOR, HALF, BATCH_SIZE)
+                      PATH_WEIGHTS_DISCRIMINATOR, HALF, BATCH_SIZE, PARALLEL)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
@@ -92,8 +92,10 @@ if __name__ == '__main__':
 
             lossCnt = cntLoss(gt_im, synth_im)
 
-            lossMch = mchLoss(embeddings,
-                              disc.module.embeddings(itemIds))
+            if PARALLEL:
+                lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
+            else:
+                lossMch = mchLoss(embeddings, disc.embeddings(itemIds))
 
             lossDsc = dscLoss(score_gt, score_synth)
 

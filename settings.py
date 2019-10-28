@@ -14,6 +14,11 @@ wandb.run.config['PLATFORM'] = PLATFORM
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+PARALLEL = False
+if torch.cuda.device_count() > 1:
+    PARALLEL = True
+
+
 DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
@@ -23,7 +28,6 @@ LATENT_SIZE = wandb.config.LATENT_SIZE
 PRINT_EVERY = wandb.config.PRINT_EVERY
 NB_WORKERS = wandb.config.NB_WORKERS
 NB_EPOCHS = wandb.config.NB_EPOCHS
-PARALLEL = wandb.config.PARALLEL
 DATASET = wandb.config.DATASET
 LAYERS = wandb.config.LAYERS
 CONCAT = wandb.config.CONCAT

@@ -133,12 +133,13 @@ class jsonLoader(Dataset):
         print("Loading ids...")
         start_time = time.time()
         self.ids = glob.glob(f"{self.root_dir}/*")
+        self.id_to_tensor = {name.split(self.slash)[-1]: torch.tensor(i).view(1)
+                             for i, name in enumerate(self.ids)}
         print(f"Ids loaded in {time.time() - start_time}s")
         print("Loading videos...")
         start_time = time.time()
         self.context_names = [video[:-5] for video in
                               glob.glob(f"{self.root_dir}/*/*.json")]
-        print(self.root_dir)
         # print(glob.glob(f"{self.root_dir}\\*\\*.json"))
         # print(self.context_names)
         print(f"videos loaded in {time.time() - start_time}s")
@@ -147,7 +148,10 @@ class jsonLoader(Dataset):
 
     def __getitem__(self, index):
         context_name = self.context_names[index]
-        itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]))
+        # itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]),
+        #                       dtype=torch.long).view(1)
+
+        itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
 
         with open(f"{context_name}.json", "r") as file:
             dict_ldmk = json.load(file,
@@ -203,7 +207,6 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS,
                               num_workers=workers, pin_memory=pin,
                               drop_last=True)
 
-    torch.cuda.empty_cache()
     return train_loader, len(datas.ids)
 
 

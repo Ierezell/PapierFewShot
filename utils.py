@@ -196,8 +196,14 @@ class CheckpointsFewShots:
                 tqdm.write('\n' + '-'*25 + '\n' +
                            "| Poids disc sauvegardes |" + '\n' + '-'*25)
                 self.best_loss_Disc = loss
-                torch.save(discriminator.module.state_dict(),
-                           PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"))
+                if PARALLEL:
+                    torch.save(discriminator.module.state_dict(),
+                               PATH_WEIGHTS_DISCRIMINATOR.replace(".pt",
+                                                                  ".bk"))
+                else:
+                    torch.save(discriminator.state_dict(),
+                               PATH_WEIGHTS_DISCRIMINATOR.replace(".pt",
+                                                                  ".bk"))
                 copyfile(PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
                          PATH_WEIGHTS_DISCRIMINATOR)
         else:
@@ -207,13 +213,18 @@ class CheckpointsFewShots:
                 tqdm.write("\n" + "-" * 31 + '\n' +
                            "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31)
                 self.best_loss_EmbGen = loss
-
-                torch.save(embedder.module.state_dict(),
-                           PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
+                if PARALLEL:
+                    torch.save(embedder.module.state_dict(),
+                               PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
+                    torch.save(generator.module.state_dict(),
+                               PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
+                else:
+                    torch.save(embedder.state_dict(),
+                               PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
+                    torch.save(generator.state_dict(),
+                               PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
                 copyfile(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
                          PATH_WEIGHTS_EMBEDDER)
-                torch.save(generator.module.state_dict(),
-                           PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
                 copyfile(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
                          PATH_WEIGHTS_GENERATOR)
 

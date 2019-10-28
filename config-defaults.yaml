@@ -4,8 +4,6 @@
 TRAIN_RL :
   value : False
 
-PARALLEL :
-  value : False
 NB_EPOCHS:
   value : 999
 
@@ -58,7 +56,7 @@ LATENT_SIZE :
   value: 512
 
 NB_WORKERS:
-  value : 0
+  value : 12
 
 # #############
 # RL SETTINGS #
