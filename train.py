@@ -1,18 +1,19 @@
 
 
-from tqdm import tqdm, trange
+import platform
 import sys
 
 import torch
 import torchvision
 import wandb
 from torch.optim import SGD, Adam
+from tqdm import tqdm, trange
 
 from preprocess import get_data_loader
-from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, NB_EPOCHS, TTUR, PLATFORM,
-                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_DISCRIMINATOR, HALF, PARALLEL)
+from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
+                      LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
+                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR,
+                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
@@ -160,7 +161,7 @@ if __name__ == '__main__':
                     normalize=True, scale_each=True)
 
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})
-                if "GAT" not in PLATFORM:
+                if platform.system() != "Windows":
                     wandb.save(PATH_WEIGHTS_EMBEDDER)
                     wandb.save(PATH_WEIGHTS_GENERATOR)
                     wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
