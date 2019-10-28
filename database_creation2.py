@@ -11,6 +11,10 @@ import torch
 from face_alignment import FaceAlignment, LandmarksType
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 
+
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = True
+
 face_landmarks = FaceAlignment(LandmarksType._2D, device="cuda")
 slash = "/"
 if "Windows" in platform.system():
@@ -117,9 +121,6 @@ def get_ldmk(frames):
     for index, f in frames:
         with torch.no_grad():
             # start = time.time()
-            print(type(f))
-            print(f.shape)
-            print(f)
             landmark_pts = face_landmarks.get_landmarks_from_image(f)
             # print(f"Time Ldmk : {time.time()-start}s")
         try:
@@ -148,14 +149,16 @@ def process(global_video_path, global_image_path, nb_frame_to_keep, from_i, to_i
         context_list = glob.glob(f"{person}/*")
 
         person_path = os.path.join(global_image_path, person_name)
+
         if not os.path.exists(person_path):
             os.mkdir(person_path)
 
         for j, context in enumerate(context_list):
             context_nb = len(context_list)
-            progress(j+1, context_nb, context)
+            # progress(j+1, context_nb, context)
 
             context_name = context.split(slash)[-1]
+
             context_video_path = os.path.join(
                 person_path, f"{context_name}.mp4")
             if not os.path.exists(context_video_path):
@@ -179,9 +182,10 @@ def process(global_video_path, global_image_path, nb_frame_to_keep, from_i, to_i
             else:
                 with open(json_path, "r") as file:
                     dict_ldmk = json.load(file)
-
+            # print(context_video_path, nb_frame_to_keep, dict_ldmk)
             frames = get_frames(context_video_path,
                                 nb_frame_to_keep, dict_ldmk)
+            # print(frames)
             ldmks = get_ldmk(frames)
 
             dict_ldmk = {}
