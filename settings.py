@@ -18,8 +18,6 @@ PARALLEL = False
 if torch.cuda.device_count() > 1:
     PARALLEL = True
 
-
-DEVICE_LANDMARKS = "cuda"  # cuda or cpu
 LEARNING_RATE_DISC = wandb.config.LEARNING_RATE_DISC
 LEARNING_RATE_EMB = wandb.config.LEARNING_RATE_EMB
 LEARNING_RATE_GEN = wandb.config.LEARNING_RATE_GEN
@@ -37,6 +35,8 @@ MODEL = wandb.config.MODEL
 TTUR = wandb.config.TTUR
 HALF = wandb.config.HALF
 
+if platform.system() == "Windows":
+    NB_WORKERS = 0
 
 # Dataset
 if LOADER == "ldmk":
@@ -86,10 +86,6 @@ LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
                                 if torch.cuda.is_available()
                                 else 1)
 
-# Sizes
-if "Arc" in PLATFORM:
-    LATENT_SIZE = 512
-    K_SHOT = 8
 
 ###############
 # RL SETTINGS #
