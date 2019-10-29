@@ -38,7 +38,7 @@ if __name__ == '__main__':
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
     optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
 
-    check = CheckpointsFewShots()
+    check = CheckpointsFewShots(len(train_loader))
 
     print_parameters(emb)
     print_parameters(gen)

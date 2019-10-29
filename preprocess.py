@@ -13,7 +13,7 @@ from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import time
-from settings import (DEVICE, K_SHOT, LOAD_BATCH_SIZE,
+from settings import (DEVICE, K_SHOT, LOAD_BATCH_SIZE, ROOT_WEIGHTS,
                       NB_WORKERS, ROOT_DATASET, HALF, LOADER)
 
 
@@ -121,8 +121,32 @@ def load_someone():
 # JSON LOADER #
 # #############
 
-
 class jsonLoader(Dataset):
+    # def get_ids(self):
+    #     # if not os.path.exists(f"{ROOT_WEIGHTS}/ids.json"):
+    #     #     with open(f"{ROOT_WEIGHTS}/ids.json", "w") as file:
+    #     #         json.dump({}, file)
+
+    #     with open(f"{ROOT_WEIGHTS}ids.json", "w+") as file:
+    #         try:
+    #             json_ids = json.load(file)
+    #         except json.decoder.JSONDecodeError:
+    #             json_ids = {}
+
+    #     current_id = 0
+    #     id_to_tensor = {}
+    #     for uid in self.ids:
+    #         key = uid.split(self.slash)[-1]
+    #         id_to_tensor[key] = json_ids.get(key, current_id + 1)
+    #         current_id = id_to_tensor[key]
+
+    #     with open(f"{ROOT_WEIGHTS}/ids.json", "w") as file:
+    #         json.dump(id_to_tensor, file)
+
+    #     id_to_tensor = {key: torch.tensor(value).view(1)
+    #                     for key, value in id_to_tensor.items()}
+    #     return id_to_tensor
+
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(jsonLoader, self).__init__()
         self.slash = "/"
@@ -133,8 +157,10 @@ class jsonLoader(Dataset):
         print("Loading ids...")
         start_time = time.time()
         self.ids = glob.glob(f"{self.root_dir}/*")
-        self.id_to_tensor = {name.split(self.slash)[-1]: torch.tensor(i).view(1)
-                             for i, name in enumerate(self.ids)}
+        # self.id_to_tensor = self.get_ids()
+        # self.id_to_tensor = {name.split(self.slash)[-1]:
+        #                      torch.tensor(i).view(1)
+        #                      for i, name in enumerate(self.ids)}
         print(f"Ids loaded in {time.time() - start_time}s")
         print("Loading videos...")
         start_time = time.time()
@@ -148,10 +174,10 @@ class jsonLoader(Dataset):
 
     def __getitem__(self, index):
         context_name = self.context_names[index]
-        # itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]),
-        #                       dtype=torch.long).view(1)
-
-        itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
+        itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]),
+                              dtype=torch.long).view(1)
+        print(itemId)
+        # itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
 
         with open(f"{context_name}.json", "r") as file:
             dict_ldmk = json.load(file,

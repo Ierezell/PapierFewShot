@@ -181,17 +181,18 @@ def load_layers(size=LAYERS):
 
 
 class CheckpointsFewShots:
-    def __init__(self):
+    def __init__(self, len_loader):
         self.best_loss_EmbGen = 1000
         self.best_loss_Disc = 1000
         self.step_disc = 0
         self.step_EmbGen = 0
+        self.save_every = len_loader//4
 
     def save(self, model, loss, embedder, generator, discriminator):
         loss = loss.detach()
         if model == "disc":
             self.step_disc += 1
-            if loss < self.best_loss_Disc or self.step_disc > PRINT_EVERY:
+            if loss < self.best_loss_Disc or self.step_disc > self.save_every:
                 self.step_disc = 0
                 tqdm.write('\n' + '-'*25 + '\n' +
                            "| Poids disc sauvegardes |" + '\n' + '-'*25)
@@ -208,7 +209,8 @@ class CheckpointsFewShots:
                          PATH_WEIGHTS_DISCRIMINATOR)
         else:
             self.step_EmbGen += 1
-            if loss < self.best_loss_EmbGen or self.step_EmbGen > PRINT_EVERY:
+            if (loss < self.best_loss_EmbGen or
+                    self.step_EmbGen > self.save_every):
                 self.step_EmbGen = 0
                 tqdm.write("\n" + "-" * 31 + '\n' +
                            "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31)
