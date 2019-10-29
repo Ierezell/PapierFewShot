@@ -149,14 +149,15 @@ def load_losses():
         cntLoss = cntLoss.half()
         dscLoss = dscLoss.half()
 
-    advLoss = nn.DataParallel(
-        advLoss, device_ids=range(torch.cuda.device_count()))
-    mchLoss = nn.DataParallel(
-        mchLoss, device_ids=range(torch.cuda.device_count()))
-    cntLoss = nn.DataParallel(
-        cntLoss, device_ids=range(torch.cuda.device_count()))
-    dscLoss = nn.DataParallel(
-        dscLoss, device_ids=range(torch.cuda.device_count()))
+    if PARALLEL:
+        advLoss = nn.DataParallel(
+            advLoss, device_ids=range(torch.cuda.device_count()))
+        mchLoss = nn.DataParallel(
+            mchLoss, device_ids=range(torch.cuda.device_count()))
+        cntLoss = nn.DataParallel(
+            cntLoss, device_ids=range(torch.cuda.device_count()))
+        dscLoss = nn.DataParallel(
+            dscLoss, device_ids=range(torch.cuda.device_count()))
 
     advLoss = advLoss.to(DEVICE)
     mchLoss = mchLoss.to(DEVICE)

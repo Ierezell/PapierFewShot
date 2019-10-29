@@ -17,6 +17,7 @@ LOADER:
   value : "json"
 
 MODEL:
+  # "big", "small"
   value : "small"
 
 LAYERS:
@@ -28,7 +29,7 @@ DATASET:
   value : "small"
 
 CONCAT:
-  # "first", "last"
+  # "first", "last", ""
   value: ""
 
 LEARNING_RATE_EMB:
@@ -42,9 +43,6 @@ LEARNING_RATE_DISC:
 
 TTUR:
   value : True
-
-PRINT_EVERY:
-  value: 5000
 
 HALF:
   value : False
@@ -81,3 +79,7 @@ MAX_DEQUE_LANDMARKS:
 
 MAX_ITER_PERSON:
   value : 50
+
+
+IN_DISC:
+  value : "noisy"

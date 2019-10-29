@@ -27,6 +27,7 @@ PRINT_EVERY = wandb.config.PRINT_EVERY
 NB_WORKERS = wandb.config.NB_WORKERS
 NB_EPOCHS = wandb.config.NB_EPOCHS
 DATASET = wandb.config.DATASET
+IN_DISC = wandb.config.IN_DISC
 LAYERS = wandb.config.LAYERS
 CONCAT = wandb.config.CONCAT
 LOADER = wandb.config.LOADER
@@ -56,7 +57,19 @@ if LOADER == "ldmk":
 
 
 if LOADER == "json":
-    ROOT_DATASET = './dataset/jsonDataset'
+    if DATASET == "big":
+        if "blg" in PLATFORM:
+            ROOT_DATASET = '../scratch/dev/jsonDataset'
+        elif "gpu" in PLATFORM:
+            ROOT_DATASET = '/scratch/syi-200-aa/dev/jsonDataset'
+        elif "GAT" in PLATFORM:
+            ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\jsonDataset"
+        elif "co" in PLATFORM:
+            ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/jsonDataset'
+        else:
+            ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/jsonDataset"
+    elif DATASET == "small":
+        ROOT_DATASET = './dataset/jsonDataset'
 
 # Batch
 if "blg" in PLATFORM:
@@ -81,6 +94,7 @@ elif "co" in PLATFORM:
         BATCH_SIZE = 4
 else:
     BATCH_SIZE = 2
+
 
 LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
                                 if torch.cuda.is_available()
@@ -116,7 +130,7 @@ CONFIG = {
     "LATENT_SIZE": str(LATENT_SIZE),
     "MODEL": str(MODEL),
     "LAYERS": str(LAYERS),
-    "IN_DISC": "noisy",
+    "IN_DISC": IN_DISC,
     "CONCAT": str(CONCAT),
     "TTUR": str(TTUR),
     "TIME": TIME,
@@ -125,7 +139,7 @@ CONFIG = {
 folder_weights = CONFIG["PLATFORM"] + "_"+CONFIG["DATASET"] + "_" + \
     CONFIG["BATCH_SIZE"] + "_" + \
     CONFIG["LR_GEN"]+"_" + CONFIG["LR_DISC"]+"_" +\
-    CONFIG["NB_GPU"] + "_" + CONFIG["K_SHOT"] + "_" + \
+    CONFIG["K_SHOT"] + "_" + \
     CONFIG["MODEL"] + "_" + CONFIG["LAYERS"] + "_" + \
     CONFIG["IN_DISC"] + "_" + \
     CONFIG["CONCAT"]+"_" + CONFIG["TTUR"] + "_" + CONFIG["LATENT_SIZE"] + "/"

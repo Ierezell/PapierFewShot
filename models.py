@@ -311,7 +311,6 @@ class Discriminator(nn.Module):
         out = self.residual5(out)  # 2, 512, 7,7
         out = self.relu(out)
         features_maps.append(out)
-
         out = self.avgPool(out).squeeze()  # b,512
         out = self.relu(out)
         final_out = self.fc(out)

@@ -6,13 +6,13 @@ import sys
 import torch
 import torchvision
 import wandb
-from torch.optim import SGD, Adam
+from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
 
 from preprocess import get_data_loader
 from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
                       LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
-                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR,
+                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, IN_DISC,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
-    optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
+    optimizerDisc = RMSprop(disc.parameters(), lr=LEARNING_RATE_DISC)
 
     check = CheckpointsFewShots(len(train_loader))
 
@@ -83,15 +83,16 @@ if __name__ == '__main__':
             score_synth, feature_maps_disc_synth = disc(torch.cat(
                 (synth_im, gt_landmarks), dim=1), itemIds)
 
-            gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
+            lossCnt = cntLoss(gt_im, synth_im)
 
-            score_gt, feature_maps_disc_gt = disc(
-                gt_w_ldm+(torch.randn_like(gt_w_ldm)/2), itemIds)
+            if IN_DISC == "noisy":
+                gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/8)
+
+            gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
+            score_gt, feature_maps_disc_gt = disc(gt_w_ldm, itemIds)
 
             lossAdv = advLoss(score_synth, feature_maps_disc_gt,
                               feature_maps_disc_synth)
-
-            lossCnt = cntLoss(gt_im, synth_im)
 
             if PARALLEL:
                 lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
