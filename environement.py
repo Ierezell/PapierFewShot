@@ -120,6 +120,8 @@ class Environement:
             self.synth_im = self.generator(self.landmarks_img,
                                            self.paramWeights,
                                            self.paramBias, self.layersUp)
+        print(landmarks_img.min(), landmarks_img.max())
+        print(synth_im.min(), synth_im.max())
         self.axes[0, 1].clear()
         self.axes[0, 1].imshow(landmarks_img/landmarks_img.max())
         self.axes[0, 1].axis("off")

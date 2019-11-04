@@ -205,6 +205,7 @@ class BigGenerator(nn.Module):
 
         self.relu = nn.SELU()
         self.tanh = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, img, pWeights, pBias, layersUp):
         """
@@ -408,7 +409,7 @@ class BigGenerator(nn.Module):
         nb_params = self.Res8.params
         x = self.Res8(x, w=pWeights.narrow(-1, i, nb_params),
                       b=pBias.narrow(-1, i, nb_params))
-        x = self.tanh(x)
+        x = self.sigmoid(x)
         # print("Res8  ", x.size())
         i += nb_params
         # print("Nb_param   ", i)

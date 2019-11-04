@@ -8,6 +8,8 @@ import torchvision
 import wandb
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
+from torchvision import transforms
+
 
 from preprocess import get_data_loader
 from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
@@ -79,6 +81,8 @@ if __name__ == '__main__':
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
             synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            synth_im = transforms.Normalize(
+                [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(synth_im)
 
             score_synth, feature_maps_disc_synth = disc(torch.cat(
                 (synth_im, gt_landmarks), dim=1), itemIds)

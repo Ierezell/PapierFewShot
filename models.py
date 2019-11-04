@@ -252,7 +252,7 @@ class Generator(nn.Module):
         nb_params = self.ResUp5.params
         x = self.ResUp5(x, pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
-        x = self.tanh(x)
+        x = self.sigmoid(x)
         i += nb_params
         # print("ResUp5", x.size())
 
