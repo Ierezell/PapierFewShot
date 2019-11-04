@@ -206,6 +206,8 @@ class jsonLoader(Dataset):
         cvVideo.release()
 
         gt_im_tensor = transforms.ToTensor()(gt_im)
+        gt_im = transforms.Normalize([0.485, 0.456, 0.406],
+                                     [0.229, 0.224, 0.225])(gt_im)
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
 
