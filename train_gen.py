@@ -71,6 +71,8 @@ if __name__ == '__main__':
             synth_im = gen(gt_landmarks, paramWeights, paramBias, layersUp)
             synth_im = transforms.Normalize(
                 [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(synth_im)
+            gt_im = transforms.Normalize(
+                [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(gt_im)
 
             lossCnt = cntLoss(gt_im, synth_im).mean()
             lossL1 = l1(gt_im, synth_im).mean()*120
