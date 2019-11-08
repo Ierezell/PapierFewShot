@@ -24,7 +24,7 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
-        self.l1 = nn.MSELoss(reduction='mean')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, score_disc_synth, features_gt, features_synth):
         feature_loss = 0
@@ -43,7 +43,7 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        self.l1 = nn.MSELoss(reduction='mean')
+        self.l1 = nn.L1Loss(reduction='mean')
 
     def forward(self, ei, Wi):
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)

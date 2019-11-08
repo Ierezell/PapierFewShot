@@ -8,7 +8,6 @@ import torchvision
 import wandb
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
-from torchvision import transforms
 
 
 from preprocess import get_data_loader
