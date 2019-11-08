@@ -43,8 +43,7 @@ class adverserialLoss(nn.Module):
 class matchLoss(nn.Module):
     def __init__(self):
         super(matchLoss, self).__init__()
-        # self.l1 = nn.MSELoss(reduction='mean')
-        self.l1 = nn.L1Loss()
+        self.l1 = nn.MSELoss(reduction='mean')
 
     def forward(self, ei, Wi):
         ei = ei.view(BATCH_SIZE, LATENT_SIZE)
