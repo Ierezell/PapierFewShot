@@ -105,11 +105,16 @@ def load_someone():
         ctx_ldmk = dict_ldmk[frame]
         ctx_img = write_landmarks_on_image(ctx_img, ctx_ldmk)
         ctx_img = transforms.ToTensor()(ctx_img)
+        ctx_img = transforms.Normalize([0.485, 0.456, 0.406],
+                                       [0.229, 0.224, 0.225])(ctx_img)
+
         context_tensors_list.append(ctx_img)
 
     cvVideo.release()
 
     gt_im_tensor = transforms.ToTensor()(gt_im)
+    gt_im_tensor = transforms.Normalize([0.485, 0.456, 0.406],
+                                        [0.229, 0.224, 0.225])(gt_im_tensor)
     context_tensors = torch.cat(context_tensors_list).unsqueeze(0)
     gt_im_tensor = gt_im_tensor.to(DEVICE)
     context_tensors = context_tensors.to(DEVICE)
@@ -201,13 +206,15 @@ class jsonLoader(Dataset):
             ctx_ldmk = dict_ldmk[frame]
             ctx_img = write_landmarks_on_image(ctx_img, ctx_ldmk)
             ctx_img = transforms.ToTensor()(ctx_img)
+            # ctx_img = transforms.Normalize([0.485, 0.456, 0.406],
+            #                                [0.229, 0.224, 0.225])(ctx_img)
             context_tensors_list.append(ctx_img)
 
         cvVideo.release()
 
         gt_im_tensor = transforms.ToTensor()(gt_im)
-        gt_im = transforms.Normalize([0.485, 0.456, 0.406],
-                                     [0.229, 0.224, 0.225])(gt_im)
+        # gt_im_tensor = transforms.Normalize([0.485, 0.456, 0.406],
+        #                                     [0.229, 0.224, 0.225])(gt_im_tensor)
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
 

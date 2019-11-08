@@ -88,7 +88,7 @@ if __name__ == '__main__':
             lossCnt = cntLoss(gt_im, synth_im)
 
             if IN_DISC == "noisy":
-                gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/8)
+                gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/32)
 
             gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
             score_gt, feature_maps_disc_gt = disc(gt_w_ldm, itemIds)

@@ -108,7 +108,8 @@ class contentLoss(nn.Module):
             '25': "relu5_1",
         }
 
-        self.l1 = nn.MSELoss(reduction="mean")
+        # self.l1 = nn.MSELoss(reduction="mean")
+        self.l1 = nn.L1Loss(reduction="mean")
 
     def forward(self, gt, synth):
         # output_gt = {}
