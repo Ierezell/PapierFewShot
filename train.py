@@ -8,6 +8,8 @@ import torchvision
 import wandb
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
+from torchvision import transforms
+
 
 from preprocess import get_data_loader
 from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
@@ -152,7 +154,7 @@ if __name__ == '__main__':
                 wandb.log({"lossAdv": lossAdv.mean()})
                 wandb.log({"LossTot": loss.mean()})
 
-            if i_batch % len(train_loader)//2 == 0:
+            if i_batch % (len(train_loader)//2) == 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
                                            dim=1).view(-1, 3, 224, 224)

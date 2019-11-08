@@ -13,7 +13,7 @@ from tqdm import tqdm
 from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
                       LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_POLICY, PRINT_EVERY, HALF, PARALLEL)
+                      PATH_WEIGHTS_POLICY, HALF, PARALLEL)
 
 mplstyle.use(['dark_background', 'fast'])
 

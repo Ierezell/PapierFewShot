@@ -6,6 +6,7 @@ import sys
 import torch
 import torchvision
 import wandb
+from torchvision import transforms
 from torch.optim import SGD, Adam
 
 from preprocess import get_data_loader
@@ -67,7 +68,7 @@ if __name__ == '__main__':
             itemIds = itemIds.to(DEVICE)
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
-            synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            synth_im = gen(gt_landmarks, paramWeights, paramBias, layersUp)
 
             lossCnt = cntLoss(gt_im, synth_im).mean()
             lossL1 = l1(gt_im, synth_im).mean()*120
