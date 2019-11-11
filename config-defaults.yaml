@@ -18,7 +18,7 @@ LOADER:
 
 MODEL:
   # "big", "small"
-  value : "small"
+  value : "big"
 
 LAYERS:
   # "big", "small"
@@ -48,10 +48,10 @@ HALF:
   value : False
 
 K_SHOT:
-  value : 8
+  value : 2
 
 LATENT_SIZE :
-  value: 512
+  value: 256
 
 NB_WORKERS:
   value : 12
