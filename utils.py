@@ -1,3 +1,6 @@
+from losses import (adverserialLoss, contentLoss,
+                    discriminatorLoss, matchLoss)
+from RlModel import Policy
 from shutil import copyfile
 import glob
 import os
@@ -122,7 +125,6 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
 
 def load_rl_model(load_previous_state=LOAD_PREVIOUS_RL):
-    from RlModel import Policy
     policy = Policy()
     policy = policy.to(DEVICE)
     policy = nn.DataParallel(
@@ -136,8 +138,6 @@ def load_rl_model(load_previous_state=LOAD_PREVIOUS_RL):
 
 
 def load_losses():
-    from losses import (adverserialLoss, contentLoss,
-                        discriminatorLoss, matchLoss)
     advLoss = adverserialLoss()
     mchLoss = matchLoss()
     cntLoss = contentLoss()

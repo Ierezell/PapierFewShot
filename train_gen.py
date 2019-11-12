@@ -11,7 +11,7 @@ from torch.optim import SGD, Adam
 
 from preprocess import get_data_loader
 from settings import (DEVICE, K_SHOT, LEARNING_RATE_DISC, LEARNING_RATE_EMB,
-                      LEARNING_RATE_GEN, NB_EPOCHS, PRINT_EVERY, TTUR,
+                      LEARNING_RATE_GEN, NB_EPOCHS, TTUR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
                       PATH_WEIGHTS_DISCRIMINATOR, HALF)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
 
-    check = CheckpointsFewShots()
+    check = CheckpointsFewShots(len(train_loader))
 
     print_parameters(emb)
     print_parameters(gen)

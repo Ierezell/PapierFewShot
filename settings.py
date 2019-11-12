@@ -38,23 +38,6 @@ HALF = wandb.config.HALF
 if platform.system() == "Windows":
     NB_WORKERS = 0
 
-# Dataset
-if LOADER == "ldmk":
-    if DATASET == "big":
-        if "blg" in PLATFORM:
-            ROOT_DATASET = '../scratch/dev/mp4/'
-        elif "gpu" in PLATFORM:
-            ROOT_DATASET = '/scratch/syi-200-aa/dev/mp4/'
-        elif "GAT" in PLATFORM:
-            ROOT_DATASET = "H:\\dataset\\voxCeleb\\dev\\mp4"
-        elif "co" in PLATFORM:
-            ROOT_DATASET = '/home-local2/pisne.extra.nobkp/dataset/dev/mp4'
-        else:
-            ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/mp4"
-    elif DATASET == "small":
-        ROOT_DATASET = './dataset/mp4'
-
-
 if LOADER == "json":
     if DATASET == "big":
         if "blg" in PLATFORM:
