@@ -19,8 +19,8 @@ from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.enabled = True
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.enabled = False
 
 if __name__ == '__main__':
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             lossCnt = cntLoss(gt_im, synth_im)
 
             if IN_DISC == "noisy":
-                gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/8)
+                gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/32)
 
             gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
             score_gt, feature_maps_disc_gt = disc(gt_w_ldm, itemIds)
@@ -116,6 +116,7 @@ if __name__ == '__main__':
                     optimizerDisc.step()
 
                     check.save("disc", lossDsc.mean(), emb, gen, disc)
+                    # print(lossDsc)
                     wandb.log({"Loss_dsc": lossDsc.mean()})
                 else:
                     ones_grad = torch.ones(torch.cuda.device_count(),
@@ -132,6 +133,10 @@ if __name__ == '__main__':
                     wandb.log({"lossMch": lossMch.mean()})
                     wandb.log({"lossAdv": lossAdv.mean()})
                     wandb.log({"LossTot": loss.mean()})
+                    # print(lossCnt)
+                    # print(lossMch)
+                    # print(lossAdv)
+                    # print(loss)
             else:
                 ones_grad = torch.ones(torch.cuda.device_count(),
                                        dtype=(torch.half if HALF

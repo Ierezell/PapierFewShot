@@ -79,7 +79,7 @@ class Embedder(nn.Module):
             layerUp0 = torch.add(out, layerUp0)
             out = self.avgPool(out).squeeze()  # b,512
             # print("out  ", out.size())
-            out = self.relu(out)
+            # out = self.relu(out)
             temp = torch.add(out, temp)
 
         context = torch.div(temp, (x.size(1) // 3))
@@ -252,7 +252,7 @@ class Generator(nn.Module):
         nb_params = self.ResUp5.params
         x = self.ResUp5(x, pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
-        x = self.sigmoid(x)
+        # x = self.sigmoid(x)
         i += nb_params
         # print("ResUp5", x.size())
 

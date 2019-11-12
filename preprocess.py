@@ -16,6 +16,8 @@ import time
 from settings import (DEVICE, K_SHOT, LOAD_BATCH_SIZE, ROOT_WEIGHTS,
                       NB_WORKERS, ROOT_DATASET, HALF, LOADER)
 
+from random import randint
+
 
 def write_landmarks_on_image(image, landmarks):
     # Machoire
@@ -105,6 +107,8 @@ def load_someone():
         ctx_ldmk = dict_ldmk[frame]
         ctx_img = write_landmarks_on_image(ctx_img, ctx_ldmk)
         ctx_img = transforms.ToTensor()(ctx_img)
+        ctx_img = transforms.Normalize([0.485, 0.456, 0.406],
+                                       [0.229, 0.224, 0.225])(ctx_img)
         context_tensors_list.append(ctx_img)
 
     cvVideo.release()
@@ -114,6 +118,7 @@ def load_someone():
     gt_im_tensor = gt_im_tensor.to(DEVICE)
     context_tensors = context_tensors.to(DEVICE)
     itemId = itemId.to(DEVICE)
+    print(itemId)
     return gt_im_tensor, gt_ldmk, context_tensors, itemId
 
 
@@ -171,18 +176,23 @@ class jsonLoader(Dataset):
         print(f"videos loaded in {time.time() - start_time}s")
 
     def __getitem__(self, index):
-        context_name = self.context_names[index]
-        # itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]),
-        #                       ).view(1)
-        itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
+        badLdmks = True
+        while badLdmks:
+            context_name = self.context_names[index]
+            # itemId = torch.tensor(int(context_name.split(self.slash)[-2][2:]),
+            #                       ).view(1)
+            itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
 
-        with open(f"{context_name}.json", "r") as file:
-            dict_ldmk = json.load(file,
-                                  object_pairs_hook=lambda x: {int(k): v
-                                                               for k, v in x})
+            with open(f"{context_name}.json", "r") as file:
+                dict_ldmk = json.load(file, object_pairs_hook=lambda x: {
+                                      int(k): v for k, v in x})
 
-        frames = np.random.choice(list(dict_ldmk.keys()), self.K_shots + 1)
-
+            try:
+                frames = np.random.choice(list(dict_ldmk.keys()),
+                                          self.K_shots + 1)
+                badLdmks = False
+            except ValueError:
+                index = randint(0, len(self.context_names))
         cvVideo = cv2.VideoCapture(f"{context_name}.mp4")
 
         cvVideo.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
@@ -201,16 +211,18 @@ class jsonLoader(Dataset):
             ctx_ldmk = dict_ldmk[frame]
             ctx_img = write_landmarks_on_image(ctx_img, ctx_ldmk)
             ctx_img = transforms.ToTensor()(ctx_img)
+            # ctx_img = transforms.Normalize([0.485, 0.456, 0.406],
+            #                                [0.229, 0.224, 0.225])(ctx_img)
             context_tensors_list.append(ctx_img)
 
         cvVideo.release()
 
         gt_im_tensor = transforms.ToTensor()(gt_im)
-        gt_im = transforms.Normalize([0.485, 0.456, 0.406],
-                                     [0.229, 0.224, 0.225])(gt_im)
+        # gt_im_tensor = transforms.Normalize([0.485, 0.456, 0.406],
+        #                                     [0.229, 0.224, 0.225])(gt_im_tensor)
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
-
+        # print(itemId)
         return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId
 
     def __len__(self):
