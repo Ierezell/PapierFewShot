@@ -189,8 +189,12 @@ class CheckpointsFewShots:
         self.step_EmbGen = 0
         self.save_every = len_loader//4
 
-    def save(self, model, loss, embedder, generator, discriminator):
+    def save(self, model, loss, embedder, generator, discriminator,
+             path_emb=PATH_WEIGHTS_EMBEDDER, path_gen=PATH_WEIGHTS_GENERATOR,
+             path_disc=PATH_WEIGHTS_DISCRIMINATOR):
+
         loss = loss.detach()
+
         if model == "disc":
             self.step_disc += 1
             if loss < self.best_loss_Disc or self.step_disc > self.save_every:
@@ -200,14 +204,12 @@ class CheckpointsFewShots:
                 self.best_loss_Disc = loss
                 if PARALLEL:
                     torch.save(discriminator.module.state_dict(),
-                               PATH_WEIGHTS_DISCRIMINATOR.replace(".pt",
-                                                                  ".bk"))
+                               path_disc.replace(".pt",
+                                                 ".bk"))
                 else:
                     torch.save(discriminator.state_dict(),
-                               PATH_WEIGHTS_DISCRIMINATOR.replace(".pt",
-                                                                  ".bk"))
-                copyfile(PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
-                         PATH_WEIGHTS_DISCRIMINATOR)
+                               path_disc.replace(".pt", ".bk"))
+                copyfile(path_disc.replace(".pt", ".bk"), path_disc)
         else:
             self.step_EmbGen += 1
             if (loss < self.best_loss_EmbGen or
@@ -218,18 +220,16 @@ class CheckpointsFewShots:
                 self.best_loss_EmbGen = loss
                 if PARALLEL:
                     torch.save(embedder.module.state_dict(),
-                               PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
+                               path_gen.replace(".pt", ".bk"))
                     torch.save(generator.module.state_dict(),
-                               PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
+                               path_gen.replace(".pt", ".bk"))
                 else:
                     torch.save(embedder.state_dict(),
-                               PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"))
+                               path_emb.replace(".pt", ".bk"))
                     torch.save(generator.state_dict(),
                                PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
-                copyfile(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
-                         PATH_WEIGHTS_EMBEDDER)
-                copyfile(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
-                         PATH_WEIGHTS_GENERATOR)
+                copyfile(path_emb.replace(".pt", ".bk"), path_emb)
+                copyfile(path_gen.replace(".pt", ".bk"), path_gen)
 
 
 class CheckpointsRl:

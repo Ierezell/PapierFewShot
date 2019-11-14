@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import time
 from settings import (DEVICE, K_SHOT, LOAD_BATCH_SIZE, ROOT_WEIGHTS,
-                      NB_WORKERS, ROOT_DATASET, HALF, LOADER, FINE_TUNING)
+                      NB_WORKERS, ROOT_DATASET, HALF, LOADER)
 
 from random import randint
 
@@ -173,13 +173,13 @@ class jsonLoader(Dataset):
         print(f"videos loaded in {time.time() - start_time}s")
 
     def __getitem__(self, index):
-        context_name = self.context_names[index]
-        itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
         badLdmks = True
         while badLdmks:
+            context_name = self.context_names[index]
+            itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
             with open(f"{context_name}.json", "r") as file:
                 dict_ldmk = json.load(file, object_pairs_hook=dictKeytoInt)
-            
+
             try:
                 frames = np.random.choice(list(dict_ldmk.keys()),
                                           self.K_shots + 1)
@@ -228,7 +228,7 @@ class jsonLoader(Dataset):
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
         # print(itemId)
-        return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId
+        return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId, context_name
 
     def __len__(self):
         return len(self.context_names)
