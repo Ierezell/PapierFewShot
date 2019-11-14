@@ -2,13 +2,11 @@ from settings import LATENT_SIZE, BATCH_SIZE, CONCAT, DEVICE, HALF
 from torch.nn.utils import spectral_norm
 from torch import nn
 import torch
-import numpy as np
+import torch.nn.functional as F
 from utils import load_layers
 
-(ResidualBlock,
- ResidualBlockDown,
- ResidualBlockUp,
- Attention) = load_layers()
+(ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention) = load_layers()
+
 # ###############
 #    Embedder   #
 # ###############
@@ -17,7 +15,7 @@ from utils import load_layers
 class Embedder(nn.Module):
     def __init__(self):
         super(Embedder, self).__init__()
-        self.residual1 = ResidualBlockDown(3, 32)
+        self.residual1 = ResidualBlockDown(6, 32)
         self.residual2 = ResidualBlockDown(32, 64)
         self.residual3 = ResidualBlockDown(64, 128)
         self.residual4 = ResidualBlockDown(128, 256)
@@ -47,9 +45,9 @@ class Embedder(nn.Module):
                                dtype=(torch.half if HALF else torch.float),
                                device=DEVICE)
 
-        for i in range(x.size(1) // 3):
+        for i in range(x.size(1) // 6):
             # print("x  ", x.size())
-            out = self.residual1(x.narrow(1, i*3, 3))  # b, 64, 112, 112
+            out = self.residual1(x.narrow(1, i*6, 6))  # b, 64, 112, 112
             out = self.relu(out)
             # print("out1  ", out.size())
 
@@ -82,12 +80,12 @@ class Embedder(nn.Module):
             # out = self.relu(out)
             temp = torch.add(out, temp)
 
-        context = torch.div(temp, (x.size(1) // 3))
+        context = torch.div(temp, (x.size(1) // 6))
 
-        layerUp0 = torch.div(layerUp0, (x.size(1) // 3))
-        layerUp1 = torch.div(layerUp1, (x.size(1) // 3))
-        layerUp2 = torch.div(layerUp2, (x.size(1) // 3))
-        layerUp3 = torch.div(layerUp3, (x.size(1) // 3))
+        layerUp0 = torch.div(layerUp0, (x.size(1) // 6))
+        layerUp1 = torch.div(layerUp1, (x.size(1) // 6))
+        layerUp2 = torch.div(layerUp2, (x.size(1) // 6))
+        layerUp3 = torch.div(layerUp3, (x.size(1) // 6))
 
         paramWeights = self.FcWeights(context)
         paramBias = self.FcBias(context)
@@ -259,6 +257,7 @@ class Generator(nn.Module):
         w = pWeights.narrow(-1, i, 3)
         b = pBias.narrow(-1, i, 3)
 
+        x = F.instance_norm(x)
         x = w.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
         x = x + b.unsqueeze(-1).unsqueeze(-1).expand_as(x)
 
