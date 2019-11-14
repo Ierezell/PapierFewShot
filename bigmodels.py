@@ -118,7 +118,7 @@ class BigEmbedder(nn.Module):
 
             temp = torch.add(out, temp)
 
-        context = torch.div(temp, (x.size(1)//3))
+        context = torch.div(temp, (x.size(1)//6))
         # layerUp3 = torch.div(layerUp3, (x.size(1)//3))
         # layerUp2 = torch.div(layerUp2, (x.size(1)//3))
         # layerUp1 = torch.div(layerUp1, (x.size(1)//3))
@@ -294,7 +294,7 @@ class BigGenerator(nn.Module):
 
         x = self.attentionUp2(x)
         x = self.relu(x)
-
+        x = self.instance_norm(x)
         w = pWeights.narrow(-1, 0, 3)
         b = pBias.narrow(-1, 0, 3)
 
@@ -304,7 +304,6 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         x = self.conv(x)
         x = self.tanh(x)
-        i += nb_params
         # print("Nb_param   ", i)
         return x
 
