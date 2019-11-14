@@ -71,9 +71,9 @@ elif "GAT" in PLATFORM:
         BATCH_SIZE = 4
 elif "co" in PLATFORM:
     if MODEL == "small":
-        BATCH_SIZE = 8
-    elif MODEL == "big":
         BATCH_SIZE = 4
+    elif MODEL == "big":
+        BATCH_SIZE = 2
 else:
     BATCH_SIZE = 2
 

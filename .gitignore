@@ -30,3 +30,4 @@ weights_beluga
 wandb/
 
 test_db/
+PytorchVenv/
