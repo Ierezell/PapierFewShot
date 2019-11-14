@@ -23,8 +23,8 @@ class Embedder(nn.Module):
         self.residual4 = ResidualBlockDown(128, 256)
         self.residual5 = ResidualBlockDown(256, LATENT_SIZE)
         # self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 2632))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 2632))
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 2635))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 2635))
         self.attention = Attention(64)
         self.avgPool = torch.nn.AvgPool2d(7)
         self.relu = nn.SELU()
@@ -111,7 +111,7 @@ class Generator(nn.Module):
         self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE)
         # Constant
         # self.ResBlock_128_1 = ResidualBlock(128, 128)
-        # self.ResBlock_128_2 = ResidualBlock(128, 256)
+        self.ResBlock_128_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
         self.ResBlock_128_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
         # Up
         self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)
@@ -120,6 +120,7 @@ class Generator(nn.Module):
         self.attentionUp = Attention(64)
         self.ResUp4 = ResidualBlockUp(64, 32)
         self.ResUp5 = ResidualBlockUp(32, 3)
+        self.conv = spectral_norm(nn.Conv2d(3, 3, 3, padding=1))
 
         if CONCAT:
             self.Ada0 = spectral_norm(nn.Conv2d(LATENT_SIZE * 2, LATENT_SIZE,
@@ -252,8 +253,17 @@ class Generator(nn.Module):
         nb_params = self.ResUp5.params
         x = self.ResUp5(x, pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
-        x = self.sigmoid(x)
         i += nb_params
+
+        w = pWeights.narrow(-1, i, 3)
+        b = pBias.narrow(-1, i, 3)
+
+        x = w.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
+        x = x + b.unsqueeze(-1).unsqueeze(-1).expand_as(x)
+
+        x = self.relu(x)
+        x = self.conv(x)
+        x = self.tanh(x)
         # print("ResUp5", x.size())
 
         # print("Nb_param   ", i)
@@ -325,5 +335,5 @@ class Discriminator(nn.Module):
         final_out += condition.view(final_out.size())
         final_out = final_out.view(b.size())
         final_out += b
-        final_out = self.sig(final_out)
+        final_out = self.tanh(final_out)
         return final_out, features_maps
