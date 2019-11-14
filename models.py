@@ -31,19 +31,19 @@ class Embedder(nn.Module):
         temp = torch.zeros((BATCH_SIZE, LATENT_SIZE),
                            dtype=(torch.half if HALF else torch.float),
                            device=DEVICE)
-
-        layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
-                               dtype=(torch.half if HALF else torch.float),
-                               device=DEVICE)
-        layerUp1 = torch.zeros((BATCH_SIZE, 256, 14, 14),
-                               dtype=(torch.half if HALF else torch.float),
-                               device=DEVICE)
-        layerUp2 = torch.zeros((BATCH_SIZE, 128, 28, 28),
-                               dtype=(torch.half if HALF else torch.float),
-                               device=DEVICE)
-        layerUp3 = torch.zeros((BATCH_SIZE, 64, 56, 56),
-                               dtype=(torch.half if HALF else torch.float),
-                               device=DEVICE)
+        if CONCAT:
+            layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+            layerUp1 = torch.zeros((BATCH_SIZE, 256, 14, 14),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+            layerUp2 = torch.zeros((BATCH_SIZE, 128, 28, 28),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+            layerUp3 = torch.zeros((BATCH_SIZE, 64, 56, 56),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
 
         for i in range(x.size(1) // 6):
             # print("x  ", x.size())
@@ -58,38 +58,44 @@ class Embedder(nn.Module):
             out = self.attention(out)  # b, 128, 56, 56
             out = self.relu(out)
             # print("out4  ", out.size())
-            layerUp3 = torch.add(out, layerUp3)
+            if CONCAT:
+                layerUp3 = torch.add(out, layerUp3)
 
             out = self.residual3(out)  # b, 128, 56, 56
             out = self.relu(out)
             # print("out3  ", out.size())
-
-            layerUp2 = torch.add(out, layerUp2)
+            if CONCAT:
+                layerUp2 = torch.add(out, layerUp2)
 
             out = self.residual4(out)  # b, 256, 28, 28
             out = self.relu(out)
             # print("out5 ", out.size())
-            layerUp1 = torch.add(out, layerUp1)
+            if CONCAT:
+                layerUp1 = torch.add(out, layerUp1)
 
             out = self.residual5(out)  # b, 512, 14, 14
             out = self.relu(out)
             # print("out6  ", out.size())
-            layerUp0 = torch.add(out, layerUp0)
+            if CONCAT:
+                layerUp0 = torch.add(out, layerUp0)
             out = self.avgPool(out).squeeze()  # b,512
             # print("out  ", out.size())
             # out = self.relu(out)
             temp = torch.add(out, temp)
 
         context = torch.div(temp, (x.size(1) // 6))
-
-        layerUp0 = torch.div(layerUp0, (x.size(1) // 6))
-        layerUp1 = torch.div(layerUp1, (x.size(1) // 6))
-        layerUp2 = torch.div(layerUp2, (x.size(1) // 6))
-        layerUp3 = torch.div(layerUp3, (x.size(1) // 6))
+        if CONCAT:
+            layerUp0 = torch.div(layerUp0, (x.size(1) // 6))
+            layerUp1 = torch.div(layerUp1, (x.size(1) // 6))
+            layerUp2 = torch.div(layerUp2, (x.size(1) // 6))
+            layerUp3 = torch.div(layerUp3, (x.size(1) // 6))
 
         paramWeights = self.FcWeights(context)
         paramBias = self.FcBias(context)
-        layersUp = (layerUp0, layerUp1, layerUp2, layerUp3)
+        if CONCAT:
+            layersUp = (layerUp0, layerUp1, layerUp2, layerUp3)
+        else:
+            layersUp = (None, None, None, None)
 
         return context, paramWeights, paramBias, layersUp
 
@@ -109,7 +115,7 @@ class Generator(nn.Module):
         self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE)
         # Constant
         # self.ResBlock_128_1 = ResidualBlock(128, 128)
-        self.ResBlock_128_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
+        # self.ResBlock_128_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
         self.ResBlock_128_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
         # Up
         self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)
