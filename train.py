@@ -171,7 +171,7 @@ if __name__ == '__main__':
                                            dim=1).view(-1, 3, 224, 224)
 
                 grid = torchvision.utils.make_grid(
-                    images_to_grid, padding=4, nrow=3 + K_SHOT,
+                    images_to_grid, padding=4, nrow=3 + 2*K_SHOT,
                     normalize=True, scale_each=True)
 
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})

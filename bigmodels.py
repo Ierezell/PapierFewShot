@@ -35,13 +35,13 @@ class BigEmbedder(nn.Module):
         fully connected are used to grow the 1*512 to the size of the generator
         """
         super(BigEmbedder, self).__init__()
-        self.residual1 = ResidualBlock(6, 64)
-        self.residual2 = ResidualBlockDown(64, 128)
-        self.residual3 = ResidualBlockDown(128, 256)
+        self.residual1 = ResidualBlock(6, 64)  # 64, 224, 224
+        self.residual2 = ResidualBlockDown(64, 128)  # 128, 112, 112
+        self.residual3 = ResidualBlockDown(128, 256)  # 256, 64, 64
         self.attention1 = Attention(256)
-        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)
-        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
-        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
+        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 512 , 32, 32
+        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 5,16,16
+        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512,7,7
         self.attention2 = Attention(LATENT_SIZE)
 
         self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
@@ -62,56 +62,52 @@ class BigEmbedder(nn.Module):
         temp = torch.zeros(LATENT_SIZE,
                            dtype=(torch.half if HALF else torch.float),
                            device=DEVICE)
-        # layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
-        #                        dtype=(torch.half if HALF else torch.float),
-        #                        device=DEVICE)
-        # layerUp1 = torch.zeros((BATCH_SIZE, 512, 14, 14),
-        #                        dtype=(torch.half if HALF else torch.float),
-        #                        device=DEVICE)
-        # layerUp2 = torch.zeros((BATCH_SIZE, 256, 14, 14),
-        #                        dtype=(torch.half if HALF else torch.float),
-        #                        device=DEVICE)
-        # layerUp3 = torch.zeros((BATCH_SIZE, 128, 28, 28),
-        #                        dtype=(torch.half if HALF else torch.float),
-        #                        device=DEVICE)
-
+        if CONCAT:
+            layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+            layerUp1 = torch.zeros((BATCH_SIZE, 512, 14, 14),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+            layerUp2 = torch.zeros((BATCH_SIZE, 256, 14, 14),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+            layerUp3 = torch.zeros((BATCH_SIZE, 128, 28, 28),
+                                   dtype=(torch.half if HALF else torch.float),
+                                   device=DEVICE)
+        else:
+            layerUp0, layerUp1, layerUp2, layerUp3 = None, None, None, None
         for i in range(x.size(1)//6):
-            # print(x.narrow(1, i*6, 6).size())
             out = self.residual1(x.narrow(1, i*6, 6))  # b, 64, 112, 112
-            # print("1 ", out.size())
+
             out = self.residual2(out)  # b, 128, 56, 56
             out = self.relu(out)
-            # print("2 ", out.size())
 
             out = self.residual3(out)  # b, 128, 56, 56
             out = self.relu(out)
-            # print("3 ", out.size())
 
             out = self.attention1(out)  # b, 128, 56, 56
             out = self.relu(out)
-            # print("4 ", out.size())
+            if CONCAT:
+                layerUp3 = torch.add(out, layerUp3)
 
             out = self.residual4(out)  # b, 256, 28, 28
             out = self.relu(out)
-            # print("5 ", out.size())
-            # print("L3  ", out.size(), layerUp3.size())
-            # layerUp3 = torch.add(out, layerUp3)
+            if CONCAT:
+                layerUp2 = torch.add(out, layerUp2)
 
             out = self.residual5(out)  # b, 512, 14, 14
             out = self.relu(out)
-            # print("6 ", out.size())
-            # print("1", "L2  ", out.size(), layerUp2.size())
-            # layerUp2 = torch.add(out, layerUp2)
+            if CONCAT:
+                layerUp1 = torch.add(out, layerUp1)
 
             out = self.residual6(out)  # b, 512, 14, 14
             out = self.relu(out)
-            # print("7 ", out.size())
-            # print("L1  ", out.size(), layerUp1.size())
-            # layerUp1 = torch.add(out, layerUp1)
 
             out = self.attention2(out)  # b, 512, 14, 14
             out = self.relu(out)
-            # print("OUT  ", out.size())
+            if CONCAT:
+                layerUp0 = torch.add(out, layerUp0)
 
             out = self.avgPool(out).squeeze()
             out = self.relu(out)
@@ -119,16 +115,16 @@ class BigEmbedder(nn.Module):
             temp = torch.add(out, temp)
 
         context = torch.div(temp, (x.size(1)//6))
-        # layerUp3 = torch.div(layerUp3, (x.size(1)//3))
-        # layerUp2 = torch.div(layerUp2, (x.size(1)//3))
-        # layerUp1 = torch.div(layerUp1, (x.size(1)//3))
-        # layerUp0 = torch.div(layerUp0, (x.size(1)//3))
+        if CONCAT:
+            layerUp3 = torch.div(layerUp3, (x.size(1)//6))
+            layerUp2 = torch.div(layerUp2, (x.size(1)//6))
+            layerUp1 = torch.div(layerUp1, (x.size(1)//6))
+            layerUp0 = torch.div(layerUp0, (x.size(1)//6))
 
         paramWeights = self.relu(self.FcWeights(context)).squeeze()
         paramBias = self.relu(self.FcBias(context)).squeeze()
 
-        # layersUp = (layerUp0, layerUp1, layerUp2, layerUp3)
-        layersUp = (None, None, None, None)
+        layersUp = (layerUp0, layerUp1, layerUp2, layerUp3)
         return context, paramWeights, paramBias, layersUp
 
 
@@ -153,24 +149,27 @@ class BigGenerator(nn.Module):
         """
         super(BigGenerator, self).__init__()
         # Down
-        self.ResDown1 = ResidualBlockDown(3, 64)
-        self.ResDown2 = ResidualBlockDown(64, 128)
-        self.ResDown3 = ResidualBlockDown(128, 256)
+        # self.ResDown1 = ResidualBlockDown(3, 64)
+        self.ResDown1 = ResidualBlockDown(3, 64)  # 64, 224, 224
+        self.ResDown2 = ResidualBlockDown(64, 128)  # 128, 112, 112
+        self.ResDown3 = ResidualBlockDown(128, 256)  # 256, 64, 64
         self.attentionDown = Attention(256)
-        self.ResDown4 = ResidualBlockDown(256, LATENT_SIZE)
+        self.ResDown4 = ResidualBlockDown(256, LATENT_SIZE)  # 512, 32, 32
+        # self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE) # 512, 16, 16
+        # self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE) # 512, 7, 7
         # Constant
-        self.ResBlock_128_1 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        self.ResBlock_128_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
+        self.ResBlock_1 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
+        self.ResBlock_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
         self.attention1 = Attention(LATENT_SIZE)
-        self.ResBlock_128_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        self.ResBlock_128_4 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
+        self.ResBlock_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
+        self.ResBlock_4 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
         self.attention2 = Attention(LATENT_SIZE)
         # Up
-        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)
-        self.ResUp2 = ResidualBlockUp(256, 128)
+        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)   # 256,64,64
+        self.ResUp2 = ResidualBlockUp(256, 128)   # 128,64,64
         self.attentionUp1 = Attention(128)
-        self.ResUp3 = ResidualBlockUp(128, 64)
-        self.ResUp4 = ResidualBlockUp(64, 3)
+        self.ResUp3 = ResidualBlockUp(128, 64)  # 64, 112, 112
+        self.ResUp4 = ResidualBlockUp(64, 3)  # 3, 224, 224
         self.attentionUp2 = Attention(3)
         self.conv = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
         self.relu = nn.SELU()
@@ -223,35 +222,35 @@ class BigGenerator(nn.Module):
         # ##########
         i = 0
 
-        nb_params = self.ResBlock_128_1.params
-        x = self.ResBlock_128_1(x, w=pWeights.narrow(-1, i, nb_params),
-                                b=pBias.narrow(-1, i, nb_params))
+        nb_params = self.ResBlock_1.params
+        x = self.ResBlock_1(x, w=pWeights.narrow(-1, i, nb_params),
+                            b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResBlock_128_1  ", x.size())
+        # print("ResBlock_1  ", x.size())
         i += nb_params
 
-        nb_params = self.ResBlock_128_2.params
-        x = self.ResBlock_128_2(x, w=pWeights.narrow(-1, i, nb_params),
-                                b=pBias.narrow(-1, i, nb_params))
+        nb_params = self.ResBlock_2.params
+        x = self.ResBlock_2(x, w=pWeights.narrow(-1, i, nb_params),
+                            b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResBlock_128_2  ", x.size())
+        # print("ResBlock_2  ", x.size())
         i += nb_params
 
         x = self.attention1(x)
         x = self.relu(x)
 
-        nb_params = self.ResBlock_128_3.params
-        x = self.ResBlock_128_3(x, w=pWeights.narrow(-1, i, nb_params),
-                                b=pBias.narrow(-1, i, nb_params))
+        nb_params = self.ResBlock_3.params
+        x = self.ResBlock_3(x, w=pWeights.narrow(-1, i, nb_params),
+                            b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResBlock_128_3  ", x.size())
+        # print("ResBlock_3  ", x.size())
         i += nb_params
 
-        nb_params = self.ResBlock_128_4.params
-        x = self.ResBlock_128_4(x, w=pWeights.narrow(-1, i, nb_params),
-                                b=pBias.narrow(-1, i, nb_params))
+        nb_params = self.ResBlock_4.params
+        x = self.ResBlock_4(x, w=pWeights.narrow(-1, i, nb_params),
+                            b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        # print("ResBlock_128_4  ", x.size())
+        # print("ResBlock_4  ", x.size())
         i += nb_params
 
         x = self.attention2(x)
@@ -286,8 +285,8 @@ class BigGenerator(nn.Module):
         i += nb_params
 
         nb_params = self.ResUp4.params
-        x = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
+        FINE_TUNINGFINE_TUNINGx = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
+                                              b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
         # print("Res4  ", x.size())
         i += nb_params

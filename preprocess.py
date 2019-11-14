@@ -129,6 +129,9 @@ def load_someone():
 # JSON LOADER #
 # #############
 
+def dictKeytoInt(x): return {int(k): v for k, v in x}
+
+
 class jsonLoader(Dataset):
     def get_ids(self):
         with open(f"{ROOT_WEIGHTS}ids.json", "w+") as file:
@@ -172,22 +175,18 @@ class jsonLoader(Dataset):
     def __getitem__(self, index):
         context_name = self.context_names[index]
         itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
-
-        with open(f"{context_name}.json", "r") as file:
-            dict_ldmk = json.load(file,
-                                  object_pairs_hook=lambda x: {int(k): v
-                                                               for k, v in x})
-
+        badLdmks = True
+        while badLdmks:
             with open(f"{context_name}.json", "r") as file:
-                dict_ldmk = json.load(file, object_pairs_hook=lambda x: {
-                                      int(k): v for k, v in x})
-
+                dict_ldmk = json.load(file, object_pairs_hook=dictKeytoInt)
+            
             try:
                 frames = np.random.choice(list(dict_ldmk.keys()),
                                           self.K_shots + 1)
                 badLdmks = False
             except ValueError:
                 index = randint(0, len(self.context_names))
+
         cvVideo = cv2.VideoCapture(f"{context_name}.mp4")
 
         cvVideo.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
@@ -204,20 +203,28 @@ class jsonLoader(Dataset):
             _, ctx_img = cvVideo.read()
             ctx_img = cv2.cvtColor(ctx_img, cv2.COLOR_BGR2RGB)
             ctx_ldmk = dict_ldmk[frame]
+
             ctx_ldmk_img = np.zeros(gt_im.shape, np.float32)
             ctx_ldmk_img = write_landmarks_on_image(ctx_ldmk_img, ctx_ldmk)
-            ctx_img = transforms.ToTensor()(ctx_img)
             ctx_ldmk_img = transforms.ToTensor()(ctx_ldmk_img)
-            # ctx_img = transforms.Normalize([0.485, 0.456, 0.406],
-            #                                [0.229, 0.224, 0.225])(ctx_img)
+            ctx_ldmk_img = transforms.Normalize([0, 0, 0],
+                                                [255, 255, 225])(ctx_ldmk_img)
+
+            ctx_img = transforms.ToTensor()(ctx_img)
+            # print("1 ", ctx_img.max(), ctx_img.min())
+            ctx_img = transforms.Normalize([0.5, 0.5, 0.5],
+                                           [0.5, 0.5, 0.5])(ctx_img)
+            # print("2 ", ctx_img.max(), ctx_img.min())
             context_tensors_list.append(ctx_img)
             context_tensors_list.append(ctx_ldmk_img)
 
         cvVideo.release()
-
+        # print("3 ", gt_im.max(), gt_im.min())
         gt_im_tensor = transforms.ToTensor()(gt_im)
-        # gt_im_tensor = transforms.Normalize([0.485, 0.456, 0.406],
-        #                                     [0.229, 0.224, 0.225])(gt_im_tensor)
+        # print("4 ", gt_im_tensor.max(), gt_im_tensor.min())
+        gt_im_tensor = transforms.Normalize([0.5, 0.5, 0.5],
+                                            [0.5, 0.5, 0.5])(gt_im_tensor)
+        # print("5 ", gt_im_tensor.max(), gt_im_tensor.min())
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
         # print(itemId)

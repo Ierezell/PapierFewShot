@@ -48,7 +48,7 @@ HALF:
   value : False
 
 K_SHOT:
-  value : 2
+  value : 1
 
 LATENT_SIZE :
   value: 256
