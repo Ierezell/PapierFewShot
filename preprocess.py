@@ -129,6 +129,9 @@ def load_someone():
 # JSON LOADER #
 # #############
 
+def dictKeytoInt(x): return {int(k): v for k, v in x}
+
+
 class jsonLoader(Dataset):
     def get_ids(self):
         with open(f"{ROOT_WEIGHTS}ids.json", "w+") as file:
@@ -172,22 +175,18 @@ class jsonLoader(Dataset):
     def __getitem__(self, index):
         context_name = self.context_names[index]
         itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
-
-        with open(f"{context_name}.json", "r") as file:
-            dict_ldmk = json.load(file,
-                                  object_pairs_hook=lambda x: {int(k): v
-                                                               for k, v in x})
-
+        badLdmks = True
+        while badLdmks:
             with open(f"{context_name}.json", "r") as file:
-                dict_ldmk = json.load(file, object_pairs_hook=lambda x: {
-                                      int(k): v for k, v in x})
-
+                dict_ldmk = json.load(file, object_pairs_hook=dictKeytoInt)
+            
             try:
                 frames = np.random.choice(list(dict_ldmk.keys()),
                                           self.K_shots + 1)
                 badLdmks = False
             except ValueError:
                 index = randint(0, len(self.context_names))
+
         cvVideo = cv2.VideoCapture(f"{context_name}.mp4")
 
         cvVideo.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
