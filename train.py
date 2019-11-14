@@ -8,6 +8,7 @@ import torchvision
 import wandb
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
+import numpy as np
 
 
 from preprocess import get_data_loader
@@ -29,7 +30,12 @@ if __name__ == '__main__':
     print("Device : ", DEVICE)
 
     print("Loading Dataset")
-    train_loader, nb_pers = get_data_loader()
+
+    if FINE_TUNING == "True":
+        train_loader, nb_pers = get_data_loader(
+            root_dir="./dataset/fine_tuning/")
+    else:
+        train_loader, nb_pers = get_data_loader()
 
     print("Loading Models & Losses")
     emb, gen, disc = load_models(nb_pers)
@@ -65,6 +71,7 @@ if __name__ == '__main__':
     # torch.autograd.set_detect_anomaly(True)
     for i_epoch in trange(NB_EPOCHS):
         print("Epoch ! Epoch ! Epooooooch !!")
+
         for i_batch, batch in enumerate(tqdm(train_loader)):
 
             optimizerEmb.zero_grad()

@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import time
 from settings import (DEVICE, K_SHOT, LOAD_BATCH_SIZE, ROOT_WEIGHTS,
-                      NB_WORKERS, ROOT_DATASET, HALF, LOADER)
+                      NB_WORKERS, ROOT_DATASET, HALF, LOADER, FINE_TUNING)
 
 from random import randint
 

@@ -285,15 +285,15 @@ class BigGenerator(nn.Module):
         i += nb_params
 
         nb_params = self.ResUp4.params
-        x = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
+        FINE_TUNINGFINE_TUNINGx = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
+                                              b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
         # print("Res4  ", x.size())
         i += nb_params
 
         x = self.attentionUp2(x)
         x = self.relu(x)
-
+        x = self.instance_norm(x)
         w = pWeights.narrow(-1, 0, 3)
         b = pBias.narrow(-1, 0, 3)
 
@@ -303,7 +303,6 @@ class BigGenerator(nn.Module):
         x = self.relu(x)
         x = self.conv(x)
         x = self.tanh(x)
-        i += nb_params
         # print("Nb_param   ", i)
         return x
 
