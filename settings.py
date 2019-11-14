@@ -56,20 +56,10 @@ if LOADER == "json":
 # Batch
 if "blg" in PLATFORM:
     if MODEL == "small":
-        BATCH_SIZE = 12
-    elif MODEL == "big":
-        BATCH_SIZE = 6
-elif "gpu" in PLATFORM:
-    if MODEL == "small":
         BATCH_SIZE = 8
     elif MODEL == "big":
         BATCH_SIZE = 4
-elif "GAT" in PLATFORM:
-    if MODEL == "small":
-        BATCH_SIZE = 8
-    elif MODEL == "big":
-        BATCH_SIZE = 4
-elif "co" in PLATFORM:
+elif "gpu" or "GAT" or "coi" in PLATFORM:
     if MODEL == "small":
         BATCH_SIZE = 4
     elif MODEL == "big":
