@@ -1,6 +1,7 @@
 
 
 import platform
+import os
 import sys
 
 import torch
@@ -14,8 +15,8 @@ import numpy as np
 from preprocess import get_data_loader
 from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
                       LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
-                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, IN_DISC,
-                      PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
+                      PARALLEL, IN_DISC, PATH_WEIGHTS_ROOT, TTUR,
+                      ROOT_FINE_TUNING_DATASET)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
 
@@ -31,7 +32,7 @@ if __name__ == '__main__':
 
     print("Loading Dataset")
 
-    train_loader, nb_pers = get_data_loader()
+    train_loader, nb_pers = get_data_loader(root_dir=ROOT_FINE_TUNING_DATASET)
 
     print("Loading Models & Losses")
     emb, gen, disc = load_models(nb_pers)
@@ -76,6 +77,13 @@ if __name__ == '__main__':
 
             gt_im, gt_landmarks, context, itemIds, context_name = batch
 
+            save_path = os.path.join(
+                PATH_WEIGHTS_ROOT, "fine_tuning", context_name)
+
+            path_emb = os.path.join(save_path, "Embedder.pt")
+            path_disc = os.path.join(save_path, "Discriminator.pt")
+            path_gen = os.path.join(save_path, "Generator.pt")
+
             gt_im = gt_im.to(DEVICE)
             gt_landmarks = gt_landmarks.to(DEVICE)
             context = context.to(DEVICE)
@@ -117,7 +125,9 @@ if __name__ == '__main__':
                     lossDsc.backward(ones_grad)
                     optimizerDisc.step()
 
-                    check.save("disc", lossDsc.mean(), emb, gen, disc)
+                    check.save("disc", lossDsc.mean(), emb, gen, disc,
+                               path_emb=path_emb, path_gen=path_gen,
+                               path_disc=path_disc)
                     # print(lossDsc)
                     wandb.log({"Loss_dsc": lossDsc.mean()})
                 else:
@@ -130,7 +140,9 @@ if __name__ == '__main__':
                     optimizerEmb.step()
                     optimizerGen.step()
 
-                    check.save("embGen", loss.mean(), emb, gen, disc)
+                    check.save("embGen", loss.mean(), emb, gen, disc,
+                               path_emb=path_emb, path_gen=path_gen,
+                               path_disc=path_disc)
                     wandb.log({"lossCnt": lossCnt.mean()})
                     wandb.log({"lossMch": lossMch.mean()})
                     wandb.log({"lossAdv": lossAdv.mean()})
@@ -152,8 +164,12 @@ if __name__ == '__main__':
                 optimizerEmb.step()
                 optimizerGen.step()
 
-                check.save("embGen", loss.mean(), emb, gen, disc)
-                check.save("disc", loss.mean(), emb, gen, disc)
+                check.save("embGen", loss.mean(), emb, gen, disc,
+                           path_emb=path_emb, path_gen=path_gen,
+                           path_disc=path_disc)
+                check.save("disc", loss.mean(), emb, gen, disc,
+                           path_emb=path_emb, path_gen=path_gen,
+                           path_disc=path_disc)
 
                 wandb.log({"Loss_dsc": lossDsc.mean()})
                 wandb.log({"lossCnt": lossCnt.mean()})
@@ -172,6 +188,6 @@ if __name__ == '__main__':
 
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})
                 if platform.system() != "Windows":
-                    wandb.save(PATH_WEIGHTS_EMBEDDER)
-                    wandb.save(PATH_WEIGHTS_GENERATOR)
-                    wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
+                    wandb.save(path_emb)
+                    wandb.save(path_gen)
+                    wandb.save(path_disc)

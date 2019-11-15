@@ -52,6 +52,7 @@ if LOADER == "json":
             ROOT_DATASET = "/run/media/pedro/Elements/dataset/voxCeleb/dev/jsonDataset"
     elif DATASET == "small":
         ROOT_DATASET = './dataset/jsonDataset'
+    ROOT_FINE_TUNING_DATASET = './dataset/fine_tuning'
 
 # Batch
 if "blg" in PLATFORM:
@@ -144,6 +145,7 @@ else:
     LOAD_PREVIOUS_RL = False
 
 # Save
+PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+folder_weights
 PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
 PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
