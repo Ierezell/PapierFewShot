@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn.utils import spectral_norm
+import torch.nn.functional as F
 
 from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF, DEVICE
 from utils import load_layers
@@ -285,18 +286,18 @@ class BigGenerator(nn.Module):
         i += nb_params
 
         nb_params = self.ResUp4.params
-        FINE_TUNINGFINE_TUNINGx = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
-                                              b=pBias.narrow(-1, i, nb_params))
+        x = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
         # print("Res4  ", x.size())
         i += nb_params
 
         x = self.attentionUp2(x)
         x = self.relu(x)
-        x = self.instance_norm(x)
         w = pWeights.narrow(-1, 0, 3)
         b = pBias.narrow(-1, 0, 3)
 
+        x = F.instance_norm(x)
         x = w.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
         x = x + b.unsqueeze(-1).unsqueeze(-1).expand_as(x)
 
