@@ -294,7 +294,7 @@ class BigGenerator(nn.Module):
 
         x = self.attentionUp2(x)
         x = self.relu(x)
-        w = pWeights.narrow(-1, 0, 3)
+        w = pWeights.narrow(-1, 0, 3) 
         b = pBias.narrow(-1, 0, 3)
 
         x = F.instance_norm(x)
