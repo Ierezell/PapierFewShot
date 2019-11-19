@@ -220,14 +220,14 @@ class CheckpointsFewShots:
                 self.best_loss_EmbGen = loss
                 if PARALLEL:
                     torch.save(embedder.module.state_dict(),
-                               path_gen.replace(".pt", ".bk"))
+                               path_emb.replace(".pt", ".bk"))
                     torch.save(generator.module.state_dict(),
                                path_gen.replace(".pt", ".bk"))
                 else:
                     torch.save(embedder.state_dict(),
                                path_emb.replace(".pt", ".bk"))
                     torch.save(generator.state_dict(),
-                               PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
+                               path_gen.replace(".pt", ".bk"))
                 copyfile(path_emb.replace(".pt", ".bk"), path_emb)
                 copyfile(path_gen.replace(".pt", ".bk"), path_gen)
 
