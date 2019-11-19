@@ -17,7 +17,7 @@ from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
                       PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, IN_DISC,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
-                   print_parameters)
+                   print_parameters, check_nan)
 
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.enabled = False
@@ -82,28 +82,38 @@ if __name__ == '__main__':
             itemIds = itemIds.to(DEVICE)
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
-            synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            check_nan(embeddings, "embeddings")
+            check_nan(paramWeights, "paramWeights")
+            check_nan(paramBias, "paramBias")
+            synth_im = gen(gt_landmarks, paramWeights, paramBias, layersUp)
+            check_nan(synth_im, "synth_im")
 
             score_synth, feature_maps_disc_synth = disc(torch.cat(
                 (synth_im, gt_landmarks), dim=1), itemIds)
+            check_nan(score_synth, "score_synth")
 
             lossCnt = cntLoss(gt_im, synth_im)
+            check_nan(lossCnt, "lossCnt")
 
             if IN_DISC == "noisy":
                 gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/32)
 
             gt_w_ldm = torch.cat((gt_im, gt_landmarks), dim=1)
             score_gt, feature_maps_disc_gt = disc(gt_w_ldm, itemIds)
+            check_nan(score_gt, "score_gt")
 
             lossAdv = advLoss(score_synth, feature_maps_disc_gt,
                               feature_maps_disc_synth)
+            check_nan(lossAdv, "lossAdv")
 
             if PARALLEL:
                 lossMch = mchLoss(embeddings, disc.module.embeddings(itemIds))
             else:
                 lossMch = mchLoss(embeddings, disc.embeddings(itemIds))
+            check_nan(lossMch, "lossMch")
 
             lossDsc = dscLoss(score_gt, score_synth)
+            check_nan(lossDsc, "lossDsc")
 
             loss = lossAdv + lossCnt + lossMch
 

@@ -21,6 +21,12 @@ from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
 mplstyle.use(['dark_background', 'fast'])
 
 
+def check_nan(x, msg=''):
+    if torch.isnan(x).any():
+        print(f"NAN IN {msg}{x[0]}")
+    return torch.isnan(x).any()
+
+
 def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
     if model == "small":
