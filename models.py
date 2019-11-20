@@ -1,4 +1,6 @@
-from settings import LATENT_SIZE, BATCH_SIZE, CONCAT, DEVICE, HALF
+from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF, DEVICE
+import numpy as np
+from settings import LATENT_SIZE, BATCH_SIZE, CONCAT, DEVICE, HALF, ATTENTION
 from torch.nn.utils import spectral_norm
 from torch import nn
 import torch
@@ -13,90 +15,113 @@ from utils import load_layers
 
 
 class Embedder(nn.Module):
+    """Class for the embedding network
+
+    Arguments:
+        None
+
+    Returns:
+        Create the model of the network (used then in utils.py -> load_models )
+    """
+
     def __init__(self):
-        super(Embedder, self).__init__()
-        self.residual1 = ResidualBlockDown(6, 32)
-        self.residual2 = ResidualBlockDown(32, 64)
-        self.residual3 = ResidualBlockDown(64, 128)
-        self.residual4 = ResidualBlockDown(128, 256)
-        self.residual5 = ResidualBlockDown(256, LATENT_SIZE)
-        # self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 2635))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 2635))
-        self.attention = Attention(64)
-        self.avgPool = torch.nn.AvgPool2d(7)
+        """
+        Initialise the layers
+        Layers created for the BIG artchitecture
+        Same as model.py but with more layers with wider receptive fields
+        All are residuals with spectral norm
+        Attention is present on two different size
+        fully connected are used to grow the 1*512 to the size of the generator
+        """
+        super().__init__()
+        self.residual1 = ResidualBlockDown(6, 64)  # 64, 112
+        self.residual2 = ResidualBlockDown(64, 128)  # 128, 64
+        if ATTENTION:
+            self.attention1 = Attention(128)
+        self.residual3 = ResidualBlockDown(128, 256)  # 256, 32
+        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 512 , 16
+        if ATTENTION:
+            self.attention2 = Attention(LATENT_SIZE)
+        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512 , 7
+
+        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
+        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
         self.relu = nn.SELU()
+        self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x):  # b, 12, 224, 224
-        temp = torch.zeros((BATCH_SIZE, LATENT_SIZE),
+        """Forward pass :
+
+        The network should take a BATCH picture as input of size (B*3)*W*H
+        It takes the pictures ONE by ONE to compute their latent representation
+        and then take the mean of all this representation to get the batch one.
+        Returns:
+            Tensor -- Size 1*512 corresponding to the latent
+                                        representation of this BATCH of image
+        """
+        temp = torch.zeros(LATENT_SIZE,
                            dtype=(torch.half if HALF else torch.float),
                            device=DEVICE)
         if CONCAT:
-            layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
+            layerUp1 = torch.zeros((BATCH_SIZE, 64, 112, 112),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-            layerUp1 = torch.zeros((BATCH_SIZE, 256, 14, 14),
+            layerUp2 = torch.zeros((BATCH_SIZE, 128, 56, 56),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-            layerUp2 = torch.zeros((BATCH_SIZE, 128, 28, 28),
+            layerUp3 = torch.zeros((BATCH_SIZE, 256, 28, 28),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-            layerUp3 = torch.zeros((BATCH_SIZE, 64, 56, 56),
+            layerUp4 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 14, 14),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-
-        for i in range(x.size(1) // 6):
-            # print("x  ", x.size())
+        else:
+            layerUp1, layerUp2, layerUp3, layerUp4 = None, None, None, None
+        for i in range(x.size(1)//6):
             out = self.residual1(x.narrow(1, i*6, 6))  # b, 64, 112, 112
             out = self.relu(out)
-            # print("out1  ", out.size())
-
-            out = self.residual2(out)  # b, 128, 56, 56
-            out = self.relu(out)
-            # print("out2  ", out.size())
-
-            out = self.attention(out)  # b, 128, 56, 56
-            out = self.relu(out)
-            # print("out4  ", out.size())
-            if CONCAT:
-                layerUp3 = torch.add(out, layerUp3)
-
-            out = self.residual3(out)  # b, 128, 56, 56
-            out = self.relu(out)
-            # print("out3  ", out.size())
-            if CONCAT:
-                layerUp2 = torch.add(out, layerUp2)
-
-            out = self.residual4(out)  # b, 256, 28, 28
-            out = self.relu(out)
-            # print("out5 ", out.size())
             if CONCAT:
                 layerUp1 = torch.add(out, layerUp1)
 
-            out = self.residual5(out)  # b, 512, 14, 14
+            out = self.residual2(out)  # b, 128, 56, 56
             out = self.relu(out)
-            # print("out6  ", out.size())
+            if ATTENTION:
+                out = self.attention1(out)  # b, 128, 56, 56
+                out = self.relu(out)
             if CONCAT:
-                layerUp0 = torch.add(out, layerUp0)
-            out = self.avgPool(out).squeeze()  # b,512
-            # print("out  ", out.size())
-            # out = self.relu(out)
+                layerUp2 = torch.add(out, layerUp2)
+
+            out = self.residual3(out)  # b, 128, 56, 56
+            out = self.relu(out)
+            if CONCAT:
+                layerUp3 = torch.add(out, layerUp3)
+
+            out = self.residual4(out)  # b, 256, 28, 28
+            out = self.relu(out)
+            if ATTENTION:
+                out = self.attention2(out)  # b, 128, 56, 56
+                out = self.relu(out)
+            if CONCAT:
+                layerUp4 = torch.add(out, layerUp4)
+
+            out = self.residual5(out)  # b, 256, 28, 28
+            out = self.relu(out)
+            out = self.avgPool(out).squeeze()
+            out = self.relu(out)
+
             temp = torch.add(out, temp)
 
-        context = torch.div(temp, (x.size(1) // 6))
+        context = torch.div(temp, (x.size(1)//6))
         if CONCAT:
-            layerUp0 = torch.div(layerUp0, (x.size(1) // 6))
-            layerUp1 = torch.div(layerUp1, (x.size(1) // 6))
-            layerUp2 = torch.div(layerUp2, (x.size(1) // 6))
-            layerUp3 = torch.div(layerUp3, (x.size(1) // 6))
+            layerUp4 = torch.div(layerUp4, (x.size(1)//6))
+            layerUp3 = torch.div(layerUp3, (x.size(1)//6))
+            layerUp2 = torch.div(layerUp2, (x.size(1)//6))
+            layerUp1 = torch.div(layerUp1, (x.size(1)//6))
 
-        paramWeights = self.FcWeights(context)
-        paramBias = self.FcBias(context)
-        if CONCAT:
-            layersUp = (layerUp0, layerUp1, layerUp2, layerUp3)
-        else:
-            layersUp = (None, None, None, None)
+        paramWeights = self.relu(self.FcWeights(context)).squeeze()
+        paramBias = self.relu(self.FcBias(context)).squeeze()
 
+        layersUp = (layerUp1, layerUp2, layerUp3, layerUp4)
         return context, paramWeights, paramBias, layersUp
 
 
@@ -104,174 +129,199 @@ class Embedder(nn.Module):
 #    Generator   #
 # ################
 class Generator(nn.Module):
-    def __init__(self):
-        super(Generator, self).__init__()
-        # Down
-        self.ResDown1 = ResidualBlockDown(3, 32)
-        self.ResDown2 = ResidualBlockDown(32, 64)
-        self.attentionDown = Attention(64)
-        self.ResDown3 = ResidualBlockDown(64, 128)
-        self.ResDown4 = ResidualBlockDown(128, 256)
-        self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE)
-        # Constant
-        # self.ResBlock_128_1 = ResidualBlock(128, 128)
-        # self.ResBlock_128_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        self.ResBlock_128_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)
-        # Up
-        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)
-        self.ResUp2 = ResidualBlockUp(256, 128)
-        self.ResUp3 = ResidualBlockUp(128, 64)
-        self.attentionUp = Attention(64)
-        self.ResUp4 = ResidualBlockUp(64, 32)
-        self.ResUp5 = ResidualBlockUp(32, 3)
-        self.conv = spectral_norm(nn.Conv2d(3, 3, 3, padding=1))
+    """
+    Class for the BigGenerator : It takes ONE landmark image and output a
+    synthetic face, helped with layers and coeficient from the embedder.
 
-        if CONCAT:
-            self.Ada0 = spectral_norm(nn.Conv2d(LATENT_SIZE * 2, LATENT_SIZE,
-                                                kernel_size=3,
-                                                padding=1, bias=False))
-            self.Ada1 = spectral_norm(nn.Conv2d(256 * 2, 256,
-                                                kernel_size=3,
-                                                padding=1, bias=False))
-            self.Ada2 = spectral_norm(nn.Conv2d(128 * 2, 128, kernel_size=3,
-                                                padding=1, bias=False))
-            self.Ada3 = spectral_norm(nn.Conv2d(64*2, 64, kernel_size=3,
-                                                padding=1, bias=False))
+    Returns:
+        Create the model of the network (used then in utils.py -> load_models )
+    """
+
+    def __init__(self):
+        """
+        Layers created for the BIG artchitecture
+        Same as model.py but with more layers with wider receptive fields
+        All are residuals with spectral norm
+        Attention is present on three different size (down constant and up)
+        """
+        super().__init__()
+        # Down
+        self.ResDown1 = ResidualBlockDown(3, 64)  # 64, 112
+        self.ResDown2 = ResidualBlockDown(64, 128)  # 128, 64
+        if ATTENTION:
+            self.attentionDown1 = Attention(128)
+        self.ResDown3 = ResidualBlockDown(128, 256)  # 256, 32
+        self.ResDown4 = ResidualBlockDown(256, LATENT_SIZE)  # 512, 16
+        if ATTENTION:
+            self.attentionDown2 = Attention(LATENT_SIZE)
+        # Constant
+        self.ResBlock_1 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512, 16
+        self.ResBlock_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512, 16
+        if ATTENTION:
+            self.attention1 = Attention(LATENT_SIZE)
+        # Up
+        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)   # 256, 32
+        self.ResUp2 = ResidualBlockUp(256, 128)   # 128, 64
+        if ATTENTION:
+            self.attentionUp1 = Attention(128)
+        self.ResUp3 = ResidualBlockUp(128, 64)  # 64, 112, 112
+        self.ResUp4 = ResidualBlockUp(64, 3)  # 3, 224, 224
+        if ATTENTION:
+            self.attentionUp2 = Attention(3)
+        self.conv1 = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
+        self.conv2 = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
         self.relu = nn.SELU()
         self.tanh = nn.Tanh()
-        self.sigmoid = nn.Sigmoid()
+
+        if CONCAT:
+            self.Ada1 = spectral_norm(
+                nn.Conv2d(64*2, 64, kernel_size=3, padding=1))
+            self.Ada2 = spectral_norm(
+                nn.Conv2d(128*2, 128, kernel_size=3, padding=1))
+            self.Ada3 = spectral_norm(
+                nn.Conv2d(256*2, 256, kernel_size=3, padding=1))
+            self.Ada4 = spectral_norm(
+                nn.Conv2d(LATENT_SIZE*2, LATENT_SIZE, kernel_size=3, padding=1))
 
     def forward(self, img, pWeights, pBias, layersUp):
-        (layerUp0, layerUp1, layerUp2, layerUp3) = layersUp
-        # print(layerUp1.size())
-        # print(layerUp2.size())
-        # print(layerUp3.size())
-        # print(img.size())
+        """
+        Res block : in out out out
+        Res block up : in out//4 out//4 out//4
+        LayersUp are corresponding to the same size layer down of the embedder
+
+        weights and biases are given by the embedder to ponderate the instance
+        norm of the constant and upsampling parts.
+        It's given in an hard coded bad manner.
+        (could be done with loops and be more scalable...
+        but I will do it later, it's easier to debug this way)
+        """
+        layerUp1, layerUp2, layerUp3, layerUp4 = layersUp
+        # print("L3 ", layerUp3.size())
+        # print("L2 ", layerUp2.size())
+        # print("L1 ", layerUp1.size())
+        # print("L0 ", layerUp0.size())
+        # print("IMG ", img.size())
 
         # ######
         # DOWN #
         # ######
+
         x = self.ResDown1(img)
         x = self.relu(x)
-        # print("resdown1", x.size())
+        # print("ResDown1  ", x.size())
 
         x = self.ResDown2(x)
         x = self.relu(x)
-        # print("resdown2", x.size())
+        # print("ResDown2  ", x.size())
 
-        x = self.attentionDown(x)
-        x = self.relu(x)
-
-        if CONCAT == "first":
-            x = torch.cat((x, layerUp3), dim=1)
-            # print("cat3", x.size())
-            x = self.Ada3(x)
+        if ATTENTION:
+            x = self.attentionDown1(x)
+            x = self.relu(x)
 
         x = self.ResDown3(x)
         x = self.relu(x)
-        # print("resdown3", x.size())
-
-        if CONCAT == "first":
-            x = torch.cat((x, layerUp2), dim=1)
-            # print("cat2", x.size())
-            x = self.Ada2(x)
+        # print("ResDown3  ", x.size())
 
         x = self.ResDown4(x)
         x = self.relu(x)
-        # print("resdown3", x.size())
-
-        if CONCAT == "first":
-            x = torch.cat((x, layerUp1), dim=1)
-            # print("cat1", x.size())
-            x = self.Ada1(x)
-
-        x = self.ResDown5(x)
-        x = self.relu(x)
-
-        if CONCAT == "first":
-            x = torch.cat((x, layerUp0), dim=1)
-            x = self.Ada0(x)
+        if ATTENTION:
+            x = self.attentionDown2(x)
             x = self.relu(x)
+        # print("ResDown4  ", x.size())
+
         # ##########
         # CONSTANT #
         # ##########
-
         i = 0
-        nb_params = self.ResBlock_128_3.params
-        x = self.ResBlock_128_3(x, w=pWeights.narrow(-1, i, nb_params),
-                                b=pBias.narrow(-1, i, nb_params))
+
+        nb_params = self.ResBlock_1.params
+        x = self.ResBlock_1(x, w=pWeights.narrow(-1, i, nb_params),
+                            b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
+        # print("ResBlock_1  ", x.size())
         i += nb_params
-        # print("ResBlock3", x.size())    # b, 128, 55, 55
+
+        nb_params = self.ResBlock_2.params
+        x = self.ResBlock_2(x, w=pWeights.narrow(-1, i, nb_params),
+                            b=pBias.narrow(-1, i, nb_params))
+        x = self.relu(x)
+        # print("ResBlock_2  ", x.size())
+        i += nb_params
+
+        if ATTENTION:
+            x = self.attention1(x)
+            x = self.relu(x)
+
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp4), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada4(x)
 
         # ####
-        # Up #
+        # UP #
         # ####
 
         nb_params = self.ResUp1.params
         x = self.ResUp1(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
+        # print("Res1  ", x.size())
         i += nb_params
-        # print("ResUp1", x.size())
+
         if CONCAT == "last":
-            x = torch.cat((x, layerUp1), dim=1)
-            x = self.Ada1(x)
-            x = self.relu(x)
+            x = torch.cat((x, layerUp3), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada3(x)
 
         nb_params = self.ResUp2.params
         x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
+        # print("ResUp2  ", x.size())
         i += nb_params
-        # print("ResUp2", x.size())
+
+        if ATTENTION:
+            x = self.attentionUp1(x)
+            x = self.relu(x)
 
         if CONCAT == "last":
             x = torch.cat((x, layerUp2), dim=1)
+            # print("cat3", x.size())
             x = self.Ada2(x)
-            x = self.relu(x)
 
         nb_params = self.ResUp3.params
         x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
+        # print("ResUp3  ", x.size())
         i += nb_params
-        # print("ResUp3", x.size())
 
         if CONCAT == "last":
-            x = torch.cat((x, layerUp3), dim=1)
-            x = self.Ada3(x)
-            x = self.relu(x)
-
-        x = self.attentionUp(x)
-        x = self.relu(x)
-        # print("AttUp", x.size())
+            x = torch.cat((x, layerUp1), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada1(x)
 
         nb_params = self.ResUp4.params
         x = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
-        i += nb_params
-        # print("ResUp4", x.size())
-
-        nb_params = self.ResUp5.params
-        x = self.ResUp5(x, pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
-        # x = self.sigmoid(x)
+        # print("Res4  ", x.size())
         i += nb_params
 
-        w = pWeights.narrow(-1, i, 3)
-        b = pBias.narrow(-1, i, 3)
+        if ATTENTION:
+            x = self.attentionUp2(x)
+            x = self.relu(x)
+        w = pWeights.narrow(-1, 0, 3)
+        b = pBias.narrow(-1, 0, 3)
 
         x = F.instance_norm(x)
         x = w.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
         x = x + b.unsqueeze(-1).unsqueeze(-1).expand_as(x)
 
         x = self.relu(x)
-        x = self.conv(x)
+        x = self.conv1(x)
+        x = self.conv2(x)
         x = self.tanh(x)
-        # print("ResUp5", x.size())
-
         # print("Nb_param   ", i)
         return x
 
@@ -280,56 +330,91 @@ class Generator(nn.Module):
 #     Discriminator    #
 # ######################
 class Discriminator(nn.Module):
+    """
+    Class for the BigDiscriminator
+    Architecture is almost the same as the embedder.
+
+    Arguments:
+        num_persons {int} -- The number of persons in the dataset. It's used to
+        create the embeddings for each persons.
+    Returns:
+        Create the model of the network (used then in utils.py -> load_models )
+    """
+
     def __init__(self, num_persons, fine_tunning=False):
-        super(Discriminator, self).__init__()
-        self.residual1 = ResidualBlockDown(6, 32)
-        self.residual2 = ResidualBlockDown(32, 64)
-        self.residual3 = ResidualBlockDown(64, 128)
-        self.attention1 = Attention(128)
-        self.residual4 = ResidualBlockDown(128, 256)
-        self.attention2 = Attention(256)
-        self.residual5 = ResidualBlockDown(256, LATENT_SIZE)
-        self.avgPool = torch.nn.AvgPool2d(7)
+        """[summary]
+
+        Arguments:
+        num_persons {int} -- The number of persons in the dataset. It's used to
+        Create the embeddings for each persons.
+
+        Keyword Arguments:
+            fine_tunning {bool} -- will be used after... still not implemented
+            (default: {False})
+            Will be used to prevent the loading of embeddings to fintune only
+            on one unknown person (variables are differents).
+        """
+        super().__init__()
+        self.residual1 = ResidualBlock(6, 64)  # 224
+        self.residual2 = ResidualBlockDown(64, 128)  # 224
+        self.residual3 = ResidualBlockDown(128, 256)  # 112
+        self.attention1 = Attention(256)
+        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 66
+        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 33
+        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 16
+        self.attention2 = Attention(LATENT_SIZE)
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
         self.relu = nn.SELU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
-        self.tanh = nn.Tanh()
         self.sig = nn.Sigmoid()
+        self.avgPool = nn.AvgPool2d(kernel_size=7)
 
-    def forward(self, x, indexes):  # b, 6, 224, 224
+    def forward(self, x, indexes):
         features_maps = []
-        out = self.residual1(x)  # b, 64, 112, 112
+        out = self.residual1(x)
+        # print("Out 1 ", out.size())
+        features_maps.append(out)
+
+        out = self.residual2(out)
+        out = self.relu(out)
+        # print("Out 2 ", out.size())
+        features_maps.append(out)
+
+        out = self.residual3(out)
+        out = self.relu(out)
+        # print("Out 3 ", out.size())
+        features_maps.append(out)
+
+        out = self.attention1(out)
         out = self.relu(out)
         features_maps.append(out)
 
-        out = self.residual2(out)  # 2, 128, 56, 56
+        out = self.residual4(out)
         out = self.relu(out)
+        # print("Out 4 ", out.size())
         features_maps.append(out)
 
-        out = self.residual3(out)  # 2, 256, 28, 28
+        out = self.residual5(out)
         out = self.relu(out)
+        # print("Out 5 ", out.size())
         features_maps.append(out)
 
-        out = self.attention1(out)  # 2, 128, 56, 56
+        out = self.residual6(out)
         out = self.relu(out)
+        # print("Out 6 ", out.size())
         features_maps.append(out)
 
-        out = self.residual4(out)  # 2, 512, 14, 14
+        out = self.attention2(out)
         out = self.relu(out)
+        # print("Out 22 ", out.size())
         features_maps.append(out)
 
-        out = self.attention2(out)  # 2, 128, 56, 56
-        out = self.relu(out)
-        features_maps.append(out)
-
-        out = self.residual5(out)  # 2, 512, 7,7
-        out = self.relu(out)
-        features_maps.append(out)
-        out = self.avgPool(out).squeeze()  # b,512
+        out = self.avgPool(out).squeeze()
         out = self.relu(out)
         final_out = self.fc(out)
+        features_maps.append(out)
 
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
@@ -341,5 +426,5 @@ class Discriminator(nn.Module):
         final_out += condition.view(final_out.size())
         final_out = final_out.view(b.size())
         final_out += b
-        final_out = self.tanh(final_out)
+        final_out = self.sig(final_out)
         return final_out, features_maps

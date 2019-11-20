@@ -25,6 +25,7 @@ ROOT_WEIGHTS = wandb.config.ROOT_WEIGHTS
 LATENT_SIZE = wandb.config.LATENT_SIZE
 NB_WORKERS = wandb.config.NB_WORKERS
 NB_EPOCHS = wandb.config.NB_EPOCHS
+ATTENTION = wandb.config.ATTENTION
 DATASET = wandb.config.DATASET
 IN_DISC = wandb.config.IN_DISC
 LAYERS = wandb.config.LAYERS
@@ -69,7 +70,7 @@ elif "Arc" in PLATFORM:
     MODEL = "small"
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 1
-    K_SHOT = 1
+    K_SHOT = 4
     LATENT_SIZE = 256
 
 
