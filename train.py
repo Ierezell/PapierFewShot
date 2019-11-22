@@ -17,10 +17,11 @@ from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
                       PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, IN_DISC,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
-                   print_parameters)
+                   print_parameters, check_nan)
 
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.enabled = False
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = True
+torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
 
@@ -28,6 +29,7 @@ if __name__ == '__main__':
     print("Torch version : ", torch.__version__)
     print("Torch CuDNN version : ", torch.backends.cudnn.version())
     print("Device : ", DEVICE)
+    print("Running on", torch.cuda.device_count(), "GPUs.")
 
     print("Loading Dataset")
 
@@ -82,12 +84,12 @@ if __name__ == '__main__':
             itemIds = itemIds.to(DEVICE)
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
-            synth_im = gen(gt_landmarks,  paramWeights, paramBias, layersUp)
+            synth_im = gen(gt_landmarks, paramWeights, paramBias, layersUp)
 
             score_synth, feature_maps_disc_synth = disc(torch.cat(
                 (synth_im, gt_landmarks), dim=1), itemIds)
 
-            lossCnt = cntLoss(gt_im, synth_im)
+            lossCnt = 10*cntLoss(gt_im, synth_im)
 
             if IN_DISC == "noisy":
                 gt_im = gt_im+((torch.randn_like(gt_im)*gt_im.max())/32)

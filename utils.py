@@ -21,6 +21,12 @@ from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
 mplstyle.use(['dark_background', 'fast'])
 
 
+def check_nan(x, msg=''):
+    if torch.isnan(x).any():
+        print(f"NAN IN {msg}{x[0]}")
+    return torch.isnan(x).any()
+
+
 def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
     if model == "small":
@@ -220,14 +226,14 @@ class CheckpointsFewShots:
                 self.best_loss_EmbGen = loss
                 if PARALLEL:
                     torch.save(embedder.module.state_dict(),
-                               path_gen.replace(".pt", ".bk"))
+                               path_emb.replace(".pt", ".bk"))
                     torch.save(generator.module.state_dict(),
                                path_gen.replace(".pt", ".bk"))
                 else:
                     torch.save(embedder.state_dict(),
                                path_emb.replace(".pt", ".bk"))
                     torch.save(generator.state_dict(),
-                               PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"))
+                               path_gen.replace(".pt", ".bk"))
                 copyfile(path_emb.replace(".pt", ".bk"), path_emb)
                 copyfile(path_gen.replace(".pt", ".bk"), path_gen)
 
