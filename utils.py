@@ -64,42 +64,51 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
         try:
             if PARALLEL:
                 embedder.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER))
+                    torch.load(PATH_WEIGHTS_EMBEDDER,
+                               map_location=DEVICE))
             else:
                 embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
         except RuntimeError:
             if PARALLEL:
                 embedder.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
+                               map_location=DEVICE))
             else:
                 embedder.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
+                               map_location=DEVICE))
         except FileNotFoundError:
             print("File not found, not loading weights embedder...")
         try:
             if PARALLEL:
                 generator.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR))
+                    torch.load(PATH_WEIGHTS_GENERATOR,
+                               map_location=DEVICE))
             else:
                 generator.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR))
+                    torch.load(PATH_WEIGHTS_GENERATOR,
+                               map_location=DEVICE))
 
         except RuntimeError:
             if PARALLEL:
                 generator.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
+                               map_location=DEVICE))
             else:
                 generator.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
+                               map_location=DEVICE))
         except FileNotFoundError:
             print("File not found, not loading weights generator...")
 
         try:
-            state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR)
+            state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR,
+                                                  map_location=DEVICE)
             weight_disc = True
         except RuntimeError:
             state_dict_discriminator = torch.load(
-                PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"))
+                PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
+                map_location=DEVICE)
             weight_disc = True
         except FileNotFoundError:
             print("File not found, not loading weights discriminator...")
@@ -118,8 +127,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                 print("Chargement du disc sans les embeddings ")
                 state_dict_discriminator.pop("embeddings.weight")
                 if PARALLEL:
-                    discriminator.module.load_state_dict(state_dict_discriminator,
-                                                         strict=False)
+                    discriminator.module.load_state_dict(
+                        state_dict_discriminator, strict=False)
                 else:
                     discriminator.load_state_dict(state_dict_discriminator,
                                                   strict=False)
