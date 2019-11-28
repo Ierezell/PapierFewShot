@@ -104,36 +104,47 @@ class BigResidualBlock(nn.Module):
 
         residual = self.relu(self.adaDim(x))
 
-        x = F.instance_norm(x)
         if w is not None and b is not None:
-            out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-            out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+            out = F.instance_norm(x, weight=w1, bias=b1)
         else:
-            out = x
+            out = F.instance_norm(x)
+        #     out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
+        #     out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        # else:
+        #     out = x
 
         out = self.relu(out)
-        out = self.conv1(x)
+        out = self.conv1(out)
 
-        out = F.instance_norm(out)
         if w is not None and b is not None:
-            out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-            out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+            out = F.instance_norm(out, weight=w2, bias=b2)
+        else:
+            out = F.instance_norm(out)
+        # if w is not None and b is not None:
+        #     out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        #     out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv2(out)
 
-        out = F.instance_norm(out)
         if w is not None and b is not None:
-            out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-            out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+            out = F.instance_norm(out, weight=w3, bias=b3)
+        else:
+            out = F.instance_norm(out)
+        # if w is not None and b is not None:
+        #     out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        #     out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv3(out)
 
-        out = F.instance_norm(out)
         if w is not None and b is not None:
-            out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-            out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+            out = F.instance_norm(out, weight=w4, bias=b4)
+        else:
+            out = F.instance_norm(out)
+        # if w is not None and b is not None:
+        #     out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        #     out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv4(out)
@@ -253,34 +264,35 @@ class BigResidualBlockUp(nn.Module):
                       self.temp_channels, self.temp_channels)
         b4 = b.narrow(-1, self.in_channels+2 *
                       self.temp_channels, self.temp_channels)
-        x = F.instance_norm(x)
+        x = F.instance_norm(x, weight=w1, bias=b1)
+        # norm1 = torch.nn.InstanceNorm2d()
         residual = x
         residual = self.adaDim(self.upsample(residual))
 
-        out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        # out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
+        # out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
-        out = self.relu(out)
+        out = self.relu(x)
         out = self.conv1(out)
 
-        out = F.instance_norm(out)
-        out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = F.instance_norm(out, weight=w2, bias=b2)
+        # out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        # out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.upsample(out)
         out = self.conv2(out)
 
-        out = F.instance_norm(out)
-        out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = F.instance_norm(out, weight=w3, bias=b3)
+        # out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        # out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv3(out)
 
-        out = F.instance_norm(out)
-        out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = F.instance_norm(out, weight=w4, bias=b4)
+        # out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        # out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv4(out)

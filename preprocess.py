@@ -161,16 +161,16 @@ class jsonLoader(Dataset):
             self.slash = "\\"
         self.K_shots = K_shots
         self.root_dir = root_dir
-        print("Loading ids...")
+        print("\tLoading ids...")
         start_time = time.time()
         self.ids = glob.glob(f"{self.root_dir}/*")
         self.id_to_tensor = self.get_ids()
-        print(f"Ids loaded in {time.time() - start_time}s")
-        print("Loading videos...")
+        print(f"\tIds loaded in {time.time() - start_time}s")
+        print("\tLoading videos...")
         start_time = time.time()
         self.context_names = [video[:-5] for video in
                               glob.glob(f"{self.root_dir}/*/*.json")]
-        print(f"videos loaded in {time.time() - start_time}s")
+        print(f"\tVideos loaded in {time.time() - start_time}s")
 
     def __getitem__(self, index):
         badLdmks = True
@@ -228,7 +228,11 @@ class jsonLoader(Dataset):
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         context_tensors = torch.cat(context_tensors_list)
         # print(itemId)
-        return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId, context_name
+        if HALF:
+            gt_im_tensor = gt_im_tensor.half()
+            gt_ldmk_im_tensor = gt_ldmk_im_tensor.half()
+            context_tensors = context_tensors.half()
+        return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId
 
     def __len__(self):
         return len(self.context_names)

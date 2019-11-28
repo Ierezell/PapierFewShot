@@ -10,7 +10,7 @@ from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
 import numpy as np
 
-
+from utils import weight_init
 from preprocess import get_data_loader
 from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
                       LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
@@ -76,7 +76,7 @@ if __name__ == '__main__':
             optimizerDisc.zero_grad()
             optimizerGen.zero_grad()
 
-            gt_im, gt_landmarks, context, itemIds, context_name = batch
+            gt_im, gt_landmarks, context, itemIds = batch
 
             gt_im = gt_im.to(DEVICE)
             gt_landmarks = gt_landmarks.to(DEVICE)
@@ -157,21 +157,23 @@ if __name__ == '__main__':
                 check.save("embGen", loss.mean(), emb, gen, disc)
                 check.save("disc", loss.mean(), emb, gen, disc)
 
-                wandb.log({"Loss_dsc": lossDsc.mean()})
-                wandb.log({"lossCnt": lossCnt.mean()})
-                wandb.log({"lossMch": lossMch.mean()})
-                wandb.log({"lossAdv": lossAdv.mean()})
-                wandb.log({"LossTot": loss.mean()})
+                wandb.log({"Loss_dsc": lossDsc.mean()}, step=i_batch)
+                wandb.log({"lossCnt": lossCnt.mean()}, step=i_batch)
+                wandb.log({"lossMch": lossMch.mean()}, step=i_batch)
+                wandb.log({"lossAdv": lossAdv.mean()}, step=i_batch)
+                wandb.log({"LossTot": loss.mean()}, step=i_batch)
 
             if i_batch % (len(train_loader)//2) == 0:
+                print(gt_landmarks.device, synth_im.device,
+                      gt_im.device, context.device)
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
                                            dim=1).view(-1, 3, 224, 224)
-
+                print(images_to_grid.device)
                 grid = torchvision.utils.make_grid(
                     images_to_grid, padding=4, nrow=3 + 2*K_SHOT,
                     normalize=True, scale_each=True)
-
+                print(grid.device)
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})
                 if platform.system() != "Windows":
                     wandb.save(PATH_WEIGHTS_EMBEDDER)

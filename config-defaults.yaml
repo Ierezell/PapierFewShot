@@ -18,7 +18,7 @@ LOADER:
 
 MODEL:
   # "big", "small"
-  value : "small"
+  value : "big"
 
 LAYERS:
   # "big", "small"
@@ -33,16 +33,16 @@ CONCAT:
   value: "last"
 
 LEARNING_RATE_EMB:
-  value: 0.000005
+  value: 0.00005
 
 LEARNING_RATE_GEN:
-  value: 0.000005
+  value: 0.00005
 
 LEARNING_RATE_DISC:
   value: 0.00005
 
 TTUR:
-  value : True
+  value : False
 
 ATTENTION : 
   value : True

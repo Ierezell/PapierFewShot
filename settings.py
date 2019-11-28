@@ -65,13 +65,13 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
     if MODEL == "small":
         BATCH_SIZE = 4
     elif MODEL == "big":
-        BATCH_SIZE = 2
+        BATCH_SIZE = 4
 elif "Arc" in PLATFORM:
-    MODEL = "small"
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 1
-    K_SHOT = 4
-    LATENT_SIZE = 256
+    K_SHOT = 2
+    LATENT_SIZE = 512
+    NB_WORKERS = 12
 
 
 LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
