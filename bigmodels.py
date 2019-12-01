@@ -352,7 +352,10 @@ class BigGenerator(nn.Module):
         bf = pBias.narrow(-1, 0, 3)
         i += 3
 
-        x = F.instance_norm(x, weight=wf, bias=bf)
+        t = torch.zeros_like(x)
+        for i in range(x.size(0)):
+            t[i] = F.instance_norm(x[i].unsqueeze(0), weight=wf[i], bias=bf[i])
+        x = t
 
         x = self.relu(x)
         x = self.conv(x)

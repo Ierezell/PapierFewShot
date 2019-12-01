@@ -22,7 +22,7 @@ from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
 # from losses import ldmkLoss
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
-
+torch.autograd.set_detect_anomaly(True)
 if __name__ == '__main__':
 
     print(colored(f"Python : {sys.version}", 'blue'))
@@ -79,6 +79,8 @@ if __name__ == '__main__':
             itemIds = itemIds.to(DEVICE)
 
             embeddings, paramWeights, paramBias, layersUp = emb(context)
+            # print(paramBias.size())
+            # print(paramWeights.size())
             synth_im = gen(gt_landmarks, paramWeights, paramBias, layersUp)
 
             lossCnt = cntLoss(gt_im, synth_im)
@@ -96,7 +98,7 @@ if __name__ == '__main__':
 
             wandb.log({"lossCnt": lossCnt.mean()},
                       #    "lossLdmk": lossLdmk.mean()},
-                      step=(len_loader*BATCH_SIZE)+i_batch)
+                      step=(i_epoch*(len_loader*BATCH_SIZE))+i_batch)
 
             if i_batch % (len(train_loader)//2) == 0:
 
@@ -108,7 +110,8 @@ if __name__ == '__main__':
                     images_to_grid, padding=4, nrow=3 + 2*K_SHOT,
                     normalize=True, scale_each=True)
 
-                wandb.log({"Img": [wandb.Image(grid.cpu(), caption="image")]})
+                wandb.log({"Img": [wandb.Image(grid.cpu(), caption="image")]},
+                          step=(i_epoch*(len_loader*BATCH_SIZE))+i_batch)
                 if platform.system() != "Windows":
                     wandb.save(PATH_WEIGHTS_EMBEDDER)
                     wandb.save(PATH_WEIGHTS_GENERATOR)
