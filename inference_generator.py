@@ -1,35 +1,26 @@
 import torch
 from matplotlib import pyplot as plt
 from utils import load_models
-from preprocess import frameLoader
-from settings import MODEL
+from preprocess import load_someone, get_landmarks_from_webcam
 
-frameloader = frameLoader()
+emb, gen, disc = load_models(1)
 
-emb, gen, disc = load_models(len(frameloader.ids))
+gt_im_tensor, gt_ldmk, context_tensors, itemId = load_someone()
 
-context, first_image_landmarks, user_id = frameloader.load_someone(limit=2000)
+real_image = gt_im_tensor.cpu().permute(1, 2, 0).numpy()
 
-real_image = context[0].narrow(0, 0, 3).cpu().permute(1, 2, 0).numpy()
-
-print(context.size(1)/3, "  Frames Loaded")
+print(context_tensors.size(1)/6, "  Frames Loaded")
 
 plt.ion()
 
 with torch.no_grad():
-    if MODEL == "small":
-        embeddings, paramWeights, paramBias = emb(context)
-    elif MODEL == "big":
-        embeddings, paramWeights, paramBias, layersUp = emb(context)
+    embeddings, paramWeights, paramBias, layersUp = emb(context_tensors)
 
     while True:
-        ldm_pts, landmarks_img = frameloader.get_landmarks_from_webcam()
-        if MODEL == "small":
-            synth_im = gen(landmarks_img, paramWeights, paramBias)
-        elif MODEL == "big":
-            synth_im = gen(landmarks_img, paramWeights, paramBias, layersUp)
+        ldm_pts, landmarks_img = get_landmarks_from_webcam()
+        synth_im = gen(landmarks_img, paramWeights, paramBias, layersUp)
         score_synth, _ = disc(
-            torch.cat((synth_im, landmarks_img), dim=1), user_id)
+            torch.cat((synth_im, landmarks_img), dim=1), itemId)
 
         im_synth = synth_im[0].detach().cpu().permute(1, 2, 0).numpy()
         im_landmarks = landmarks_img[0].detach().cpu().permute(1, 2, 0).numpy()

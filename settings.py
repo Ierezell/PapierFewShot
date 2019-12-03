@@ -69,7 +69,7 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 2
-    K_SHOT = 2
+    K_SHOT = 6
     LATENT_SIZE = 256
     NB_WORKERS = 12
 
@@ -155,5 +155,10 @@ PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
 PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
 PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
+
+# ROOT_WEIGHTS = "../Deep-Reinforcement-Learning-Algorithms-with-PyTorch/weights/test1/"
+# PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
+# PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
+# PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator.pt'
 
 print(folder_weights)

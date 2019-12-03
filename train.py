@@ -6,6 +6,8 @@ import sys
 import torch
 import torchvision
 import wandb
+from termcolor import colored, cprint
+
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
 import numpy as np
@@ -25,19 +27,24 @@ torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
 
-    print("Python : ", sys.version)
-    print("Torch version : ", torch.__version__)
-    print("Torch CuDNN version : ", torch.backends.cudnn.version())
-    print("Device : ", DEVICE)
-    print("Running on", torch.cuda.device_count(), "GPUs.")
+    print(colored(f"Python : {sys.version}", 'blue'))
+    print(colored(f"Torch version : {torch.__version__}", 'green'))
+    print(colored(f"Torch CuDNN version : {torch.backends.cudnn.version()}",
+                  'cyan'))
+    print(colored(f"Device : {DEVICE}", "red"))
+    print(colored(f"Running on {torch.cuda.device_count()} GPUs.", "cyan"))
 
-    print("Loading Dataset")
+    print(colored("Loading Dataset...", 'cyan'))
 
     train_loader, nb_pers = get_data_loader()
-
+    print(colored("Dataset Ok", "green"))
     print("Loading Models & Losses")
+    print(colored("Loading Models", "cyan"))
     emb, gen, disc = load_models(nb_pers)
+    print(colored("Models Ok", "green"))
+    print(colored("Loading Losses", "cyan"))
     advLoss, mchLoss, cntLoss, dscLoss = load_losses()
+    print(colored("Losses Ok", "green"))
 
     optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
@@ -164,16 +171,12 @@ if __name__ == '__main__':
                 wandb.log({"LossTot": loss.mean()}, step=i_batch)
 
             if i_batch % (len(train_loader)//2) == 0:
-                print(gt_landmarks.device, synth_im.device,
-                      gt_im.device, context.device)
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
                                            dim=1).view(-1, 3, 224, 224)
-                print(images_to_grid.device)
                 grid = torchvision.utils.make_grid(
                     images_to_grid, padding=4, nrow=3 + 2*K_SHOT,
                     normalize=True, scale_each=True)
-                print(grid.device)
                 wandb.log({"Img": [wandb.Image(grid, caption="image")]})
                 if platform.system() != "Windows":
                     wandb.save(PATH_WEIGHTS_EMBEDDER)

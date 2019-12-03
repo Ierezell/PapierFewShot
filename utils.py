@@ -192,7 +192,7 @@ def load_layers(size=LAYERS):
         print("\tLoading small layers")
         return ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
     elif size == "big":
-        from biglayers2 import (BigResidualBlock, BigResidualBlockDown,
+        from biglayers import (BigResidualBlock, BigResidualBlockDown,
                                 BigResidualBlockUp, Attention)
         print("\tLoading big layers")
         return (BigResidualBlock, BigResidualBlockDown,
@@ -218,8 +218,8 @@ class CheckpointsFewShots:
             if loss < self.best_loss_Disc or self.step_disc > self.save_every:
                 self.step_disc = 0
                 tqdm.write(colored('\n' + '-'*25 + '\n' +
-                           "| Poids disc sauvegardes |" + '\n' + '-'*25),
-                           'green')
+                           "| Poids disc sauvegardes |" + '\n' + '-'*25,
+                           'green'))
                 self.best_loss_Disc = loss
                 if PARALLEL:
                     torch.save(discriminator.module.state_dict(),

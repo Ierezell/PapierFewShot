@@ -18,7 +18,7 @@ LOADER:
 
 MODEL:
   # "big", "small"
-  value : "big"
+  value : "small"
 
 LAYERS:
   # "big", "small"
@@ -30,7 +30,7 @@ DATASET:
 
 CONCAT:
   # "first", "last", ""
-  value: ""
+  value: "last"
 
 LEARNING_RATE_EMB:
   value: 0.00005
