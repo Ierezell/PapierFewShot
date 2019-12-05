@@ -257,6 +257,8 @@ class BigResidualBlockUp(nn.Module):
         residual = x
         residual = self.adaDim(self.upsample(residual))
 
+        # print("w1 :: ", w1.size())
+        # print("x  :: ", x.size())
         out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
         out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 

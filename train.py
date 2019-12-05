@@ -6,20 +6,17 @@ import sys
 import torch
 import torchvision
 import wandb
-from termcolor import colored, cprint
-
+from termcolor import colored
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
-import numpy as np
 
-from utils import weight_init
 from preprocess import get_data_loader
-from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
+from settings import (DEVICE, HALF, IN_DISC, K_SHOT, LEARNING_RATE_DISC,
                       LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
-                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, IN_DISC,
+                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
-                   print_parameters, check_nan)
+                   print_parameters)
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
@@ -114,7 +111,7 @@ if __name__ == '__main__':
 
             lossDsc = dscLoss(score_gt, score_synth)
 
-            loss = lossAdv + lossCnt + lossMch
+            loss = lossAdv + lossMch + lossCnt
 
             if TTUR:
                 if i_batch % 3 == 0 or i_batch % 3 == 1:

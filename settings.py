@@ -1,7 +1,8 @@
+import datetime
 import os
 import platform
+
 import torch
-import datetime
 import wandb
 
 PLATFORM = platform.node()[:3]
@@ -68,7 +69,7 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
         BATCH_SIZE = 4
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
-    BATCH_SIZE = 2
+    BATCH_SIZE = 1
     K_SHOT = 6
     LATENT_SIZE = 256
     NB_WORKERS = 12

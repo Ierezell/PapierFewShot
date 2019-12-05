@@ -1,10 +1,9 @@
-import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.nn.utils import spectral_norm
-import torch.nn.functional as F
 
-from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF, DEVICE, ATTENTION
+from settings import ATTENTION, BATCH_SIZE, CONCAT, DEVICE, HALF, LATENT_SIZE
 from utils import load_layers
 
 (ResidualBlock,

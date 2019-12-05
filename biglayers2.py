@@ -111,6 +111,8 @@ class BigResidualBlock(nn.Module):
             # print("hjhkhjkhjkhj :: :: ", x.size(), x[0].unsqueeze(0).size())
             # print("lksdflksdfkj", x.size(0))
             t = torch.zeros_like(x)
+            # print(w1.size())
+            # print(x.size())
             for i in range(x.size(0)):
                 t[i] = F.instance_norm(x[i].unsqueeze(0),
                                        weight=w1[i], bias=b1[i])

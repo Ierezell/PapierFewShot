@@ -1,9 +1,9 @@
-from torchvision.models.vgg import vgg19
-import torch.nn as nn
 import torch
-from face_alignment import FaceAlignment, LandmarksType
-from settings import BATCH_SIZE, LATENT_SIZE, DEVICE
-import numpy as np
+import torch.nn as nn
+from torchvision.models.vgg import vgg19
+
+from settings import BATCH_SIZE, DEVICE, LATENT_SIZE
+
 """
 For the calculation of LCNT, we evaluate L1 loss between activations of
 Conv1,6,11,20,29 VGG19 layers
@@ -19,6 +19,7 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 """
 
 
+# from face_alignment import FaceAlignment, LandmarksType
 # class ldmkLoss(nn.Module):
 #     def __init__(self):
 #         super().__init__()
@@ -135,11 +136,11 @@ class contentLoss(nn.Module):
         # output_synth = {}
         gtVgg19 = gt.clone()
         synthVgg19 = synth.clone()
-        # gtVggFace = gt.clone()
-        # synthVggFace = synth.clone()
+        gtVggFace = gt.clone()
+        synthVggFace = synth.clone()
 
         lossVgg19 = torch.zeros(1, device=DEVICE)
-        # lossVggFace = torch.zeros(1, device=DEVICE)
+        lossVggFace = torch.zeros(1, device=DEVICE)
 
         for name, module in self.vgg_layers._modules.items():
             with torch.no_grad():
@@ -151,15 +152,14 @@ class contentLoss(nn.Module):
                 # each layer :
                 # output_gt[self.layer_name_mapping[name]] = gt
                 # output_synth[self.layer_name_mapping[name]] = synth
-        return lossVgg19 + self.l1(gt, synth)
-        # for name, module in self.vgg_Face.named_children():
-        #     gtVggFace = module(gtVggFace)
-        #     synthVggFace = module(synthVggFace)
-        #     if name in self.layer_name_mapping_vggFace.values():
-        #         lossVggFace += self.l1(gtVggFace, synthVggFace)
-        #     if name == "conv5_2":
-        #         break
-        # return 25e-2 * lossVggFace + 15e-1*lossVgg19
+        for name, module in self.vgg_Face.named_children():
+            gtVggFace = module(gtVggFace)
+            synthVggFace = module(synthVggFace)
+            if name in self.layer_name_mapping_vggFace.values():
+                lossVggFace += self.l1(gtVggFace, synthVggFace)
+            if name == "conv5_2":
+                break
+        return 25e-2 * lossVggFace + 15e-1*lossVgg19 + self.l1(gt, synth)
 
 
 class Vgg_face_dag(nn.Module):

@@ -1,23 +1,25 @@
-from losses import (adverserialLoss, contentLoss,
-                    discriminatorLoss, matchLoss)
-from RlModel import Policy
-from shutil import copyfile
 import glob
 import os
 import shutil
-from termcolor import colored, cprint
+from shutil import copyfile
 
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.init as init
 from matplotlib.lines import Line2D
-from torch import nn
+from termcolor import colored
 from tqdm import tqdm
-from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
-                      LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
+
+from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
+from RlModel import Policy
+from settings import (DEVICE, HALF, LAYERS, LOAD_PREVIOUS, LOAD_PREVIOUS_RL,
+                      MODEL, PARALLEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_POLICY, HALF, PARALLEL)
+                      PATH_WEIGHTS_POLICY)
+
 mplstyle.use(['dark_background', 'fast'])
 
 
@@ -78,7 +80,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                     torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
                                map_location=DEVICE))
         except FileNotFoundError:
-            print(colored("\tFile not found, not loading weights embedder...",'red'))
+            print(colored("\tFile not found, not loading weights embedder...", 'red'))
         try:
             if PARALLEL:
                 generator.module.load_state_dict(
@@ -99,7 +101,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                     torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
                                map_location=DEVICE))
         except FileNotFoundError:
-            print(colored("\tFile not found, not loading weights generator...",'red'))
+            print(colored("\tFile not found, not loading weights generator...", 'red'))
 
         try:
             state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR,
@@ -111,7 +113,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                 map_location=DEVICE)
             weight_disc = True
         except FileNotFoundError:
-            print(colored("\tFile not found, not loading weights discriminator...",'red'))
+            print(
+                colored("\tFile not found, not loading weights discriminator...", 'red'))
             weight_disc = False
 
         if weight_disc:
@@ -123,8 +126,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                     discriminator.load_state_dict(
                         state_dict_discriminator)
             except RuntimeError:
-                print(colored("Wrong dataset, different number of persons",'red'))
-                print(colored("Loading disc without embeddings ",'red'))
+                print(colored("Wrong dataset, different number of persons", 'red'))
+                print(colored("Loading disc without embeddings ", 'red'))
                 state_dict_discriminator.pop("embeddings.weight")
                 if PARALLEL:
                     discriminator.module.load_state_dict(
@@ -192,7 +195,7 @@ def load_layers(size=LAYERS):
         print("\tLoading small layers")
         return ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
     elif size == "big":
-        from biglayers import (BigResidualBlock, BigResidualBlockDown,
+        from biglayers2 import (BigResidualBlock, BigResidualBlockDown,
                                 BigResidualBlockUp, Attention)
         print("\tLoading big layers")
         return (BigResidualBlock, BigResidualBlockDown,
@@ -218,8 +221,8 @@ class CheckpointsFewShots:
             if loss < self.best_loss_Disc or self.step_disc > self.save_every:
                 self.step_disc = 0
                 tqdm.write(colored('\n' + '-'*25 + '\n' +
-                           "| Poids disc sauvegardes |" + '\n' + '-'*25,
-                           'green'))
+                                   "| Poids disc sauvegardes |" + '\n' + '-'*25,
+                                   'green'))
                 self.best_loss_Disc = loss
                 if PARALLEL:
                     torch.save(discriminator.module.state_dict(),
@@ -235,7 +238,7 @@ class CheckpointsFewShots:
                     self.step_EmbGen > self.save_every):
                 self.step_EmbGen = 0
                 tqdm.write(colored("\n" + "-" * 31 + '\n' +
-                           "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31,'green'))
+                                   "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31, 'green'))
                 self.best_loss_EmbGen = loss
                 if PARALLEL:
                     torch.save(embedder.module.state_dict(),
@@ -442,11 +445,6 @@ def print_device(model):
         print(f"{name} est sur {device_param}")
     except StopIteration:
         print(f"{name} n'as pas de parametres")
-
-
-import torch
-import torch.nn as nn
-import torch.nn.init as init
 
 
 def weight_init(m):

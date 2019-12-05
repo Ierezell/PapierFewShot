@@ -30,7 +30,7 @@ DATASET:
 
 CONCAT:
   # "first", "last", ""
-  value: "last"
+  value: ""
 
 LEARNING_RATE_EMB:
   value: 0.00005
