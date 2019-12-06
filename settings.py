@@ -7,7 +7,7 @@ import wandb
 
 PLATFORM = platform.node()[:3]
 
-if ("blg" in PLATFORM) or ("gpu" in PLATFORM):
+if ("blg" in PLATFORM) or ("gpu" in PLATFORM) or ("Arc" in PLATFORM):
     os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papier_few_shot", entity="plop", reinit=True)
@@ -152,14 +152,13 @@ else:
 
 # Save
 PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+folder_weights
-PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
-PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
-PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
+"./weights/top_small/"
+# PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
+# PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
+# PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
 
-# ROOT_WEIGHTS = "../Deep-Reinforcement-Learning-Algorithms-with-PyTorch/weights/test1/"
-# PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+'Embedder.pt'
-# PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+'Generator.pt'
-# PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + 'Discriminator.pt'
-
+PATH_WEIGHTS_EMBEDDER = "./weights/top_small/"+'Embedder.pt'
+PATH_WEIGHTS_GENERATOR = "./weights/top_small/"+'Generator.pt'
+PATH_WEIGHTS_DISCRIMINATOR = "./weights/top_small/" + 'Discriminator.pt'
 print(folder_weights)

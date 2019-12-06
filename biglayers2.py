@@ -268,10 +268,6 @@ class BigResidualBlockUp(nn.Module):
                                              self.out_channels,
                                              kernel_size=1, padding=0,
                                              bias=False))
-        self.in1 = nn.InstanceNorm2d(self.in_channels, affine=True)
-        self.in2 = nn.InstanceNorm2d(self.temp_channels, affine=True)
-        self.in3 = nn.InstanceNorm2d(self.temp_channels, affine=True)
-        self.in4 = nn.InstanceNorm2d(self.temp_channels, affine=True)
 
         self.upsample = nn.Upsample(scale_factor=scale, mode='nearest')
         # 'nearest', 'linear', 'bilinear', 'bicubic' and 'trilinear'

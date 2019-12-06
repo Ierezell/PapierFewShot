@@ -3,6 +3,8 @@ import glob
 import json
 import os
 import platform
+import time
+from random import randint
 
 import cv2
 import matplotlib.pyplot as plt
@@ -12,11 +14,9 @@ import torchvision
 from face_alignment import FaceAlignment, LandmarksType
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-import time
-from settings import (DEVICE, K_SHOT, LOAD_BATCH_SIZE, ROOT_WEIGHTS,
-                      NB_WORKERS, ROOT_DATASET, HALF, LOADER)
 
-from random import randint
+from settings import (DEVICE, HALF, K_SHOT, LOAD_BATCH_SIZE, LOADER,
+                      NB_WORKERS, ROOT_DATASET, ROOT_WEIGHTS)
 
 
 def write_landmarks_on_image(image, landmarks):
@@ -50,7 +50,9 @@ def write_landmarks_on_image(image, landmarks):
     return image
 
 
-def get_landmarks_from_webcam(self):
+def get_landmarks_from_webcam():
+    face_landmarks = FaceAlignment(
+        landmarks_type=LandmarksType._2D, device="cuda")
     cam = cv2.VideoCapture(0)
     bad_image = True
     while bad_image:
@@ -59,7 +61,7 @@ def get_landmarks_from_webcam(self):
         image = cv2.resize(image, (224, 224))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         with torch.no_grad():
-            landmark_pts = self.face_landmarks.get_landmarks_from_image(
+            landmark_pts = face_landmarks.get_landmarks_from_image(
                 image)
         image = np.zeros(image.shape, np.float32)
         try:
@@ -81,7 +83,8 @@ def load_someone():
         slash = "/"
     userid = np.random.choice(glob.glob(f"{ROOT_DATASET}/*"))
     filename = np.random.choice(glob.glob(f"{userid}/*.json"))[:-5]
-    itemId = torch.tensor(int(filename.split(slash)[-2][2:]))
+    id_to_tensor = get_ids()
+    itemId = id_to_tensor[filename.split('/')[-2]]
 
     with open(f"{filename}.json", "r") as file:
         dict_ldmk = json.load(file, object_pairs_hook=lambda x:
@@ -132,27 +135,33 @@ def load_someone():
 def dictKeytoInt(x): return {int(k): v for k, v in x}
 
 
+def get_ids(root_dir=ROOT_DATASET):
+    if platform.system() == "Windows":
+        slash = "\\"
+    else:
+        slash = "/"
+    with open(f"{ROOT_WEIGHTS}ids.json", "w+") as file:
+        try:
+            json_ids = json.load(file)
+        except json.decoder.JSONDecodeError:
+            json_ids = {}
+
+    current_id = -1
+    id_to_tensor = {}
+    for uid in glob.glob(f"{root_dir}/*"):
+        key = uid.split(slash)[-1]
+        id_to_tensor[key] = json_ids.get(key, current_id + 1)
+        current_id = id_to_tensor[key]
+
+    with open(f"{ROOT_WEIGHTS}/ids.json", "w") as file:
+        json.dump(id_to_tensor, file)
+
+    id_to_tensor = {key: torch.tensor(value).view(1)
+                    for key, value in id_to_tensor.items()}
+    return id_to_tensor
+
+
 class jsonLoader(Dataset):
-    def get_ids(self):
-        with open(f"{ROOT_WEIGHTS}ids.json", "w+") as file:
-            try:
-                json_ids = json.load(file)
-            except json.decoder.JSONDecodeError:
-                json_ids = {}
-
-        current_id = -1
-        id_to_tensor = {}
-        for uid in self.ids:
-            key = uid.split(self.slash)[-1]
-            id_to_tensor[key] = json_ids.get(key, current_id + 1)
-            current_id = id_to_tensor[key]
-
-        with open(f"{ROOT_WEIGHTS}/ids.json", "w") as file:
-            json.dump(id_to_tensor, file)
-
-        id_to_tensor = {key: torch.tensor(value).view(1)
-                        for key, value in id_to_tensor.items()}
-        return id_to_tensor
 
     def __init__(self, root_dir=ROOT_DATASET, K_shots=K_SHOT):
         super(jsonLoader, self).__init__()
@@ -164,7 +173,7 @@ class jsonLoader(Dataset):
         print("\tLoading ids...")
         start_time = time.time()
         self.ids = glob.glob(f"{self.root_dir}/*")
-        self.id_to_tensor = self.get_ids()
+        self.id_to_tensor = get_ids()
         print(f"\tIds loaded in {time.time() - start_time}s")
         print("\tLoading videos...")
         start_time = time.time()

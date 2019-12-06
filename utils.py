@@ -29,7 +29,18 @@ def check_nan(x, msg=''):
     return torch.isnan(x).any()
 
 
-def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
+def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
+                root_path_weights=False, freeze=False):
+    if root_path_weights:
+        print(root_path_weights)
+        path_discriminator = root_path_weights + "Discriminator.pt"
+        path_embedder = root_path_weights + "Embdedder.pt"
+        path_generator = root_path_weights + "Generator.pt"
+    else:
+        print("Default")
+        path_discriminator = PATH_WEIGHTS_DISCRIMINATOR
+        path_embedder = PATH_WEIGHTS_EMBEDDER
+        path_generator = PATH_WEIGHTS_GENERATOR
 
     if model == "small":
         from models import Discriminator, Embedder, Generator
@@ -66,50 +77,50 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
         try:
             if PARALLEL:
                 embedder.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER,
+                    torch.load(path_embedder,
                                map_location=DEVICE))
             else:
-                embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
+                embedder.load_state_dict(torch.load(path_embedder))
         except RuntimeError:
             if PARALLEL:
                 embedder.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
+                    torch.load(path_embedder.replace(".pt", ".bk"),
                                map_location=DEVICE))
             else:
                 embedder.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk"),
+                    torch.load(path_embedder.replace(".pt", ".bk"),
                                map_location=DEVICE))
         except FileNotFoundError:
             print(colored("\tFile not found, not loading weights embedder...", 'red'))
         try:
             if PARALLEL:
                 generator.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR,
+                    torch.load(path_generator,
                                map_location=DEVICE))
             else:
                 generator.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR,
+                    torch.load(path_generator,
                                map_location=DEVICE))
 
         except RuntimeError:
             if PARALLEL:
                 generator.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
+                    torch.load(path_generator.replace(".pt", ".bk"),
                                map_location=DEVICE))
             else:
                 generator.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk"),
+                    torch.load(path_generator.replace(".pt", ".bk"),
                                map_location=DEVICE))
         except FileNotFoundError:
             print(colored("\tFile not found, not loading weights generator...", 'red'))
 
         try:
-            state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR,
+            state_dict_discriminator = torch.load(path_discriminator,
                                                   map_location=DEVICE)
             weight_disc = True
         except RuntimeError:
             state_dict_discriminator = torch.load(
-                PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"),
+                path_discriminator.replace(".pt", ".bk"),
                 map_location=DEVICE)
             weight_disc = True
         except FileNotFoundError:
@@ -135,13 +146,24 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                 else:
                     discriminator.load_state_dict(state_dict_discriminator,
                                                   strict=False)
+        embedder.apply(weight_init)
+        generator.apply(weight_init)
+        discriminator.apply(weight_init)
 
     embedder = embedder.to(DEVICE)
     generator = generator.to(DEVICE)
     discriminator = discriminator.to(DEVICE)
-    embedder.apply(weight_init)
-    generator.apply(weight_init)
-    discriminator.apply(weight_init)
+
+    if freeze:
+        # embedder = embedder.eval()
+        # discriminator = discriminator.eval()
+        # generator = generator.eval()
+        for param in discriminator.parameters():
+            param.requires_grad = False
+        for param in generator.parameters():
+            param.requires_grad = False
+        for param in embedder.parameters():
+            param.requires_grad = False
     return embedder, generator, discriminator
 
 
