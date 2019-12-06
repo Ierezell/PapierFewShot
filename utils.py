@@ -217,8 +217,8 @@ def load_layers(size=LAYERS):
         print("\tLoading small layers")
         return ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
     elif size == "big":
-        from biglayers2 import (BigResidualBlock, BigResidualBlockDown,
-                                BigResidualBlockUp, Attention)
+        from biglayers import (BigResidualBlock, BigResidualBlockDown,
+                               BigResidualBlockUp, Attention)
         print("\tLoading big layers")
         return (BigResidualBlock, BigResidualBlockDown,
                 BigResidualBlockUp, Attention)

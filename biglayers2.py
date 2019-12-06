@@ -302,6 +302,8 @@ class BigResidualBlockUp(nn.Module):
         out = self.relu(x)
         out = self.conv1(out)
         t = torch.zeros_like(out)
+        # TODO
+        # ICI FAIRE LE SPADE !
         for i in range(out.size(0)):
             t[i] = F.instance_norm(out[i].unsqueeze(0),
                                    weight=w2[i], bias=b2[i])
