@@ -1,22 +1,24 @@
-from losses import (adverserialLoss, contentLoss,
-                    discriminatorLoss, matchLoss)
-from RlModel import Policy
-from shutil import copyfile
 import glob
 import os
 import shutil
+from shutil import copyfile
 
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.init as init
 from matplotlib.lines import Line2D
-from torch import nn
+from termcolor import colored
 from tqdm import tqdm
-from settings import (DEVICE, LAYERS, LOAD_PREVIOUS,
-                      LOAD_PREVIOUS_RL, MODEL, PATH_WEIGHTS_DISCRIMINATOR,
+
+from losses import adverserialLoss, contentLoss, discriminatorLoss, matchLoss
+from RlModel import Policy
+from settings import (DEVICE, HALF, LAYERS, LOAD_PREVIOUS, LOAD_PREVIOUS_RL,
+                      MODEL, PARALLEL, PATH_WEIGHTS_DISCRIMINATOR,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR,
-                      PATH_WEIGHTS_POLICY, HALF, PARALLEL)
+                      PATH_WEIGHTS_POLICY)
 
 mplstyle.use(['dark_background', 'fast'])
 
@@ -27,12 +29,23 @@ def check_nan(x, msg=''):
     return torch.isnan(x).any()
 
 
-def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
+def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
+                root_path_weights=False, freeze=False):
+    if root_path_weights:
+        print(root_path_weights)
+        path_discriminator = root_path_weights + "Discriminator.pt"
+        path_embedder = root_path_weights + "Embdedder.pt"
+        path_generator = root_path_weights + "Generator.pt"
+    else:
+        print("Default")
+        path_discriminator = PATH_WEIGHTS_DISCRIMINATOR
+        path_embedder = PATH_WEIGHTS_EMBEDDER
+        path_generator = PATH_WEIGHTS_GENERATOR
 
     if model == "small":
         from models import Discriminator, Embedder, Generator
-        print("Loading Small Models (load previous)" if LOAD_PREVIOUS
-              else "Loading Small Models (no load previous)")
+        print("\tLoading Small Models (load previous)" if LOAD_PREVIOUS
+              else "\tLoading Small Models (no load previous)")
 
         embedder = Embedder()
         generator = Generator()
@@ -40,8 +53,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
 
     elif model == "big":
         from bigmodels import BigDiscriminator, BigEmbedder, BigGenerator
-        print("Loading Big Models (load previous)" if LOAD_PREVIOUS
-              else "Loading Big Models (no load previous)")
+        print("\tLoading Big Models (load previous)" if LOAD_PREVIOUS
+              else "\tLoading Big Models (no load previous)")
 
         embedder = BigEmbedder()
         generator = BigGenerator()
@@ -64,45 +77,55 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
         try:
             if PARALLEL:
                 embedder.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER))
+                    torch.load(path_embedder,
+                               map_location=DEVICE))
             else:
-                embedder.load_state_dict(torch.load(PATH_WEIGHTS_EMBEDDER))
+                embedder.load_state_dict(torch.load(path_embedder))
         except RuntimeError:
             if PARALLEL:
                 embedder.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+                    torch.load(path_embedder.replace(".pt", ".bk"),
+                               map_location=DEVICE))
             else:
                 embedder.load_state_dict(
-                    torch.load(PATH_WEIGHTS_EMBEDDER.replace(".pt", ".bk")))
+                    torch.load(path_embedder.replace(".pt", ".bk"),
+                               map_location=DEVICE))
         except FileNotFoundError:
-            print("File not found, not loading weights embedder...")
+            print(colored("\tFile not found, not loading weights embedder...", 'red'))
         try:
             if PARALLEL:
                 generator.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR))
+                    torch.load(path_generator,
+                               map_location=DEVICE))
             else:
                 generator.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR))
+                    torch.load(path_generator,
+                               map_location=DEVICE))
 
         except RuntimeError:
             if PARALLEL:
                 generator.module.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+                    torch.load(path_generator.replace(".pt", ".bk"),
+                               map_location=DEVICE))
             else:
                 generator.load_state_dict(
-                    torch.load(PATH_WEIGHTS_GENERATOR.replace(".pt", ".bk")))
+                    torch.load(path_generator.replace(".pt", ".bk"),
+                               map_location=DEVICE))
         except FileNotFoundError:
-            print("File not found, not loading weights generator...")
+            print(colored("\tFile not found, not loading weights generator...", 'red'))
 
         try:
-            state_dict_discriminator = torch.load(PATH_WEIGHTS_DISCRIMINATOR)
+            state_dict_discriminator = torch.load(path_discriminator,
+                                                  map_location=DEVICE)
             weight_disc = True
         except RuntimeError:
             state_dict_discriminator = torch.load(
-                PATH_WEIGHTS_DISCRIMINATOR.replace(".pt", ".bk"))
+                path_discriminator.replace(".pt", ".bk"),
+                map_location=DEVICE)
             weight_disc = True
         except FileNotFoundError:
-            print("File not found, not loading weights discriminator...")
+            print(
+                colored("\tFile not found, not loading weights discriminator...", 'red'))
             weight_disc = False
 
         if weight_disc:
@@ -114,19 +137,33 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL):
                     discriminator.load_state_dict(
                         state_dict_discriminator)
             except RuntimeError:
-                print("Pas le bon dataset, different nombre de personnes")
-                print("Chargement du disc sans les embeddings ")
+                print(colored("Wrong dataset, different number of persons", 'red'))
+                print(colored("Loading disc without embeddings ", 'red'))
                 state_dict_discriminator.pop("embeddings.weight")
                 if PARALLEL:
-                    discriminator.module.load_state_dict(state_dict_discriminator,
-                                                         strict=False)
+                    discriminator.module.load_state_dict(
+                        state_dict_discriminator, strict=False)
                 else:
                     discriminator.load_state_dict(state_dict_discriminator,
                                                   strict=False)
+        embedder.apply(weight_init)
+        generator.apply(weight_init)
+        discriminator.apply(weight_init)
 
     embedder = embedder.to(DEVICE)
     generator = generator.to(DEVICE)
     discriminator = discriminator.to(DEVICE)
+
+    if freeze:
+        # embedder = embedder.eval()
+        # discriminator = discriminator.eval()
+        # generator = generator.eval()
+        for param in discriminator.parameters():
+            param.requires_grad = False
+        for param in generator.parameters():
+            param.requires_grad = False
+        for param in embedder.parameters():
+            param.requires_grad = False
     return embedder, generator, discriminator
 
 
@@ -177,12 +214,12 @@ def load_layers(size=LAYERS):
     if size == "small":
         from layers import (Attention, ResidualBlock,
                             ResidualBlockDown, ResidualBlockUp)
-        print("Loading small layers")
+        print("\tLoading small layers")
         return ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention
     elif size == "big":
-        from biglayers import (BigResidualBlock, BigResidualBlockDown,
-                               BigResidualBlockUp, Attention)
-        print("Loading big layers")
+        from biglayers2 import (BigResidualBlock, BigResidualBlockDown,
+                                BigResidualBlockUp, Attention)
+        print("\tLoading big layers")
         return (BigResidualBlock, BigResidualBlockDown,
                 BigResidualBlockUp, Attention)
 
@@ -205,8 +242,9 @@ class CheckpointsFewShots:
             self.step_disc += 1
             if loss < self.best_loss_Disc or self.step_disc > self.save_every:
                 self.step_disc = 0
-                tqdm.write('\n' + '-'*25 + '\n' +
-                           "| Poids disc sauvegardes |" + '\n' + '-'*25)
+                tqdm.write(colored('\n' + '-'*25 + '\n' +
+                                   "| Poids disc sauvegardes |" + '\n' + '-'*25,
+                                   'green'))
                 self.best_loss_Disc = loss
                 if PARALLEL:
                     torch.save(discriminator.module.state_dict(),
@@ -221,8 +259,8 @@ class CheckpointsFewShots:
             if (loss < self.best_loss_EmbGen or
                     self.step_EmbGen > self.save_every):
                 self.step_EmbGen = 0
-                tqdm.write("\n" + "-" * 31 + '\n' +
-                           "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31)
+                tqdm.write(colored("\n" + "-" * 31 + '\n' +
+                                   "| Poids Emb & Gen sauvegardes |" + '\n' + "-"*31, 'green'))
                 self.best_loss_EmbGen = loss
                 if PARALLEL:
                     torch.save(embedder.module.state_dict(),
@@ -429,3 +467,71 @@ def print_device(model):
         print(f"{name} est sur {device_param}")
     except StopIteration:
         print(f"{name} n'as pas de parametres")
+
+
+def weight_init(m):
+    '''
+    Usage:
+        model = Model()
+        model.apply(weight_init)
+    '''
+    if isinstance(m, nn.Conv1d):
+        init.normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.Conv2d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.Conv3d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.ConvTranspose1d):
+        init.normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.ConvTranspose2d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.ConvTranspose3d):
+        init.xavier_normal_(m.weight.data)
+        if m.bias is not None:
+            init.normal_(m.bias.data)
+    elif isinstance(m, nn.BatchNorm1d):
+        init.normal_(m.weight.data, mean=1, std=0.02)
+        init.constant_(m.bias.data, 0)
+    elif isinstance(m, nn.BatchNorm2d):
+        init.normal_(m.weight.data, mean=1, std=0.02)
+        init.constant_(m.bias.data, 0)
+    elif isinstance(m, nn.BatchNorm3d):
+        init.normal_(m.weight.data, mean=1, std=0.02)
+        init.constant_(m.bias.data, 0)
+    elif isinstance(m, nn.Linear):
+        init.xavier_normal_(m.weight.data)
+        init.normal_(m.bias.data)
+    elif isinstance(m, nn.LSTM):
+        for param in m.parameters():
+            if len(param.shape) >= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+    elif isinstance(m, nn.LSTMCell):
+        for param in m.parameters():
+            if len(param.shape) >= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+    elif isinstance(m, nn.GRU):
+        for param in m.parameters():
+            if len(param.shape) >= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+    elif isinstance(m, nn.GRUCell):
+        for param in m.parameters():
+            if len(param.shape) >= 2:
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)

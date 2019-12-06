@@ -1,9 +1,10 @@
-from torchvision.models.vgg import vgg19
-import torch.nn as nn
 import torch
-from settings import BATCH_SIZE, LATENT_SIZE, DEVICE, HALF
-"""
+import torch.nn as nn
+from torchvision.models.vgg import vgg19
 
+from settings import BATCH_SIZE, DEVICE, LATENT_SIZE
+
+"""
 For the calculation of LCNT, we evaluate L1 loss between activations of
 Conv1,6,11,20,29 VGG19 layers
 and Conv1,6,11,18,25 VGGFace layers for real and
@@ -18,9 +19,28 @@ LFM(G, Dk) = E(s,x)  Sum 1/Ni [ ||D(s, x) − D(s, G(s))||],
 """
 
 
+# from face_alignment import FaceAlignment, LandmarksType
+# class ldmkLoss(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.face_landmarks = FaceAlignment(LandmarksType._2D, device="cpu")
+
+#     def forward(self, gt, synth):
+#         score = 0
+#         with torch.no_grad():
+#             for i in range(gt.size(0)):
+#                 ldmks_gt = self.face_landmarks.get_landmarks_from_image(
+#                     gt[i].permute(2, 1, 0).data.cpu().numpy())
+#                 ldmks_synth = self.face_landmarks.get_landmarks_from_image(
+#                     synth[i].permute(2, 1, 0).data.cpu().numpy())
+#                 print("ldmk  ", ldmks_gt)
+#                 score += np.linalg.norm(ldmks_gt[0]-ldmks_synth[0])
+#         return torch.from_numpy()
 # #########
 #  L_adv  #
 # #########
+
+
 class adverserialLoss(nn.Module):
     def __init__(self):
         super(adverserialLoss, self).__init__()
@@ -132,7 +152,6 @@ class contentLoss(nn.Module):
                 # each layer :
                 # output_gt[self.layer_name_mapping[name]] = gt
                 # output_synth[self.layer_name_mapping[name]] = synth
-
         for name, module in self.vgg_Face.named_children():
             gtVggFace = module(gtVggFace)
             synthVggFace = module(synthVggFace)
@@ -140,7 +159,7 @@ class contentLoss(nn.Module):
                 lossVggFace += self.l1(gtVggFace, synthVggFace)
             if name == "conv5_2":
                 break
-        return 25e-2 * lossVggFace + 15e-1*lossVgg19
+        return 25e-2 * lossVggFace + 15e-1*lossVgg19 + self.l1(gt, synth)
 
 
 class Vgg_face_dag(nn.Module):

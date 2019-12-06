@@ -1,12 +1,13 @@
+import datetime
 import os
 import platform
+
 import torch
-import datetime
 import wandb
 
 PLATFORM = platform.node()[:3]
 
-if ("blg" in PLATFORM) or ("gpu" in PLATFORM):
+if ("blg" in PLATFORM) or ("gpu" in PLATFORM) or ("Arc" in PLATFORM):
     os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papier_few_shot", entity="plop", reinit=True)
@@ -65,13 +66,13 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
     if MODEL == "small":
         BATCH_SIZE = 4
     elif MODEL == "big":
-        BATCH_SIZE = 2
+        BATCH_SIZE = 4
 elif "Arc" in PLATFORM:
-    MODEL = "small"
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 1
-    K_SHOT = 4
+    K_SHOT = 6
     LATENT_SIZE = 256
+    NB_WORKERS = 12
 
 
 LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
@@ -151,9 +152,13 @@ else:
 
 # Save
 PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+folder_weights
-PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
-PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
-PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
+"./weights/top_small/"
+# PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
+# PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
+# PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
 
+PATH_WEIGHTS_EMBEDDER = "./weights/top_small/"+'Embedder.pt'
+PATH_WEIGHTS_GENERATOR = "./weights/top_small/"+'Generator.pt'
+PATH_WEIGHTS_DISCRIMINATOR = "./weights/top_small/" + 'Discriminator.pt'
 print(folder_weights)

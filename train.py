@@ -6,18 +6,17 @@ import sys
 import torch
 import torchvision
 import wandb
+from termcolor import colored
 from torch.optim import SGD, Adam, RMSprop
 from tqdm import tqdm, trange
-import numpy as np
-
 
 from preprocess import get_data_loader
-from settings import (DEVICE, HALF, K_SHOT, LEARNING_RATE_DISC,
+from settings import (DEVICE, HALF, IN_DISC, K_SHOT, LEARNING_RATE_DISC,
                       LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
-                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, IN_DISC,
+                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, BATCH_SIZE,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
-                   print_parameters, check_nan)
+                   print_parameters)
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
@@ -25,19 +24,24 @@ torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
 
-    print("Python : ", sys.version)
-    print("Torch version : ", torch.__version__)
-    print("Torch CuDNN version : ", torch.backends.cudnn.version())
-    print("Device : ", DEVICE)
-    print("Running on", torch.cuda.device_count(), "GPUs.")
+    print(colored(f"Python : {sys.version}", 'blue'))
+    print(colored(f"Torch version : {torch.__version__}", 'green'))
+    print(colored(f"Torch CuDNN version : {torch.backends.cudnn.version()}",
+                  'cyan'))
+    print(colored(f"Device : {DEVICE}", "red"))
+    print(colored(f"Running on {torch.cuda.device_count()} GPUs.", "cyan"))
 
-    print("Loading Dataset")
+    print(colored("Loading Dataset...", 'cyan'))
 
     train_loader, nb_pers = get_data_loader()
-
+    print(colored("Dataset Ok", "green"))
     print("Loading Models & Losses")
+    print(colored("Loading Models", "cyan"))
     emb, gen, disc = load_models(nb_pers)
+    print(colored("Models Ok", "green"))
+    print(colored("Loading Losses", "cyan"))
     advLoss, mchLoss, cntLoss, dscLoss = load_losses()
+    print(colored("Losses Ok", "green"))
 
     optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
@@ -71,12 +75,12 @@ if __name__ == '__main__':
         print("Epoch ! Epoch ! Epooooooch !!")
 
         for i_batch, batch in enumerate(tqdm(train_loader)):
-
+            step = (i_epoch * (BATCH_SIZE*len(train_loader))) + i_batch
             optimizerEmb.zero_grad()
             optimizerDisc.zero_grad()
             optimizerGen.zero_grad()
 
-            gt_im, gt_landmarks, context, itemIds, context_name = batch
+            gt_im, gt_landmarks, context, itemIds = batch
 
             gt_im = gt_im.to(DEVICE)
             gt_landmarks = gt_landmarks.to(DEVICE)
@@ -107,10 +111,14 @@ if __name__ == '__main__':
 
             lossDsc = dscLoss(score_gt, score_synth)
 
-            loss = lossAdv + lossCnt + lossMch
+            loss = lossAdv + lossMch + lossCnt
 
             if TTUR:
                 if i_batch % 3 == 0 or i_batch % 3 == 1:
+                    for param in emb.parameters():
+                        param.requires_grad = False
+                    for param in gen.parameters():
+                        param.requires_grad = False
                     ones_grad = torch.ones(torch.cuda.device_count(),
                                            dtype=(torch.half if HALF
                                                   else torch.float),
@@ -121,8 +129,14 @@ if __name__ == '__main__':
 
                     check.save("disc", lossDsc.mean(), emb, gen, disc)
                     # print(lossDsc)
-                    wandb.log({"Loss_dsc": lossDsc.mean()})
+                    wandb.log({"Loss_dsc": lossDsc.mean()}, step=step)
+                    for param in emb.parameters():
+                        param.requires_grad = True
+                    for param in gen.parameters():
+                        param.requires_grad = True
                 else:
+                    for param in disc.parameters():
+                        param.requires_grad = False
                     ones_grad = torch.ones(torch.cuda.device_count(),
                                            dtype=(torch.half if HALF
                                                   else torch.float),
@@ -133,10 +147,12 @@ if __name__ == '__main__':
                     optimizerGen.step()
 
                     check.save("embGen", loss.mean(), emb, gen, disc)
-                    wandb.log({"lossCnt": lossCnt.mean()})
-                    wandb.log({"lossMch": lossMch.mean()})
-                    wandb.log({"lossAdv": lossAdv.mean()})
-                    wandb.log({"LossTot": loss.mean()})
+                    wandb.log({"lossCnt": lossCnt.mean()}, step=step)
+                    wandb.log({"lossMch": lossMch.mean()}, step=step)
+                    wandb.log({"lossAdv": lossAdv.mean()}, step=step)
+                    wandb.log({"LossTot": loss.mean()}, step=step)
+                    for param in disc.parameters():
+                        param.requires_grad = True
                     # print(lossCnt)
                     # print(lossMch)
                     # print(lossAdv)
@@ -157,22 +173,21 @@ if __name__ == '__main__':
                 check.save("embGen", loss.mean(), emb, gen, disc)
                 check.save("disc", loss.mean(), emb, gen, disc)
 
-                wandb.log({"Loss_dsc": lossDsc.mean()})
-                wandb.log({"lossCnt": lossCnt.mean()})
-                wandb.log({"lossMch": lossMch.mean()})
-                wandb.log({"lossAdv": lossAdv.mean()})
-                wandb.log({"LossTot": loss.mean()})
+                wandb.log({"Loss_dsc": lossDsc.mean()}, step=step)
+                wandb.log({"lossCnt": lossCnt.mean()}, step=step)
+                wandb.log({"lossMch": lossMch.mean()}, step=step)
+                wandb.log({"lossAdv": lossAdv.mean()}, step=step)
+                wandb.log({"LossTot": loss.mean()}, step=step)
 
             if i_batch % (len(train_loader)//2) == 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
                                            dim=1).view(-1, 3, 224, 224)
-
                 grid = torchvision.utils.make_grid(
                     images_to_grid, padding=4, nrow=3 + 2*K_SHOT,
                     normalize=True, scale_each=True)
-
-                wandb.log({"Img": [wandb.Image(grid, caption="image")]})
+                wandb.log({"Img": [wandb.Image(grid, caption="image")]},
+                          step=step)
                 if platform.system() != "Windows":
                     wandb.save(PATH_WEIGHTS_EMBEDDER)
                     wandb.save(PATH_WEIGHTS_GENERATOR)

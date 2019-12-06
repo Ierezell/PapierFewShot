@@ -1,10 +1,9 @@
-import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 from torch.nn.utils import spectral_norm
-import torch.nn.functional as F
 
-from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF, DEVICE
+from settings import ATTENTION, BATCH_SIZE, CONCAT, DEVICE, HALF, LATENT_SIZE
 from utils import load_layers
 
 (ResidualBlock,
@@ -36,17 +35,23 @@ class BigEmbedder(nn.Module):
         fully connected are used to grow the 1*512 to the size of the generator
         """
         super(BigEmbedder, self).__init__()
-        self.residual1 = ResidualBlock(6, 64)  # 64, 224, 224
-        self.residual2 = ResidualBlockDown(64, 128)  # 128, 112, 112
-        self.residual3 = ResidualBlockDown(128, 256)  # 256, 64, 64
-        self.attention1 = Attention(256)
-        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 512 , 32, 32
-        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 5,16,16
-        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512,7,7
-        self.attention2 = Attention(LATENT_SIZE)
+        self.residual1 = ResidualBlockDown(6, 64)  # 64, 112, 112
+        self.residual2 = ResidualBlockDown(64, 128)  # 128, 56, 56
+        self.residual3 = ResidualBlockDown(128, 256)  # 256, 28, 28
+        if ATTENTION:
+            self.attention1 = Attention(256)
+        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # lt , 14, 14
+        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # lt,7,7
+        # self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # lt,7,7
+        if ATTENTION:
+            self.attention2 = Attention(LATENT_SIZE)
+        if LATENT_SIZE == 256:
+            self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 3475))
+            self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 3475))
+        elif LATENT_SIZE == 512:
+            self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 6163))
+            self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 6163))
 
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
         self.relu = nn.SELU()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
@@ -67,46 +72,46 @@ class BigEmbedder(nn.Module):
             layerUp0 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 7, 7),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-            layerUp1 = torch.zeros((BATCH_SIZE, 512, 14, 14),
+            layerUp1 = torch.zeros((BATCH_SIZE, LATENT_SIZE, 14, 14),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-            layerUp2 = torch.zeros((BATCH_SIZE, 256, 14, 14),
+            layerUp2 = torch.zeros((BATCH_SIZE, 256, 28, 28),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
-            layerUp3 = torch.zeros((BATCH_SIZE, 128, 28, 28),
+            layerUp3 = torch.zeros((BATCH_SIZE, 128, 56, 56),
                                    dtype=(torch.half if HALF else torch.float),
                                    device=DEVICE)
         else:
             layerUp0, layerUp1, layerUp2, layerUp3 = None, None, None, None
+
         for i in range(x.size(1)//6):
             out = self.residual1(x.narrow(1, i*6, 6))  # b, 64, 112, 112
 
             out = self.residual2(out)  # b, 128, 56, 56
             out = self.relu(out)
+            if CONCAT:
+                layerUp3 = torch.add(out, layerUp3)
 
             out = self.residual3(out)  # b, 128, 56, 56
             out = self.relu(out)
 
-            out = self.attention1(out)  # b, 128, 56, 56
-            out = self.relu(out)
+            if ATTENTION:
+                out = self.attention1(out)  # b, 128, 56, 56
+                out = self.relu(out)
             if CONCAT:
-                layerUp3 = torch.add(out, layerUp3)
+                layerUp2 = torch.add(out, layerUp2)
 
             out = self.residual4(out)  # b, 256, 28, 28
             out = self.relu(out)
             if CONCAT:
-                layerUp2 = torch.add(out, layerUp2)
+                layerUp1 = torch.add(out, layerUp1)
 
             out = self.residual5(out)  # b, 512, 14, 14
             out = self.relu(out)
-            if CONCAT:
-                layerUp1 = torch.add(out, layerUp1)
 
-            out = self.residual6(out)  # b, 512, 14, 14
-            out = self.relu(out)
-
-            out = self.attention2(out)  # b, 512, 14, 14
-            out = self.relu(out)
+            if ATTENTION:
+                out = self.attention2(out)  # b, 512, 14, 14
+                out = self.relu(out)
             if CONCAT:
                 layerUp0 = torch.add(out, layerUp0)
 
@@ -151,30 +156,44 @@ class BigGenerator(nn.Module):
         super(BigGenerator, self).__init__()
         # Down
         # self.ResDown1 = ResidualBlockDown(3, 64)
-        self.ResDown1 = ResidualBlockDown(3, 64)  # 64, 224, 224
-        self.ResDown2 = ResidualBlockDown(64, 128)  # 128, 112, 112
-        self.ResDown3 = ResidualBlockDown(128, 256)  # 256, 64, 64
-        self.attentionDown = Attention(256)
-        self.ResDown4 = ResidualBlockDown(256, LATENT_SIZE)  # 512, 32, 32
-        # self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE) # 512, 16, 16
-        # self.ResDown5 = ResidualBlockDown(256, LATENT_SIZE) # 512, 7, 7
+        self.ResDown1 = ResidualBlockDown(3, 64)  # 64, 112, 112
+        self.ResDown2 = ResidualBlockDown(64, 128)  # 128, 56, 56
+        self.ResDown3 = ResidualBlockDown(128, 256)  # 256, 28, 28
+        if ATTENTION:
+            self.attentionDown = Attention(256)
+        self.ResDown4 = ResidualBlockDown(256, LATENT_SIZE)  # lt, 14, 14
+        self.ResDown5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # lt, 7, 7
         # Constant
-        self.ResBlock_1 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
-        self.ResBlock_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
-        self.attention1 = Attention(LATENT_SIZE)
-        self.ResBlock_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
-        self.ResBlock_4 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512,32,32
+        self.ResBlock_1 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # lt,7,7
+        self.ResBlock_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # lt,7,7
+        if ATTENTION:
+            self.attention1 = Attention(LATENT_SIZE)
+        self.ResBlock_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # lt,7,7
+        self.ResBlock_4 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # lt,7,7
         self.attention2 = Attention(LATENT_SIZE)
         # Up
-        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)   # 256,64,64
-        self.ResUp2 = ResidualBlockUp(256, 128)   # 128,64,64
-        self.attentionUp1 = Attention(128)
-        self.ResUp3 = ResidualBlockUp(128, 64)  # 64, 112, 112
-        self.ResUp4 = ResidualBlockUp(64, 3)  # 3, 224, 224
-        self.attentionUp2 = Attention(3)
+        self.ResUp0 = ResidualBlockUp(LATENT_SIZE, LATENT_SIZE)   # lt,14,14
+        self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)   # 256,28,28
+        self.ResUp2 = ResidualBlockUp(256, 128)   # 128,28,28
+        if ATTENTION:
+            self.attentionUp1 = Attention(128)
+        self.ResUp3 = ResidualBlockUp(128, 64)  # 64, 56, 56
+        self.ResUp4 = ResidualBlockUp(64, 3)  # 3, 112, 112
+        if ATTENTION:
+            self.attentionUp2 = Attention(3)
         self.conv = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
         self.relu = nn.SELU()
         self.tanh = nn.Tanh()
+
+        if CONCAT:
+            self.Ada0 = spectral_norm(
+                nn.Conv2d(LATENT_SIZE*2, LATENT_SIZE, kernel_size=3, padding=1))
+            self.Ada1 = spectral_norm(
+                nn.Conv2d(LATENT_SIZE*2, LATENT_SIZE, kernel_size=3, padding=1))
+            self.Ada2 = spectral_norm(
+                nn.Conv2d(256*2, 256, kernel_size=3, padding=1))
+            self.Ada3 = spectral_norm(
+                nn.Conv2d(128*2, 128, kernel_size=3, padding=1))
 
     def forward(self, img, pWeights, pBias, layersUp):
         """
@@ -210,11 +229,15 @@ class BigGenerator(nn.Module):
         x = self.ResDown3(x)
         x = self.relu(x)
         # print("ResDown3  ", x.size())
-
-        x = self.attentionDown(x)
-        x = self.relu(x)
+        if ATTENTION:
+            x = self.attentionDown(x)
+            x = self.relu(x)
 
         x = self.ResDown4(x)
+        x = self.relu(x)
+        # print("ResDown4  ", x.size())
+
+        x = self.ResDown5(x)
         x = self.relu(x)
         # print("ResDown4  ", x.size())
 
@@ -237,8 +260,9 @@ class BigGenerator(nn.Module):
         # print("ResBlock_2  ", x.size())
         i += nb_params
 
-        x = self.attention1(x)
-        x = self.relu(x)
+        if ATTENTION:
+            x = self.attention1(x)
+            x = self.relu(x)
 
         nb_params = self.ResBlock_3.params
         x = self.ResBlock_3(x, w=pWeights.narrow(-1, i, nb_params),
@@ -254,12 +278,29 @@ class BigGenerator(nn.Module):
         # print("ResBlock_4  ", x.size())
         i += nb_params
 
-        x = self.attention2(x)
-        x = self.relu(x)
+        if ATTENTION:
+            x = self.attention2(x)
+            x = self.relu(x)
 
         # ####
         # UP #
         # ####
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp0), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada0(x)
+
+        nb_params = self.ResUp0.params
+        x = self.ResUp0(x, w=pWeights.narrow(-1, i, nb_params),
+                        b=pBias.narrow(-1, i, nb_params))
+        x = self.relu(x)
+        # print("Res0  ", x.size())
+        i += nb_params
+
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp1), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada1(x)
 
         nb_params = self.ResUp1.params
         x = self.ResUp1(x, w=pWeights.narrow(-1, i, nb_params),
@@ -268,15 +309,25 @@ class BigGenerator(nn.Module):
         # print("Res1  ", x.size())
         i += nb_params
 
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp2), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada2(x)
+
         nb_params = self.ResUp2.params
         x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
                         b=pBias.narrow(-1, i, nb_params))
         x = self.relu(x)
         # print("ResUp2  ", x.size())
         i += nb_params
+        if ATTENTION:
+            x = self.attentionUp1(x)
+            x = self.relu(x)
 
-        x = self.attentionUp1(x)
-        x = self.relu(x)
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp3), dim=1)
+            # print("cat3", x.size())
+            x = self.Ada3(x)
 
         nb_params = self.ResUp3.params
         x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
@@ -292,14 +343,18 @@ class BigGenerator(nn.Module):
         # print("Res4  ", x.size())
         i += nb_params
 
-        x = self.attentionUp2(x)
-        x = self.relu(x)
-        w = pWeights.narrow(-1, 0, 3) 
-        b = pBias.narrow(-1, 0, 3)
+        if ATTENTION:
+            x = self.attentionUp2(x)
+            x = self.relu(x)
 
-        x = F.instance_norm(x)
-        x = w.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        x = x + b.unsqueeze(-1).unsqueeze(-1).expand_as(x)
+        wf = pWeights.narrow(-1, 0, 3)
+        bf = pBias.narrow(-1, 0, 3)
+        i += 3
+
+        t = torch.zeros_like(x)
+        for i in range(x.size(0)):
+            t[i] = F.instance_norm(x[i].unsqueeze(0), weight=wf[i], bias=bf[i])
+        x = t
 
         x = self.relu(x)
         x = self.conv(x)

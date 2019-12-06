@@ -30,13 +30,13 @@ DATASET:
 
 CONCAT:
   # "first", "last", ""
-  value: "last"
+  value: ""
 
 LEARNING_RATE_EMB:
-  value: 0.000005
+  value: 0.00005
 
 LEARNING_RATE_GEN:
-  value: 0.000005
+  value: 0.00005
 
 LEARNING_RATE_DISC:
   value: 0.00005
@@ -86,4 +86,4 @@ MAX_ITER_PERSON:
 
 IN_DISC:
   # "noisy", ""
-  value : ""
+  value : "noisy"

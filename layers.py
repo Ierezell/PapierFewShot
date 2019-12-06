@@ -79,7 +79,6 @@ class ResidualBlock(nn.Module):
     def forward(self, x, w, b):
         w1 = w.narrow(-1, 0, self.in_channels)
         w2 = w.narrow(-1, self.in_channels, self.out_channels)
-
         b1 = b.narrow(-1, 0, self.in_channels)
         b2 = b.narrow(-1, self.in_channels, self.out_channels)
 

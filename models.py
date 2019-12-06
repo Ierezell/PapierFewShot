@@ -1,10 +1,9 @@
-from settings import BATCH_SIZE, LATENT_SIZE, CONCAT, HALF, DEVICE
-import numpy as np
-from settings import LATENT_SIZE, BATCH_SIZE, CONCAT, DEVICE, HALF, ATTENTION
-from torch.nn.utils import spectral_norm
-from torch import nn
 import torch
 import torch.nn.functional as F
+from torch import nn
+from torch.nn.utils import spectral_norm
+
+from settings import ATTENTION, BATCH_SIZE, CONCAT, DEVICE, HALF, LATENT_SIZE
 from utils import load_layers
 
 (ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention) = load_layers()
@@ -196,6 +195,8 @@ class Generator(nn.Module):
         but I will do it later, it's easier to debug this way)
         """
         layerUp1, layerUp2, layerUp3, layerUp4 = layersUp
+        pWeights = pWeights.view(img.size(0), -1)
+        pBias = pBias.view(img.size(0), -1)
         # print("L3 ", layerUp3.size())
         # print("L2 ", layerUp2.size())
         # print("L1 ", layerUp1.size())
@@ -233,7 +234,7 @@ class Generator(nn.Module):
         # CONSTANT #
         # ##########
         i = 0
-
+        # print(pWeights.size())
         nb_params = self.ResBlock_1.params
         x = self.ResBlock_1(x, w=pWeights.narrow(-1, i, nb_params),
                             b=pBias.narrow(-1, i, nb_params))
