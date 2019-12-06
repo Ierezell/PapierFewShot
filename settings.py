@@ -152,13 +152,12 @@ else:
 
 # Save
 PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+folder_weights
-"./weights/top_small/"
-# PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
-# PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
-# PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
+PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
+PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
+PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
 
-PATH_WEIGHTS_EMBEDDER = "./weights/top_small/"+'Embedder.pt'
-PATH_WEIGHTS_GENERATOR = "./weights/top_small/"+'Generator.pt'
-PATH_WEIGHTS_DISCRIMINATOR = "./weights/top_small/" + 'Discriminator.pt'
+# PATH_WEIGHTS_EMBEDDER = "./weights/top_small/"+'Embedder.pt'
+# PATH_WEIGHTS_GENERATOR = "./weights/top_small/"+'Generator.pt'
+# PATH_WEIGHTS_DISCRIMINATOR = "./weights/top_small/" + 'Discriminator.pt'
 print(folder_weights)

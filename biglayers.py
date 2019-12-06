@@ -274,7 +274,8 @@ class BigResidualBlockUp(nn.Module):
         out = self.conv2(out)
 
         out = F.instance_norm(out)
-        out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
+        out = w3.unsqueeze(-1).unsqueeze(-1).expand_a
+        s(out) * out
         out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)

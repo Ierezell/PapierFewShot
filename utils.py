@@ -155,9 +155,9 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
     discriminator = discriminator.to(DEVICE)
 
     if freeze:
-        # embedder = embedder.eval()
-        # discriminator = discriminator.eval()
-        # generator = generator.eval()
+        embedder = embedder.eval()
+        discriminator = discriminator.eval()
+        generator = generator.eval()
         for param in discriminator.parameters():
             param.requires_grad = False
         for param in generator.parameters():
