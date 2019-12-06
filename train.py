@@ -13,7 +13,7 @@ from tqdm import tqdm, trange
 from preprocess import get_data_loader
 from settings import (DEVICE, HALF, IN_DISC, K_SHOT, LEARNING_RATE_DISC,
                       LEARNING_RATE_EMB, LEARNING_RATE_GEN, NB_EPOCHS,
-                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR,
+                      PARALLEL, PATH_WEIGHTS_DISCRIMINATOR, BATCH_SIZE,
                       PATH_WEIGHTS_EMBEDDER, PATH_WEIGHTS_GENERATOR, TTUR)
 from utils import (CheckpointsFewShots, load_losses, load_models, print_device,
                    print_parameters)
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         print("Epoch ! Epoch ! Epooooooch !!")
 
         for i_batch, batch in enumerate(tqdm(train_loader)):
-
+            step = (i_epoch * (BATCH_SIZE*len(train_loader))) + i_batch
             optimizerEmb.zero_grad()
             optimizerDisc.zero_grad()
             optimizerGen.zero_grad()
@@ -115,6 +115,10 @@ if __name__ == '__main__':
 
             if TTUR:
                 if i_batch % 3 == 0 or i_batch % 3 == 1:
+                    for param in emb.parameters():
+                        param.requires_grad = False
+                    for param in gen.parameters():
+                        param.requires_grad = False
                     ones_grad = torch.ones(torch.cuda.device_count(),
                                            dtype=(torch.half if HALF
                                                   else torch.float),
@@ -125,8 +129,14 @@ if __name__ == '__main__':
 
                     check.save("disc", lossDsc.mean(), emb, gen, disc)
                     # print(lossDsc)
-                    wandb.log({"Loss_dsc": lossDsc.mean()})
+                    wandb.log({"Loss_dsc": lossDsc.mean()}, step=step)
+                    for param in emb.parameters():
+                        param.requires_grad = True
+                    for param in gen.parameters():
+                        param.requires_grad = True
                 else:
+                    for param in disc.parameters():
+                        param.requires_grad = False
                     ones_grad = torch.ones(torch.cuda.device_count(),
                                            dtype=(torch.half if HALF
                                                   else torch.float),
@@ -137,10 +147,12 @@ if __name__ == '__main__':
                     optimizerGen.step()
 
                     check.save("embGen", loss.mean(), emb, gen, disc)
-                    wandb.log({"lossCnt": lossCnt.mean()})
-                    wandb.log({"lossMch": lossMch.mean()})
-                    wandb.log({"lossAdv": lossAdv.mean()})
-                    wandb.log({"LossTot": loss.mean()})
+                    wandb.log({"lossCnt": lossCnt.mean()}, step=step)
+                    wandb.log({"lossMch": lossMch.mean()}, step=step)
+                    wandb.log({"lossAdv": lossAdv.mean()}, step=step)
+                    wandb.log({"LossTot": loss.mean()}, step=step)
+                    for param in disc.parameters():
+                        param.requires_grad = True
                     # print(lossCnt)
                     # print(lossMch)
                     # print(lossAdv)
@@ -161,11 +173,11 @@ if __name__ == '__main__':
                 check.save("embGen", loss.mean(), emb, gen, disc)
                 check.save("disc", loss.mean(), emb, gen, disc)
 
-                wandb.log({"Loss_dsc": lossDsc.mean()}, step=i_batch)
-                wandb.log({"lossCnt": lossCnt.mean()}, step=i_batch)
-                wandb.log({"lossMch": lossMch.mean()}, step=i_batch)
-                wandb.log({"lossAdv": lossAdv.mean()}, step=i_batch)
-                wandb.log({"LossTot": loss.mean()}, step=i_batch)
+                wandb.log({"Loss_dsc": lossDsc.mean()}, step=step)
+                wandb.log({"lossCnt": lossCnt.mean()}, step=step)
+                wandb.log({"lossMch": lossMch.mean()}, step=step)
+                wandb.log({"lossAdv": lossAdv.mean()}, step=step)
+                wandb.log({"LossTot": loss.mean()}, step=step)
 
             if i_batch % (len(train_loader)//2) == 0:
                 images_to_grid = torch.cat((gt_landmarks, synth_im,
@@ -174,7 +186,8 @@ if __name__ == '__main__':
                 grid = torchvision.utils.make_grid(
                     images_to_grid, padding=4, nrow=3 + 2*K_SHOT,
                     normalize=True, scale_each=True)
-                wandb.log({"Img": [wandb.Image(grid, caption="image")]})
+                wandb.log({"Img": [wandb.Image(grid, caption="image")]},
+                          step=step)
                 if platform.system() != "Windows":
                     wandb.save(PATH_WEIGHTS_EMBEDDER)
                     wandb.save(PATH_WEIGHTS_GENERATOR)

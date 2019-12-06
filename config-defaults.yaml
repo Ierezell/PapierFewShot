@@ -42,7 +42,7 @@ LEARNING_RATE_DISC:
   value: 0.00005
 
 TTUR:
-  value : False
+  value : True
 
 ATTENTION : 
   value : True
