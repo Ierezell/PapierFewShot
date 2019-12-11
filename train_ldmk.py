@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+from shutil import copyfile
 
 import numpy as np
 import torch
@@ -16,7 +17,7 @@ from torchvision.utils import save_image
 from tqdm import tqdm
 
 from preprocess_ldmk import get_data_loader
-from settings import IMAGE_SIZE
+from settings import DEVICE, IMAGE_SIZE, PARALLEL
 
 cuda = True if torch.cuda.is_available() else False
 wandb.init(project="papier_few_shot", entity="plop")
@@ -98,24 +99,65 @@ adversarial_loss = torch.nn.BCELoss()
 generator = Generator()
 discriminator = Discriminator()
 
-if cuda:
-    generator.cuda()
-    discriminator.cuda()
-    adversarial_loss.cuda()
+generator = generator.to(DEVICE)
+discriminator = discriminator.to(DEVICE)
+adversarial_loss = adversarial_loss.to(DEVICE)
 
-if os.path.exists(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt"):
-    discriminator.load_state_dict(torch.load(
-        f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt"))
-    generator.load_state_dict(torch.load(
-        f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt"))
-else:
-    # Initialize weights
+if PARALLEL:
+    generator = nn.DataParallel(
+        generator, device_ids=range(torch.cuda.device_count()))
+    discriminator = nn.DataParallel(
+        discriminator, device_ids=range(torch.cuda.device_count()))
+
+try:
+    if PARALLEL:
+        generator.module.load_state_dict(torch.load(
+            f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt",
+            map_location=DEVICE))
+    else:
+        generator.load_state_dict(torch.load(
+            f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt",
+            map_location=DEVICE))
+except RuntimeError:
+    if PARALLEL:
+        generator.module.load_state_dict(
+            torch.load(f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk",
+                       map_location=DEVICE))
+    else:
+        generator.load_state_dict(
+            torch.load(f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk",
+                       map_location=DEVICE))
+except FileNotFoundError:
     generator.apply(weights_init_normal)
+    print("\tFile not found, not loading weights generator...")
+
+try:
+    if PARALLEL:
+        discriminator.module.load_state_dict(torch.load(
+            f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt",
+            map_location=DEVICE))
+    else:
+        discriminator.load_state_dict(torch.load(
+            f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt",
+            map_location=DEVICE))
+except RuntimeError:
+    if PARALLEL:
+        discriminator.module.load_state_dict(
+            torch.load(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk",
+                       map_location=DEVICE))
+    else:
+        discriminator.load_state_dict(
+            torch.load(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk",
+                       map_location=DEVICE))
+except FileNotFoundError:
     discriminator.apply(weights_init_normal)
+    print("\tFile not found, not loading weights discriminator...")
+
+
+# Initialize weights
 wandb.watch((generator, discriminator))
 
 # Configure data loader
-os.makedirs("../../data/mnist", exist_ok=True)
 dataloader, _ = get_data_loader()
 # Optimizers
 optimizer_G = torch.optim.Adam(
@@ -191,6 +233,10 @@ for epoch in range(999):
                   step=batches_done)
 
         torch.save(generator.state_dict(),
-                   f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt")
+                   f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk")
         torch.save(discriminator.state_dict(),
-                   f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt")
+                   f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk")
+        copyfile(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk",
+                 f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt")
+        copyfile(f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk",
+                 f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt")

@@ -91,6 +91,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
                     torch.load(path_embedder.replace(".pt", ".bk"),
                                map_location=DEVICE))
         except FileNotFoundError:
+            embedder.apply(weight_init)
             print(colored("\tFile not found, not loading weights embedder...", 'red'))
         try:
             if PARALLEL:
@@ -112,6 +113,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
                     torch.load(path_generator.replace(".pt", ".bk"),
                                map_location=DEVICE))
         except FileNotFoundError:
+            generator.apply(weight_init)
             print(colored("\tFile not found, not loading weights generator...", 'red'))
 
         try:
@@ -126,6 +128,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
         except FileNotFoundError:
             print(
                 colored("\tFile not found, not loading weights discriminator...", 'red'))
+            discriminator.apply(weight_init)
             weight_disc = False
 
         if weight_disc:

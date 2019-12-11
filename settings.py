@@ -56,22 +56,24 @@ if LOADER == "json":
         ROOT_DATASET = './dataset/jsonDataset'
     ROOT_FINE_TUNING_DATASET = './dataset/fine_tuning'
 
+IMAGE_SIZE = (224, 224)
 # Batch
 if "blg" in PLATFORM:
     if MODEL == "small":
         BATCH_SIZE = 8
     elif MODEL == "big":
         BATCH_SIZE = 4
+    BATCH_SIZE_LDMK = 4
 elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
     if MODEL == "small":
         BATCH_SIZE = 4
     elif MODEL == "big":
         BATCH_SIZE = 4
+    BATCH_SIZE_LDMK = 4
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 1
     BATCH_SIZE_LDMK = 4
-    IMAGE_SIZE = (224, 224)
     K_SHOT = 6
     LATENT_SIZE = 256
     NB_WORKERS = 12
@@ -80,6 +82,10 @@ elif "Arc" in PLATFORM:
 LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
                                 if torch.cuda.is_available()
                                 else 1)
+
+LOAD_BATCH_SIZE_LDMK = BATCH_SIZE_LDMK * (torch.cuda.device_count()
+                                          if torch.cuda.is_available()
+                                          else 1)
 
 
 ###############

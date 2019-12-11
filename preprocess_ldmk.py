@@ -16,8 +16,8 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
-from settings import (BATCH_SIZE_LDMK, DEVICE, HALF, IMAGE_SIZE, K_SHOT,
-                      LOAD_BATCH_SIZE, LOADER, NB_WORKERS, ROOT_DATASET,
+from settings import (DEVICE, HALF, IMAGE_SIZE, K_SHOT, LOAD_BATCH_SIZE,
+                      LOAD_BATCH_SIZE_LDMK, LOADER, NB_WORKERS, ROOT_DATASET,
                       ROOT_WEIGHTS)
 
 
@@ -137,8 +137,8 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS,
     if loader == "json":
         datas = ldmkLoader(root_dir=root_dir, K_shots=K_shots)
     pin = False if DEVICE.type == 'cpu' else True
-    train_loader = DataLoader(datas, batch_size=BATCH_SIZE_LDMK, shuffle=True,
-                              num_workers=workers, pin_memory=pin,
+    train_loader = DataLoader(datas, batch_size=LOAD_BATCH_SIZE_LDMK,
+                              shuffle=True, num_workers=workers, pin_memory=pin,
                               drop_last=True)
 
     return train_loader, len(datas.ids)

@@ -380,7 +380,7 @@ class Discriminator(nn.Module):
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
         self.relu = nn.SELU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
-        self.sig = nn.Sigmoid()
+        self.tanh = nn.Tanh()
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x, indexes):
@@ -399,5 +399,5 @@ class Discriminator(nn.Module):
         final_out += condition.view(final_out.size())
         final_out = final_out.view(b.size())
         final_out += b
-        final_out = self.sig(final_out)
+        final_out = self.tanh(final_out)
         return final_out
