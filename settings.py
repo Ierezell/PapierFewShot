@@ -7,7 +7,7 @@ import wandb
 
 PLATFORM = platform.node()[:3]
 
-if ("blg" in PLATFORM) or ("gpu" in PLATFORM) or ("Arc" in PLATFORM):
+if ("blg" in PLATFORM) or ("gpu" in PLATFORM):  # or ("Arc" in PLATFORM):
     os.environ['WANDB_MODE'] = 'dryrun'
 
 wandb.init(project="papier_few_shot", entity="plop", reinit=True)
@@ -69,7 +69,7 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
         BATCH_SIZE = 4
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
-    BATCH_SIZE = 1
+    BATCH_SIZE = 4
     K_SHOT = 6
     LATENT_SIZE = 256
     NB_WORKERS = 12

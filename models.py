@@ -321,6 +321,7 @@ class Generator(nn.Module):
 
         x = self.relu(x)
         x = self.conv1(x)
+        x = self.relu(x)
         x = self.conv2(x)
         x = self.tanh(x)
         # print("Nb_param   ", i)

@@ -274,24 +274,29 @@ class BigResidualBlockUp(nn.Module):
 
         self.relu = nn.SELU()
 
-    def forward(self, x, w, b):
-        w1 = w.narrow(-1, 0, self.in_channels)
-        b1 = b.narrow(-1, 0, self.in_channels)
-        w2 = w.narrow(-1, self.in_channels, self.temp_channels)
-        b2 = b.narrow(-1, self.in_channels, self.temp_channels)
-        w3 = w.narrow(-1, self.in_channels +
-                      self.temp_channels, self.temp_channels)
-        b3 = b.narrow(-1, self.in_channels +
-                      self.temp_channels, self.temp_channels)
-        w4 = w.narrow(-1, self.in_channels+2 *
-                      self.temp_channels, self.temp_channels)
-        b4 = b.narrow(-1, self.in_channels+2 *
-                      self.temp_channels, self.temp_channels)
-        t = torch.zeros_like(x)
-        for i in range(x.size(0)):
-            t[i] = F.instance_norm(x[i].unsqueeze(0),
-                                   weight=w1[i], bias=b1[i])
-        x = t
+    def forward(self, x, w=None, b=None):
+        if w is not None and b is not None:
+            w1 = w.narrow(-1, 0, self.in_channels)
+            b1 = b.narrow(-1, 0, self.in_channels)
+            w2 = w.narrow(-1, self.in_channels, self.temp_channels)
+            b2 = b.narrow(-1, self.in_channels, self.temp_channels)
+            w3 = w.narrow(-1, self.in_channels +
+                          self.temp_channels, self.temp_channels)
+            b3 = b.narrow(-1, self.in_channels +
+                          self.temp_channels, self.temp_channels)
+            w4 = w.narrow(-1, self.in_channels+2 *
+                          self.temp_channels, self.temp_channels)
+            b4 = b.narrow(-1, self.in_channels+2 *
+                          self.temp_channels, self.temp_channels)
+
+        if w is not None and b is not None:
+            t = torch.zeros_like(x)
+            for i in range(x.size(0)):
+                t[i] = F.instance_norm(x[i].unsqueeze(0),
+                                       weight=w1[i], bias=b1[i])
+            x = t
+        else:
+            x = F.instance_norm(x)
         # norm1 = torch.nn.InstanceNorm2d()
         residual = x
         residual = self.adaDim(self.upsample(residual))
@@ -301,32 +306,42 @@ class BigResidualBlockUp(nn.Module):
 
         out = self.relu(x)
         out = self.conv1(out)
-        t = torch.zeros_like(out)
-        for i in range(out.size(0)):
-            t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                   weight=w2[i], bias=b2[i])
-        out = t
+        if w is not None and b is not None:
+            t = torch.zeros_like(out)
+            for i in range(out.size(0)):
+                t[i] = F.instance_norm(out[i].unsqueeze(0),
+                                       weight=w2[i], bias=b2[i])
+            out = t
+        else:
+            out = F.instance_norm(out)
+
         # out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
         # out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.upsample(out)
         out = self.conv2(out)
-        t = torch.zeros_like(out)
-        for i in range(out.size(0)):
-            t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                   weight=w3[i], bias=b3[i])
-        out = t
+        if w is not None and b is not None:
+            t = torch.zeros_like(out)
+            for i in range(out.size(0)):
+                t[i] = F.instance_norm(out[i].unsqueeze(0),
+                                       weight=w3[i], bias=b3[i])
+            out = t
+        else:
+            out = F.instance_norm(out)
         # out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
         # out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
         out = self.relu(out)
         out = self.conv3(out)
-        t = torch.zeros_like(out)
-        for i in range(out.size(0)):
-            t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                   weight=w4[i], bias=b4[i])
-        out = t
+        if w is not None and b is not None:
+            t = torch.zeros_like(out)
+            for i in range(out.size(0)):
+                t[i] = F.instance_norm(out[i].unsqueeze(0),
+                                       weight=w4[i], bias=b4[i])
+            out = t
+        else:
+            out = F.instance_norm(out)
         # out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
         # out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 

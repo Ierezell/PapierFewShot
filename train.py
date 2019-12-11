@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
     optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
-    optimizerDisc = RMSprop(disc.parameters(), lr=LEARNING_RATE_DISC)
+    optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
 
     check = CheckpointsFewShots(len(train_loader))
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         print("Epoch ! Epoch ! Epooooooch !!")
 
         for i_batch, batch in enumerate(tqdm(train_loader)):
-            step = (i_epoch * (BATCH_SIZE*len(train_loader))) + i_batch
+            step = (i_epoch * len(train_loader)) + i_batch
             optimizerEmb.zero_grad()
             optimizerDisc.zero_grad()
             optimizerGen.zero_grad()
