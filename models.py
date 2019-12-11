@@ -357,14 +357,24 @@ class Discriminator(nn.Module):
             on one unknown person (variables are differents).
         """
         super().__init__()
-        self.residual1 = ResidualBlock(6, 64)  # 224
-        self.residual2 = ResidualBlockDown(64, 128)  # 224
-        self.residual3 = ResidualBlockDown(128, 256)  # 112
-        self.attention1 = Attention(256)
-        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 66
-        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 33
-        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 16
-        self.attention2 = Attention(LATENT_SIZE)
+        self.conv = nn.Sequential(
+            ResidualBlock(6, 64),
+            nn.SELU(inplace=True),
+            ResidualBlockDown(64, 128),
+            nn.SELU(inplace=True),
+            ResidualBlockDown(128, 256),
+            nn.SELU(inplace=True),
+            Attention(256),
+            nn.SELU(inplace=True),
+            ResidualBlockDown(256, LATENT_SIZE),
+            nn.SELU(inplace=True),
+            ResidualBlockDown(LATENT_SIZE, LATENT_SIZE),
+            nn.SELU(inplace=True),
+            ResidualBlockDown(LATENT_SIZE, LATENT_SIZE),
+            nn.SELU(inplace=True),
+            Attention(LATENT_SIZE),
+            nn.SELU(inplace=True)
+        )
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
@@ -374,49 +384,10 @@ class Discriminator(nn.Module):
         self.avgPool = nn.AvgPool2d(kernel_size=7)
 
     def forward(self, x, indexes):
-        features_maps = []
-        out = self.residual1(x)
-        # print("Out 1 ", out.size())
-        features_maps.append(out)
-
-        out = self.residual2(out)
-        out = self.relu(out)
-        # print("Out 2 ", out.size())
-        features_maps.append(out)
-
-        out = self.residual3(out)
-        out = self.relu(out)
-        # print("Out 3 ", out.size())
-        features_maps.append(out)
-
-        out = self.attention1(out)
-        out = self.relu(out)
-        features_maps.append(out)
-
-        out = self.residual4(out)
-        out = self.relu(out)
-        # print("Out 4 ", out.size())
-        features_maps.append(out)
-
-        out = self.residual5(out)
-        out = self.relu(out)
-        # print("Out 5 ", out.size())
-        features_maps.append(out)
-
-        out = self.residual6(out)
-        out = self.relu(out)
-        # print("Out 6 ", out.size())
-        features_maps.append(out)
-
-        out = self.attention2(out)
-        out = self.relu(out)
-        # print("Out 22 ", out.size())
-        features_maps.append(out)
-
+        out = self.conv(x)
         out = self.avgPool(out).squeeze()
         out = self.relu(out)
         final_out = self.fc(out)
-        features_maps.append(out)
 
         w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
         b = self.b.repeat(BATCH_SIZE)
@@ -429,4 +400,4 @@ class Discriminator(nn.Module):
         final_out = final_out.view(b.size())
         final_out += b
         final_out = self.sig(final_out)
-        return final_out, features_maps
+        return final_out

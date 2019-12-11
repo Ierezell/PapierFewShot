@@ -36,7 +36,7 @@ K_SHOT = wandb.config.K_SHOT
 MODEL = wandb.config.MODEL
 TTUR = wandb.config.TTUR
 HALF = wandb.config.HALF
-
+TTUR = False
 if platform.system() == "Windows":
     NB_WORKERS = 0
 
@@ -69,7 +69,7 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
         BATCH_SIZE = 4
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
-    BATCH_SIZE = 4
+    BATCH_SIZE = 1
     BATCH_SIZE_LDMK = 4
     IMAGE_SIZE = (224, 224)
     K_SHOT = 6
