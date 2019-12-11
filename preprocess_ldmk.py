@@ -1,4 +1,3 @@
-from PIL import Image
 import copy
 import glob
 import json
@@ -13,11 +12,13 @@ import numpy as np
 import torch
 import torchvision
 from face_alignment import FaceAlignment, LandmarksType
+from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
-from settings import (DEVICE, HALF, K_SHOT, LOAD_BATCH_SIZE, LOADER,
-                      NB_WORKERS, ROOT_DATASET, ROOT_WEIGHTS)
+from settings import (BATCH_SIZE_LDMK, DEVICE, HALF, IMAGE_SIZE, K_SHOT,
+                      LOAD_BATCH_SIZE, LOADER, NB_WORKERS, ROOT_DATASET,
+                      ROOT_WEIGHTS)
 
 
 def write_landmarks_on_image(image, landmarks):
@@ -119,10 +120,10 @@ class ldmkLoader(Dataset):
                 index = randint(0, len(self.context_names))
 
         gt_ldmk = dict_ldmk[frames[0]]
-        gt_ldmk_im = np.zeros((224, 224, 3), np.float32)
+        gt_ldmk_im = np.zeros((IMAGE_SIZE[0], IMAGE_SIZE[1], 3), np.float32)
         gt_ldmk_im = write_landmarks_on_image(gt_ldmk_im, gt_ldmk)
         gt_ldmk_im = transforms.ToPILImage()(gt_ldmk_im)
-        gt_ldmk_im = transforms.Resize((224, 224))(gt_ldmk_im)
+        gt_ldmk_im = transforms.Resize(IMAGE_SIZE)(gt_ldmk_im)
         gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
 
         return gt_ldmk_im_tensor, itemId
@@ -136,7 +137,7 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS,
     if loader == "json":
         datas = ldmkLoader(root_dir=root_dir, K_shots=K_shots)
     pin = False if DEVICE.type == 'cpu' else True
-    train_loader = DataLoader(datas, batch_size=8, shuffle=True,
+    train_loader = DataLoader(datas, batch_size=BATCH_SIZE_LDMK, shuffle=True,
                               num_workers=workers, pin_memory=pin,
                               drop_last=True)
 

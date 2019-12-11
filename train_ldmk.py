@@ -1,4 +1,3 @@
-import torchvision
 import argparse
 import math
 import os
@@ -7,16 +6,19 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 import torchvision.transforms as transforms
+import wandb
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.utils import save_image
-from preprocess_ldmk import get_data_loader
-import wandb
 from tqdm import tqdm
-cuda = True if torch.cuda.is_available() else False
 
+from preprocess_ldmk import get_data_loader
+from settings import IMAGE_SIZE
+
+cuda = True if torch.cuda.is_available() else False
 wandb.init(project="papier_few_shot", entity="plop")
 
 
@@ -33,7 +35,7 @@ class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
 
-        self.init_size = 224 // 4
+        self.init_size = IMAGE_SIZE[0] // 4
         self.l1 = nn.Sequential(
             nn.Linear(256, 128 * self.init_size ** 2))
 
@@ -77,7 +79,7 @@ class Discriminator(nn.Module):
         )
 
         # The height and width of downsampled image
-        ds_size = 224 // 2 ** 4
+        ds_size = IMAGE_SIZE[0] // 2 ** 4
         self.adv_layer = nn.Sequential(
             nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
 
@@ -101,10 +103,11 @@ if cuda:
     discriminator.cuda()
     adversarial_loss.cuda()
 
-if os.path.exists("./weights/ldmk/discriminator_224.pt"):
+if os.path.exists(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt"):
     discriminator.load_state_dict(torch.load(
-        "./weights/ldmk/discriminator_224.pt"))
-    generator.load_state_dict(torch.load("./weights/ldmk/generator_224.pt"))
+        f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt"))
+    generator.load_state_dict(torch.load(
+        f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt"))
 else:
     # Initialize weights
     generator.apply(weights_init_normal)
@@ -131,10 +134,10 @@ for epoch in range(999):
         if cuda:
             imgs = imgs.cuda()
         # Adversarial ground truths
-        valid = Variable(Tensor(imgs.shape[0], 1).fill_(
-            1.0), requires_grad=False)
-        fake = Variable(Tensor(imgs.shape[0], 1).fill_(
-            0.0), requires_grad=False)
+        valid = Variable(Tensor(imgs.shape[0], 1).fill_(1.0),
+                         requires_grad=False)
+        fake = Variable(Tensor(imgs.shape[0], 1).fill_(0.0),
+                        requires_grad=False)
 
         # Configure input
         real_imgs = Variable(imgs.type(Tensor))
@@ -165,9 +168,10 @@ for epoch in range(999):
             optimizer_D.zero_grad()
 
             # Measure discriminator's ability to classify real from generated samples
-            real_loss = adversarial_loss(discriminator(real_imgs), valid)
-            fake_loss = adversarial_loss(
-                discriminator(gen_imgs.detach()), fake)
+            real_loss = adversarial_loss(discriminator(real_imgs),
+                                         valid)
+            fake_loss = adversarial_loss(discriminator(gen_imgs.detach()),
+                                         fake)
             d_loss = (real_loss + fake_loss) / 2
 
             d_loss.backward()
@@ -177,14 +181,16 @@ for epoch in range(999):
         wandb.log({"d_loss": d_loss.item(), "g_loss": g_loss.item()},
                   step=batches_done)
     if epoch % 10 == 0:
-        images_to_grid = torch.cat((imgs, gen_imgs),
-                                   dim=1).view(-1, 3, 224, 224)
-        grid = torchvision.utils.make_grid(
-            images_to_grid, padding=4, nrow=2,
-            normalize=True, scale_each=True)
+        images_to_grid = torch.cat((imgs, gen_imgs), dim=1).view(
+            -1, 3, IMAGE_SIZE[0], IMAGE_SIZE[1])
+
+        grid = torchvision.utils.make_grid(images_to_grid, padding=4, nrow=2,
+                                           normalize=True, scale_each=True)
+
         wandb.log({"Img": [wandb.Image(grid, caption="image")]},
                   step=batches_done)
+
         torch.save(generator.state_dict(),
-                   "./weights/ldmk/generator_128.pt")
+                   f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt")
         torch.save(discriminator.state_dict(),
-                   "./weights/ldmk/discriminator_128.pt")
+                   f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt")
