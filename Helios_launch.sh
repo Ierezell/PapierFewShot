@@ -16,4 +16,4 @@ cd "${PBS_O_WORKDIR}"
 
 source ~/Pytorch_FewShot_Env/bin/activate
 
-python train.py
+python train_ldmk.py

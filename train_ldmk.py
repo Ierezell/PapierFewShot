@@ -163,7 +163,7 @@ dataloader, _ = get_data_loader()
 optimizer_G = torch.optim.Adam(
     generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 optimizer_D = torch.optim.Adam(
-    discriminator.parameters(), lr=0.00006, betas=(0.5, 0.999))
+    discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
@@ -188,36 +188,36 @@ for epoch in range(999):
         #  Train Generator
         # -----------------
 
-        optimizer_G.zero_grad()
-
         # Sample noise as generator input
         z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], 256))))
 
         # Generate a batch of images
         gen_imgs = generator(z)
 
-        # Loss measures generator's ability to fool the discriminator
-        g_loss = adversarial_loss(discriminator(gen_imgs), valid)
+        if i % 2 == 0:
+            optimizer_G.zero_grad()
+            # Loss measures generator's ability to fool the discriminator
+            g_loss = adversarial_loss(discriminator(gen_imgs), valid)
 
-        g_loss.backward()
-        optimizer_G.step()
+            g_loss.backward()
+            optimizer_G.step()
 
-        if (i % 2 == 0):
-            # ---------------------
-            #  Train Discriminator
-            # ---------------------
+        # ---------------------
+        #  Train Discriminator
+        # ---------------------
 
-            optimizer_D.zero_grad()
+        # if (i % 2 == 0):
+        optimizer_D.zero_grad()
 
-            # Measure discriminator's ability to classify real from generated samples
-            real_loss = adversarial_loss(discriminator(real_imgs),
-                                         valid)
-            fake_loss = adversarial_loss(discriminator(gen_imgs.detach()),
-                                         fake)
-            d_loss = (real_loss + fake_loss) / 2
+        # Measure discriminator's ability to classify real from generated samples
+        real_loss = adversarial_loss(discriminator(real_imgs),
+                                     valid)
+        fake_loss = adversarial_loss(discriminator(gen_imgs.detach()),
+                                     fake)
+        d_loss = (real_loss + fake_loss) / 2
 
-            d_loss.backward()
-            optimizer_D.step()
+        d_loss.backward()
+        optimizer_D.step()
 
         batches_done = epoch * len(dataloader) + i
         wandb.log({"d_loss": d_loss.item(), "g_loss": g_loss.item()},

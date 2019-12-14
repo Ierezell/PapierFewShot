@@ -63,13 +63,13 @@ if "blg" in PLATFORM:
         BATCH_SIZE = 8
     elif MODEL == "big":
         BATCH_SIZE = 4
-    BATCH_SIZE_LDMK = 4
+    BATCH_SIZE_LDMK = 64
 elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
     if MODEL == "small":
         BATCH_SIZE = 4
     elif MODEL == "big":
         BATCH_SIZE = 4
-    BATCH_SIZE_LDMK = 4
+    BATCH_SIZE_LDMK = 32
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 1
