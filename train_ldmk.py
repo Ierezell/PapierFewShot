@@ -11,6 +11,7 @@ import torchvision
 import torchvision.transforms as transforms
 import wandb
 from torch.autograd import Variable
+from torch.nn.utils import spectral_norm
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.utils import save_image
@@ -41,16 +42,16 @@ class Generator(nn.Module):
             nn.Linear(256, 128 * self.init_size ** 2))
 
         self.conv_blocks = nn.Sequential(
-            nn.BatchNorm2d(128),
+            nn.InstanceNorm2d(128),
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 128, 3, stride=1, padding=1),
-            nn.BatchNorm2d(128, 0.8),
+            spectral_norm(nn.Conv2d(128, 128, 3, stride=1, padding=1)),
+            nn.InstanceNorm2d(128, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(128, 64, 3, stride=1, padding=1),
-            nn.BatchNorm2d(64, 0.8),
+            spectral_norm(nn.Conv2d(128, 64, 3, stride=1, padding=1)),
+            nn.InstanceNorm2d(64, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(64, 3, 3, stride=1, padding=1),
+            spectral_norm(nn.Conv2d(64, 3, 3, stride=1, padding=1)),
             nn.Tanh(),
         )
 
@@ -66,10 +67,11 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         def discriminator_block(in_filters, out_filters, bn=True):
-            block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(
-                0.2, inplace=True), nn.Dropout2d(0.25)]
+            block = [spectral_norm(nn.Conv2d(in_filters, out_filters, 3, 2, 1)),
+                     nn.LeakyReLU(0.2, inplace=True),
+                     nn.Dropout2d(0.25)]
             if bn:
-                block.append(nn.BatchNorm2d(out_filters, 0.8))
+                block.append(nn.InstanceNorm2d(out_filters, 0.8))
             return block
 
         self.model = nn.Sequential(
@@ -232,11 +234,17 @@ for epoch in range(999):
         wandb.log({"Img": [wandb.Image(grid, caption="image")]},
                   step=batches_done)
 
+    if PARALLEL:
+        torch.save(generator.module.state_dict(),
+                   f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk")
+        torch.save(discriminator.module.state_dict(),
+                   f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk")
+    else:
         torch.save(generator.state_dict(),
                    f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk")
         torch.save(discriminator.state_dict(),
                    f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk")
-        copyfile(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk",
-                 f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt")
-        copyfile(f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk",
-                 f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt")
+    copyfile(f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.bk",
+             f"./weights/ldmk/discriminator_{IMAGE_SIZE[0]}.pt")
+    copyfile(f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.bk",
+             f"./weights/ldmk/generator_{IMAGE_SIZE[0]}.pt")
