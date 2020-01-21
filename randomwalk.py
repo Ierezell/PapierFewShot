@@ -2,7 +2,7 @@ import torch
 from models_ldmk import Generator
 from settings import DEVICE, BATCH_SIZE
 
-FACTOR = 30
+FACTOR = 10
 
 if __name__ == '__main__':
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     input_noise = torch.randn(BATCH_SIZE, 10, 1, 1, device=DEVICE)
     input_noise.flatten()
 
-    random_walk = torch.randn(len(input_noise)) / FACTOR
+    random_walk = torch.randn(len(input_noise), device=DEVICE) / FACTOR
 
     for i, value in enumerate(random_walk):
         input_noise[i] += value
