@@ -46,15 +46,16 @@ class adverserialLoss(nn.Module):
         super(adverserialLoss, self).__init__()
         self.l1 = nn.L1Loss(reduction='mean')
 
-    def forward(self, score_disc_synth, features_gt, features_synth):
+    def forward(self, score_disc_synth, disc, synth_im, gt):
         feature_loss = 0
-        for ft_gt, ft_synth in zip(features_gt, features_synth):
-            feature_loss += self.l1(ft_gt, ft_synth)
-        feature_loss = feature_loss.expand_as(score_disc_synth)
-        # loss /= len(features_synth)
-        # loss /= 10.0
+        with torch.no_grad():
+            for name, module in disc.conv.named_children():
+                gt = module(gt)
+                synth_im = module(synth_im)
+                feature_loss += self.l1(gt, synth_im)
+
         loss_disc = -score_disc_synth
-        return (loss_disc + feature_loss).sum()
+        return loss_disc.sum(dim=0) + feature_loss
 
 
 # #########

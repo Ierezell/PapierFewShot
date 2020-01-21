@@ -86,4 +86,4 @@ MAX_ITER_PERSON:
 
 IN_DISC:
   # "noisy", ""
-  value : "noisy"
+  value : ""
