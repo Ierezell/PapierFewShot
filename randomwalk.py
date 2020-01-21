@@ -1,10 +1,15 @@
+import matplotlib as plt
 import torch
 import torchvision
 from models_ldmk import Generator
 from settings import DEVICE, BATCH_SIZE
-import matplotlib as plt
+<< << << < HEAD
 FACTOR = 30
 NB_IMAGE = 20
+== == == =
+
+FACTOR = 10
+>>>>>> > 1413b280d37fb95cfcff73d31b67cca8e8af9c21
 
 if __name__ == '__main__':
 
