@@ -73,7 +73,7 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
     BATCH_SIZE = 1
-    BATCH_SIZE_LDMK = 4
+    BATCH_SIZE_LDMK = 128
     K_SHOT = 6
     LATENT_SIZE = 256
     NB_WORKERS = 12

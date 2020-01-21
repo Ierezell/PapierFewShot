@@ -212,8 +212,7 @@ for epoch in range(999):
         optimizer_D.zero_grad()
 
         # Measure discriminator's ability to classify real from generated samples
-        real_loss = adversarial_loss(discriminator(real_imgs),
-                                     valid)
+        real_loss = adversarial_loss(discriminator(real_imgs), valid)
         fake_loss = adversarial_loss(discriminator(gen_imgs.detach()),
                                      fake)
         d_loss = (real_loss + fake_loss) / 2

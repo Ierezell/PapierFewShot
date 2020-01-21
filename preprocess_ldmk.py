@@ -94,11 +94,11 @@ class ldmkLoader(Dataset):
             self.slash = "\\"
         self.K_shots = K_shots
         self.root_dir = root_dir
-        print("\tLoading ids...")
-        start_time = time.time()
-        self.ids = glob.glob(f"{self.root_dir}/*")
-        self.id_to_tensor = get_ids()
-        print(f"\tIds loaded in {time.time() - start_time}s")
+        # print("\tLoading ids...")
+        # start_time = time.time()
+        # self.ids = glob.glob(f"{self.root_dir}/*")
+        # self.id_to_tensor = get_ids()
+        # print(f"\tIds loaded in {time.time() - start_time}s")
         print("\tLoading videos...")
         start_time = time.time()
         self.context_names = [video[:-5] for video in
@@ -109,7 +109,7 @@ class ldmkLoader(Dataset):
         badLdmks = True
         while badLdmks:
             context_name = self.context_names[index]
-            itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
+            # itemId = self.id_to_tensor[context_name.split(self.slash)[-2]]
             with open(f"{context_name}.json", "r") as file:
                 dict_ldmk = json.load(file, object_pairs_hook=dictKeytoInt)
 
@@ -120,13 +120,14 @@ class ldmkLoader(Dataset):
                 index = randint(0, len(self.context_names))
 
         gt_ldmk = dict_ldmk[frames[0]]
-        gt_ldmk_im = np.zeros((IMAGE_SIZE[0], IMAGE_SIZE[1], 3), np.float32)
-        gt_ldmk_im = write_landmarks_on_image(gt_ldmk_im, gt_ldmk)
-        gt_ldmk_im = transforms.ToPILImage()(gt_ldmk_im)
-        gt_ldmk_im = transforms.Resize(IMAGE_SIZE)(gt_ldmk_im)
-        gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
+        # gt_ldmk_im = np.zeros((IMAGE_SIZE[0], IMAGE_SIZE[1], 3), np.float32)
+        # gt_ldmk_im = write_landmarks_on_image(gt_ldmk_im, gt_ldmk)
+        # gt_ldmk_im = transforms.ToPILImage()(gt_ldmk_im)
+        # gt_ldmk_im = transforms.Resize(IMAGE_SIZE)(gt_ldmk_im)
+        # gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
+        gt_ldmk = torch.tensor(gt_ldmk)
 
-        return gt_ldmk_im_tensor, itemId
+        return gt_ldmk
 
     def __len__(self):
         return len(self.context_names)
@@ -141,4 +142,4 @@ def get_data_loader(root_dir=ROOT_DATASET, K_shots=K_SHOT, workers=NB_WORKERS,
                               shuffle=True, num_workers=workers, pin_memory=pin,
                               drop_last=True)
 
-    return train_loader, len(datas.ids)
+    return train_loader  # , len(datas.ids)

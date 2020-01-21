@@ -12,4 +12,4 @@ module load python/3.7
 
 source ~/Pytorch_FewShot_Env/bin/activate
 
-python train.py
+python train_ldmk.py
