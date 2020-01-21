@@ -3,6 +3,7 @@ from models_ldmk import Generator
 from settings import DEVICE, BATCH_SIZE
 
 FACTOR = 30
+
 if __name__ == '__main__':
 
     img_list = []
@@ -26,6 +27,6 @@ if __name__ == '__main__':
 
     for i, value in enumerate(random_walk):
         input_noise[i] += value
-        img = gen(input_noise)
+        img = gen(input_noise.view(BATCH_SIZE, 10, 1, 1))
         if i % 10:
             img_list.append(img)
