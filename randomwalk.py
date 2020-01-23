@@ -1,3 +1,5 @@
+from builtins import input
+from matplotlib import pyplot as plt
 import matplotlib.pyplot as plt
 import torch
 import torchvision
@@ -7,9 +9,12 @@ from train_ldmk2 import Generator
 from settings import DEVICE, BATCH_SIZE_LDMK
 from preprocess import write_landmarks_on_image
 plt.ion()
+fig = plt.figure()
+ax = fig.gca()
+fig.show()
 
 FACTOR = 2
-NB_IMAGE = 100
+NB_IMAGE = 25
 
 if __name__ == '__main__':
 
@@ -21,10 +26,10 @@ if __name__ == '__main__':
     gen = gen.to(DEVICE)
 
     try:
-        gen.load_state_dict(torch.load("./weights/ldmk/generator_224.pt",
+        gen.load_state_dict(torch.load("./weights/ldmk_int/generator_224.pt",
                                        map_location=DEVICE))
     except RuntimeError:
-        gen.load_state_dict(torch.load("./weights/ldmk/gen.bk",
+        gen.load_state_dict(torch.load("./weights/ldmk_int/generator_224.bk",
                                        map_location=DEVICE))
     except FileNotFoundError:
         print("Weights not found")
@@ -34,10 +39,9 @@ if __name__ == '__main__':
     # input_noise = Variable(Tensor(np.random.normal(0, 1, (ldmks.shape[0], 100))))
 
     for _ in range(NB_IMAGE):
-        value = torch.randn(
-            BATCH_SIZE_LDMK, input_noise.size(1), device=DEVICE) / FACTOR
+        value = torch.randn(BATCH_SIZE_LDMK, input_noise.size(1),
+                            device=DEVICE) / FACTOR
         input_noise += value
-        print(input_noise.size())
         img = gen(input_noise)
 
         gen_ldmk_im = []
@@ -48,14 +52,22 @@ if __name__ == '__main__':
 
             genli = write_landmarks_on_image(genli, l_gen.int().cpu())
             genli = transforms.ToTensor()(genli)
+            genli /= 255.0
 
             gen_ldmk_im.append(genli)
 
         gen_ldmk_im = torch.stack(gen_ldmk_im)
         img_list.append(gen_ldmk_im)
 
-        print(torch.stack(img_list).size())
-        grid = torchvision.utils.make_grid(torch.stack(img_list).view(-1, 3, 224, 224), padding=4, nrow=25,
-                                           normalize=True, scale_each=True)
-        plt.imshow(grid.permute(1, 2, 0))
-        plt.draw()
+        plt.imshow(genli.permute(1, 2, 0))
+        fig.canvas.draw()
+        plt.pause(0.1)
+    plt.close(fig)
+    plt.ioff()
+    grid = torchvision.utils.make_grid(torch.stack(img_list).view(-1, 3,
+                                                                  224, 224),
+                                       padding=4, nrow=5,
+                                       normalize=True, scale_each=True)
+    plt.imshow(grid.permute(1, 2, 0))
+    plt.axis('off')
+    plt.show()

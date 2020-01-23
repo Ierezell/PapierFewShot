@@ -2,7 +2,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
 import torch
-
+from utils import adaIN
 """
 
 https://cs.stanford.edu/people/jcjohns/papers/fast-style/fast-style-supp.pdf
@@ -75,30 +75,34 @@ class ResidualBlock(nn.Module):
                                              bias=False))
 
         self.relu = nn.SELU()
+        self.instance_norm = nn.InstanceNorm2d(self.in_channels, affine=True)
 
     def forward(self, x, w, b):
-        w1 = w.narrow(-1, 0, self.in_channels)
-        w2 = w.narrow(-1, self.in_channels, self.out_channels)
-        b1 = b.narrow(-1, 0, self.in_channels)
-        b2 = b.narrow(-1, self.in_channels, self.out_channels)
-
-        x = F.instance_norm(x)
+        x = self.instance_norm(x)
 
         residual = self.relu(self.adaDim(x))
+        w1 = w.narrow(-1, 0, self.in_channels)
 
-        # out = F.instance_norm(x)
-        out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        b1 = b.narrow(-1, 0, self.in_channels)
+        w2 = w.narrow(-1, self.in_channels, self.temp_channels)
+        b2 = b.narrow(-1, self.in_channels, self.temp_channels)
+        w3 = w.narrow(-1, self.in_channels +
+                      self.temp_channels, self.temp_channels)
+        b3 = b.narrow(-1, self.in_channels +
+                      self.temp_channels, self.temp_channels)
+        w4 = w.narrow(-1, self.in_channels+2 *
+                      self.temp_channels, self.temp_channels)
+        b4 = b.narrow(-1, self.in_channels+2 *
+                      self.temp_channels, self.temp_channels)
 
-        out = self.relu(out)
         out = self.conv1(x)
-
-        # out = F.instance_norm(out)
-        out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
-
         out = self.relu(out)
+        out = adaIN(out, mean_style=w.narrow(-1, 0, self.in_channels),
+                    std_style=.narrow(-1, 0, self.in_channels))
+
         out = self.conv2(out)
+        out = self.relu(out)
+        out = adaIN(out, mean_style=1, std_style=1)
 
         # out = F.instance_norm(out)
         out = self.relu(out)

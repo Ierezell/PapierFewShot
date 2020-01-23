@@ -2,6 +2,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
 import torch
+from utils import adaIN
 
 """
 
@@ -87,91 +88,24 @@ class BigResidualBlock(nn.Module):
 
         self.relu = nn.SELU()
 
-    def forward(self, x, w=None, b=None):
-        if w is not None and b is not None:
-            w1 = w.narrow(-1, 0, self.in_channels)
-
-            b1 = b.narrow(-1, 0, self.in_channels)
-            w2 = w.narrow(-1, self.in_channels, self.temp_channels)
-            b2 = b.narrow(-1, self.in_channels, self.temp_channels)
-            w3 = w.narrow(-1, self.in_channels +
-                          self.temp_channels, self.temp_channels)
-            b3 = b.narrow(-1, self.in_channels +
-                          self.temp_channels, self.temp_channels)
-            w4 = w.narrow(-1, self.in_channels+2 *
-                          self.temp_channels, self.temp_channels)
-            b4 = b.narrow(-1, self.in_channels+2 *
-                          self.temp_channels, self.temp_channels)
-
+    def forward(self, x, w):
         residual = self.relu(self.adaDim(x))
-
-        if w is not None and b is not None:
-            # print("sdfksdjfldsk :: :: ", w1.size(), w1[0].size())
-            # print("fsdfsdfffdsw :: :: ", b1.size(), b1[0].size())
-            # print("hjhkhjkhjkhj :: :: ", x.size(), x[0].unsqueeze(0).size())
-            # print("lksdflksdfkj", x.size(0))
-            t = torch.zeros_like(x)
-            # print(w1.size())
-            # print(x.size())
-            for i in range(x.size(0)):
-                t[i] = F.instance_norm(x[i].unsqueeze(0),
-                                       weight=w1[i], bias=b1[i])
-            x = t
-        else:
-            out = F.instance_norm(x)
-        #     out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        #     out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
-        # else:
-        #     out = x
 
         out = self.relu(x)
         out = self.conv1(out)
-
-        if w is not None and b is not None:
-            t = torch.zeros_like(out)
-            for i in range(out.size(0)):
-                t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                       weight=w2[i], bias=b2[i])
-            out = t
-        else:
-            out = F.instance_norm(out)
-        # if w is not None and b is not None:
-        #     out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        #     out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = adaIN(out, mean_style=w, std_style=w)
 
         out = self.relu(out)
         out = self.conv2(out)
-
-        if w is not None and b is not None:
-            t = torch.zeros_like(out)
-            for i in range(out.size(0)):
-                t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                       weight=w3[i], bias=b3[i])
-            out = t
-        else:
-            out = F.instance_norm(out)
-        # if w is not None and b is not None:
-        #     out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        #     out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = adaIN(out, mean_style=w, std_style=w)
 
         out = self.relu(out)
         out = self.conv3(out)
-
-        if w is not None and b is not None:
-            t = torch.zeros_like(out)
-            for i in range(out.size(0)):
-                t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                       weight=w4[i], bias=b4[i])
-            out = t
-        else:
-            out = F.instance_norm(out)
-        # if w is not None and b is not None:
-        #     out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        #     out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
+        out = adaIN(out, mean_style=w, std_style=w)
 
         out = self.relu(out)
         out = self.conv4(out)
-
+        out = adaIN(out, mean_style=w, std_style=w)
         out += residual
         return out
 
@@ -213,24 +147,23 @@ class BigResidualBlockDown(nn.Module):
 
     def forward(self, x):
         residual = x
-        residual = self.avgPool(residual)
-        if hasattr(self, "adaDim"):
-            # fill_to_out_channels = self.adaDim(residual)
-            # residual = torch.cat((residual, fill_to_out_channels), dim=1)
-            residual = self.adaDim(residual)
 
-        out = F.instance_norm(x)
-        out = self.relu(out)
+        residual = self.avgPool(residual)
+
+        residual = self.adaDim(residual)
+
+        out = self.relu(x)
         out = self.conv1(out)
-        out = F.instance_norm(out)
+
         out = self.relu(out)
         out = self.conv2(out)
-        out = F.instance_norm(out)
+
         out = self.relu(out)
         out = self.conv3(out)
-        out = F.instance_norm(out)
+
         out = self.relu(out)
         out = self.avgPool(out)
+
         out = self.conv4(out)
 
         out += residual
@@ -274,66 +207,27 @@ class BigResidualBlockUp(nn.Module):
 
         self.relu = nn.SELU()
 
-    def forward(self, x, w, b):
-        w1 = w.narrow(-1, 0, self.in_channels)
-        b1 = b.narrow(-1, 0, self.in_channels)
-        w2 = w.narrow(-1, self.in_channels, self.temp_channels)
-        b2 = b.narrow(-1, self.in_channels, self.temp_channels)
-        w3 = w.narrow(-1, self.in_channels +
-                      self.temp_channels, self.temp_channels)
-        b3 = b.narrow(-1, self.in_channels +
-                      self.temp_channels, self.temp_channels)
-        w4 = w.narrow(-1, self.in_channels+2 *
-                      self.temp_channels, self.temp_channels)
-        b4 = b.narrow(-1, self.in_channels+2 *
-                      self.temp_channels, self.temp_channels)
-        t = torch.zeros_like(x)
-        for i in range(x.size(0)):
-            t[i] = F.instance_norm(x[i].unsqueeze(0),
-                                   weight=w1[i], bias=b1[i])
-        x = t
-        # norm1 = torch.nn.InstanceNorm2d()
+    def forward(self, x, w):
         residual = x
         residual = self.adaDim(self.upsample(residual))
 
-        # out = w1.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        # out = out + b1.unsqueeze(-1).unsqueeze(-1).expand_as(out)
-
+        out = adaIN(x, mean_style=w, std_style=w)
         out = self.relu(x)
         out = self.conv1(out)
-        t = torch.zeros_like(out)
-        # TODO
-        # ICI FAIRE LE SPADE !
-        for i in range(out.size(0)):
-            t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                   weight=w2[i], bias=b2[i])
-        out = t
-        # out = w2.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        # out = out + b2.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
+        out = adaIN(out, mean_style=w, std_style=w)
         out = self.relu(out)
         out = self.upsample(out)
         out = self.conv2(out)
-        t = torch.zeros_like(out)
-        for i in range(out.size(0)):
-            t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                   weight=w3[i], bias=b3[i])
-        out = t
-        # out = w3.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        # out = out + b3.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
+        out = adaIN(out, mean_style=w, std_style=w)
         out = self.relu(out)
         out = self.conv3(out)
-        t = torch.zeros_like(out)
-        for i in range(out.size(0)):
-            t[i] = F.instance_norm(out[i].unsqueeze(0),
-                                   weight=w4[i], bias=b4[i])
-        out = t
-        # out = w4.unsqueeze(-1).unsqueeze(-1).expand_as(out) * out
-        # out = out + b4.unsqueeze(-1).unsqueeze(-1).expand_as(out)
 
+        out = adaIN(out, mean_style=w, std_style=w)
         out = self.relu(out)
         out = self.conv4(out)
+
         out += residual
         return out
 
@@ -341,25 +235,64 @@ class BigResidualBlockUp(nn.Module):
 # ##############
 #   Attention  #
 # ##############
+# class Attention(nn.Module):
+#     def __init__(self, in_channels):
+#         super(Attention, self).__init__()
+#         self.convF = spectral_norm(nn.Conv2d(in_channels, in_channels,
+#                                              kernel_size=1, padding=0,
+#                                              stride=1,   bias=False))
+#         self.convG = spectral_norm(nn.Conv2d(in_channels, in_channels,
+#                                              kernel_size=1, padding=0,
+#                                              stride=1,   bias=False))
+#         self.convH = spectral_norm(nn.Conv2d(in_channels, in_channels,
+#                                              kernel_size=1, padding=0,
+#                                              stride=1,   bias=False))
+#         self.softmax = nn.Softmax(dim=1)
+
+#     def forward(self, x):
+#         residual = x
+#         f = self.convF(x)
+#         g = self.convG(x)
+#         h = self.convH(x)
+#         attn_map = self.softmax(torch.matmul(f, g))
+#         attn = torch.matmul(h, attn_map)
+#         return residual + attn
+
+
 class Attention(nn.Module):
-    def __init__(self, in_channels):
-        super(Attention, self).__init__()
-        self.convF = spectral_norm(nn.Conv2d(in_channels, in_channels,
-                                             kernel_size=1, padding=0,
-                                             stride=1,   bias=False))
-        self.convG = spectral_norm(nn.Conv2d(in_channels, in_channels,
-                                             kernel_size=1, padding=0,
-                                             stride=1,   bias=False))
-        self.convH = spectral_norm(nn.Conv2d(in_channels, in_channels,
-                                             kernel_size=1, padding=0,
-                                             stride=1,   bias=False))
-        self.softmax = nn.Softmax(dim=1)
+    def __init__(self, in_channel):
+        super().__init__()
+
+        # conv f
+        self.conv_f = nn.utils.spectral_norm(
+            nn.Conv2d(in_channel, in_channel//8, 1))
+        # conv_g
+        self.conv_g = nn.utils.spectral_norm(
+            nn.Conv2d(in_channel, in_channel//8, 1))
+        # conv_h
+        self.conv_h = nn.utils.spectral_norm(
+            nn.Conv2d(in_channel, in_channel, 1))
+
+        self.softmax = nn.Softmax(-2)  # sum in column j = 1
+        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
-        residual = x
-        f = self.convF(x)
-        g = self.convG(x)
-        h = self.convH(x)
-        attn_map = self.softmax(torch.matmul(f, g))
-        attn = torch.matmul(h, attn_map)
-        return residual + attn
+        B, C, H, W = x.shape
+        f_projection = self.conv_f(x)  # BxC'xHxW, C'=C//8
+        g_projection = self.conv_g(x)  # BxC'xHxW
+        h_projection = self.conv_h(x)  # BxCxHxW
+
+        f_projection = torch.transpose(
+            f_projection.view(B, -1, H*W), 1, 2)  # BxNxC', N=H*W
+        g_projection = g_projection.view(B, -1, H*W)  # BxC'xN
+        h_projection = h_projection.view(B, -1, H*W)  # BxCxN
+
+        attention_map = torch.bmm(f_projection, g_projection)  # BxNxN
+        attention_map = self.softmax(attention_map)  # sum_i_N (A i,j) = 1
+
+        # sum_i_N (A i,j) = 1 hence oj = (HxAj) is a weighted sum of input columns
+        out = torch.bmm(h_projection, attention_map)  # BxCxN
+        out = out.view(B, C, H, W)
+
+        out = self.gamma*out + x
+        return out

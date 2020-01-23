@@ -3,9 +3,9 @@ import torch.nn.functional as F
 from torch import nn
 from torch.nn.utils import spectral_norm
 
-from settings import ATTENTION, BATCH_SIZE, CONCAT, DEVICE, HALF, LATENT_SIZE
-from utils import load_layers
-
+from settings import (ATTENTION, BATCH_SIZE, CONCAT,
+                      DEVICE, HALF, LATENT_SIZE, FINETUNNING)
+from utils import load_layers, Padding, adaIN
 (ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention) = load_layers()
 
 # ###############
@@ -33,20 +33,23 @@ class Embedder(nn.Module):
         fully connected are used to grow the 1*512 to the size of the generator
         """
         super().__init__()
-        self.residual1 = ResidualBlockDown(6, 64)  # 64, 112
+        self.padding = Padding(224)
+        self.residual1 = ResidualBlockDown(6, 64)  # 64, 128
         self.residual2 = ResidualBlockDown(64, 128)  # 128, 64
-        if ATTENTION:
-            self.attention1 = Attention(128)
         self.residual3 = ResidualBlockDown(128, 256)  # 256, 32
         self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 512 , 16
-        if ATTENTION:
-            self.attention2 = Attention(LATENT_SIZE)
-        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512 , 7
+        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512 , 8
+        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512 , 4
 
-        self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
-        self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
+        # self.FcWeights = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
+        # self.FcBias = spectral_norm(nn.Linear(LATENT_SIZE, 8017))
+
         self.relu = nn.SELU()
-        self.avgPool = nn.AvgPool2d(kernel_size=7)
+        self.pool = nn.AdaptiveMaxPool2d((1, 1))
+
+        if ATTENTION:
+            self.attention1 = Attention(256)
+            self.attention2 = Attention(LATENT_SIZE)
 
     def forward(self, x):  # b, 12, 224, 224
         """Forward pass :
@@ -58,9 +61,7 @@ class Embedder(nn.Module):
             Tensor -- Size 1*512 corresponding to the latent
                                         representation of this BATCH of image
         """
-        temp = torch.zeros(LATENT_SIZE,
-                           dtype=(torch.half if HALF else torch.float),
-                           device=DEVICE)
+        x = self.padding(x)
         if CONCAT:
             layerUp1 = torch.zeros((BATCH_SIZE, 64, 112, 112),
                                    dtype=(torch.half if HALF else torch.float),
@@ -76,52 +77,49 @@ class Embedder(nn.Module):
                                    device=DEVICE)
         else:
             layerUp1, layerUp2, layerUp3, layerUp4 = None, None, None, None
-        for i in range(x.size(1)//6):
-            out = self.residual1(x.narrow(1, i*6, 6))  # b, 64, 112, 112
-            out = self.relu(out)
-            if CONCAT:
-                layerUp1 = torch.add(out, layerUp1)
 
-            out = self.residual2(out)  # b, 128, 56, 56
-            out = self.relu(out)
-            if ATTENTION:
-                out = self.attention1(out)  # b, 128, 56, 56
-                out = self.relu(out)
-            if CONCAT:
-                layerUp2 = torch.add(out, layerUp2)
-
-            out = self.residual3(out)  # b, 128, 56, 56
-            out = self.relu(out)
-            if CONCAT:
-                layerUp3 = torch.add(out, layerUp3)
-
-            out = self.residual4(out)  # b, 256, 28, 28
-            out = self.relu(out)
-            if ATTENTION:
-                out = self.attention2(out)  # b, 128, 56, 56
-                out = self.relu(out)
-            if CONCAT:
-                layerUp4 = torch.add(out, layerUp4)
-
-            out = self.residual5(out)  # b, 256, 28, 28
-            out = self.relu(out)
-            out = self.avgPool(out).squeeze()
-            out = self.relu(out)
-
-            temp = torch.add(out, temp)
-
-        context = torch.div(temp, (x.size(1)//6))
+        x = x.view(-1, 6, 256, 256)
+        out = self.residual1(x)  # bxk, 64, 112, 112
+        out = self.relu(out)
         if CONCAT:
-            layerUp4 = torch.div(layerUp4, (x.size(1)//6))
-            layerUp3 = torch.div(layerUp3, (x.size(1)//6))
-            layerUp2 = torch.div(layerUp2, (x.size(1)//6))
-            layerUp1 = torch.div(layerUp1, (x.size(1)//6))
+            layerUp1 = torch.add(out, layerUp1)
 
-        paramWeights = self.relu(self.FcWeights(context)).squeeze()
-        paramBias = self.relu(self.FcBias(context)).squeeze()
+        out = self.residual2(out)  # b, 128, 56, 56
+        out = self.relu(out)
+        if CONCAT:
+            layerUp2 = torch.add(out, layerUp2)
+
+        out = self.residual3(out)  # b, 128, 56, 56
+        out = self.relu(out)
+        if CONCAT:
+            layerUp3 = torch.add(out, layerUp3)
+        if ATTENTION:
+            out = self.attention1(out)  # b, 128, 56, 56
+            out = self.relu(out)
+
+        out = self.residual4(out)  # b, 256, 28, 28
+        out = self.relu(out)
+        if CONCAT:
+            layerUp4 = torch.add(out, layerUp4)
+
+        out = self.residual5(out)  # b, 256, 28, 28
+        out = self.relu(out)
+        out = self.residual6(out)  # b, 256, 28, 28
+        if ATTENTION:
+            out = self.attention2(out)  # b, 128, 56, 56
+            out = self.relu(out)
+        out = self.relu(out)
+        out = self.pool(out)
+        out = self.relu(out)
+
+        # paramWeights = self.relu(self.FcWeights(out)).squeeze()
+        # paramBias = self.relu(self.FcBias(out)).squeeze()
+
+        out = out.view(-1, x.size(1), LATENT_SIZE, 1)
+        out = out.mean(dim=1)
 
         layersUp = (layerUp1, layerUp2, layerUp3, layerUp4)
-        return context, paramWeights, paramBias, layersUp
+        return out, layersUp
 
 
 # ################
@@ -144,33 +142,44 @@ class Generator(nn.Module):
         Attention is present on three different size (down constant and up)
         """
         super().__init__()
+        NB_PARAM = 2*(512*2*5+512*2+512*2+512+256+256+128+128+64+64+3)
+        self.padding = Padding(224)
+
         # Down
         self.ResDown1 = ResidualBlockDown(3, 64)  # 64, 112
+        self.in1 = nn.InstanceNorm2d(64, affine=True)
+
         self.ResDown2 = ResidualBlockDown(64, 128)  # 128, 64
-        if ATTENTION:
-            self.attentionDown1 = Attention(128)
+        self.in2 = nn.InstanceNorm2d(128, affine=True)
+
         self.ResDown3 = ResidualBlockDown(128, 256)  # 256, 32
+        self.in3 = nn.InstanceNorm2d(256, affine=True)
+
         self.ResDown4 = ResidualBlockDown(256, LATENT_SIZE)  # 512, 16
-        if ATTENTION:
-            self.attentionDown2 = Attention(LATENT_SIZE)
+        self.in4 = nn.InstanceNorm2d(LATENT_SIZE, affine=True)
+
         # Constant
         self.ResBlock_1 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512, 16
         self.ResBlock_2 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512, 16
-        if ATTENTION:
-            self.attention1 = Attention(LATENT_SIZE)
+        self.ResBlock_3 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512, 16
+        self.ResBlock_4 = ResidualBlock(LATENT_SIZE, LATENT_SIZE)  # 512, 16
+
         # Up
         self.ResUp1 = ResidualBlockUp(LATENT_SIZE, 256)   # 256, 32
         self.ResUp2 = ResidualBlockUp(256, 128)   # 128, 64
-        if ATTENTION:
-            self.attentionUp1 = Attention(128)
         self.ResUp3 = ResidualBlockUp(128, 64)  # 64, 112, 112
         self.ResUp4 = ResidualBlockUp(64, 3)  # 3, 224, 224
-        if ATTENTION:
-            self.attentionUp2 = Attention(3)
-        self.conv1 = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
-        self.conv2 = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
+        # self.conv1 = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
+        # self.conv2 = spectral_norm(nn.Conv2d(3, 3, kernel_size=3, padding=1))
         self.relu = nn.SELU()
         self.tanh = nn.Tanh()
+        self.sig = nn.Sigmoid()
+
+        if ATTENTION:
+            self.attentionDown1 = Attention(256)
+            self.attention1 = Attention(LATENT_SIZE)
+            self.attentionUp1 = Attention(128)
+            self.attentionUp2 = Attention(3)
 
         if CONCAT:
             self.Ada1 = spectral_norm(
@@ -182,7 +191,16 @@ class Generator(nn.Module):
             self.Ada4 = spectral_norm(
                 nn.Conv2d(LATENT_SIZE*2, LATENT_SIZE, kernel_size=3, padding=1))
 
-    def forward(self, img, pWeights, pBias, layersUp):
+        self.p = nn.Parameter(torch.rand(self.NB_PARAM,
+                                         512).normal_(0.0, 0.02))
+        self.psi = nn.Parameter(torch.rand(self.NB_PARAM, 1))
+
+    def finetuning_init(self):
+        if FINETUNNING:
+            self.psi = nn.Parameter(
+                torch.mm(self.p, self.e_finetuning.mean(dim=0)))
+
+    def forward(self, img, weights, layersUp):
         """
         Res block : in out out out
         Res block up : in out//4 out//4 out//4
@@ -195,136 +213,88 @@ class Generator(nn.Module):
         but I will do it later, it's easier to debug this way)
         """
         layerUp1, layerUp2, layerUp3, layerUp4 = layersUp
-        pWeights = pWeights.view(img.size(0), -1)
-        pBias = pBias.view(img.size(0), -1)
-        # print("L3 ", layerUp3.size())
-        # print("L2 ", layerUp2.size())
-        # print("L1 ", layerUp1.size())
-        # print("L0 ", layerUp0.size())
-        # print("IMG ", img.size())
-
+        if FINETUNNING:
+            e_psi = self.psi.unsqueeze(0)
+            e_psi = e_psi.expand(weights.shape[0], self.NB_PARAM, 1)
+        else:
+            p = self.p.unsqueeze(0)
+            p = p.expand(weights.shape[0], self.NB_PARAM, 512)
+            e_psi = torch.bmm(p, weights)
         # ######
         # DOWN #
         # ######
+        x = self.pad(img)
 
-        x = self.ResDown1(img)
-        x = self.relu(x)
-        # print("ResDown1  ", x.size())
+        x = self.ResDown1(x)
+        x = self.in1(x)
 
         x = self.ResDown2(x)
-        x = self.relu(x)
-        # print("ResDown2  ", x.size())
+        x = self.in2(x)
+
+        x = self.ResDown3(x)
+        x = self.in3(x)
 
         if ATTENTION:
             x = self.attentionDown1(x)
             x = self.relu(x)
 
-        x = self.ResDown3(x)
-        x = self.relu(x)
-        # print("ResDown3  ", x.size())
-
         x = self.ResDown4(x)
-        x = self.relu(x)
-        if ATTENTION:
-            x = self.attentionDown2(x)
-            x = self.relu(x)
-        # print("ResDown4  ", x.size())
+        x = self.in4(x)
 
         # ##########
         # CONSTANT #
         # ##########
-        i = 0
-        # print(pWeights.size())
-        nb_params = self.ResBlock_1.params
-        x = self.ResBlock_1(x, w=pWeights.narrow(-1, i, nb_params),
-                            b=pBias.narrow(-1, i, nb_params))
-        x = self.relu(x)
-        # print("ResBlock_1  ", x.size())
-        i += nb_params
-
-        nb_params = self.ResBlock_2.params
-        x = self.ResBlock_2(x, w=pWeights.narrow(-1, i, nb_params),
-                            b=pBias.narrow(-1, i, nb_params))
-        x = self.relu(x)
-        # print("ResBlock_2  ", x.size())
-        i += nb_params
+        x = self.ResBlock_1(x, mean=weights.narrow(-1, i, nb_params),
+                            std=weights.narrow(-1, i, nb_params))
+        x = self.ResBlock_2(x, mean=weights.narrow(-1, i, nb_params),
+                            std=weights.narrow(-1, i, nb_params))
+        x = self.ResBlock_3(x, mean=weights.narrow(-1, i, nb_params),
+                            std=weights.narrow(-1, i, nb_params))
 
         if ATTENTION:
             x = self.attention1(x)
             x = self.relu(x)
 
+        x = self.ResBlock_4(x, mean=weights.narrow(-1, i, nb_params),
+                            std=weights.narrow(-1, i, nb_params))
+
         if CONCAT == "last":
             x = torch.cat((x, layerUp4), dim=1)
-            # print("cat3", x.size())
             x = self.Ada4(x)
 
         # ####
         # UP #
         # ####
-
-        nb_params = self.ResUp1.params
-        x = self.ResUp1(x, w=pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
-        x = self.relu(x)
-        # print("Res1  ", x.size())
-        i += nb_params
+        x = self.ResUp1(x, mean=weights.narrow(-1, i, nb_params),
+                        std=weights.narrow(-1, i, nb_params))
 
         if CONCAT == "last":
             x = torch.cat((x, layerUp3), dim=1)
-            # print("cat3", x.size())
             x = self.Ada3(x)
 
-        nb_params = self.ResUp2.params
-        x = self.ResUp2(x, w=pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
-        x = self.relu(x)
-        # print("ResUp2  ", x.size())
-        i += nb_params
+        x = self.ResUp2(x, mean=weights.narrow(-1, i, nb_params),
+                        std=weights.narrow(-1, i, nb_params))
+
+        if CONCAT == "last":
+            x = torch.cat((x, layerUp2), dim=1)
+            x = self.Ada2(x)
+
+        x = self.ResUp3(x, mean=weights.narrow(-1, i, nb_params),
+                        std=weights.narrow(-1, i, nb_params))
 
         if ATTENTION:
             x = self.attentionUp1(x)
             x = self.relu(x)
 
         if CONCAT == "last":
-            x = torch.cat((x, layerUp2), dim=1)
-            # print("cat3", x.size())
-            x = self.Ada2(x)
-
-        nb_params = self.ResUp3.params
-        x = self.ResUp3(x, w=pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
-        x = self.relu(x)
-        # print("ResUp3  ", x.size())
-        i += nb_params
-
-        if CONCAT == "last":
             x = torch.cat((x, layerUp1), dim=1)
-            # print("cat3", x.size())
             x = self.Ada1(x)
 
-        nb_params = self.ResUp4.params
-        x = self.ResUp4(x, w=pWeights.narrow(-1, i, nb_params),
-                        b=pBias.narrow(-1, i, nb_params))
-        x = self.relu(x)
-        # print("Res4  ", x.size())
-        i += nb_params
+        x = self.ResUp4(x, mean=weights.narrow(-1, i, nb_params),
+                        std=weights.narrow(-1, i, nb_params))
 
-        if ATTENTION:
-            x = self.attentionUp2(x)
-            x = self.relu(x)
-        w = pWeights.narrow(-1, 0, 3)
-        b = pBias.narrow(-1, 0, 3)
-
-        x = F.instance_norm(x)
-        x = w.unsqueeze(-1).unsqueeze(-1).expand_as(x) * x
-        x = x + b.unsqueeze(-1).unsqueeze(-1).expand_as(x)
-
-        x = self.relu(x)
-        x = self.conv1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.tanh(x)
-        # print("Nb_param   ", i)
+        x = self.sig(x)
+        x = x * 255
         return x
 
 
@@ -357,40 +327,53 @@ class Discriminator(nn.Module):
             on one unknown person (variables are differents).
         """
         super().__init__()
-        self.conv = nn.Sequential(
-            ResidualBlock(6, 64),
-            nn.SELU(inplace=True),
-            ResidualBlockDown(64, 128),
-            nn.SELU(inplace=True),
-            ResidualBlockDown(128, 256),
-            nn.SELU(inplace=True),
-            Attention(256),
-            nn.SELU(inplace=True),
-            ResidualBlockDown(256, LATENT_SIZE),
-            nn.SELU(inplace=True),
-            ResidualBlockDown(LATENT_SIZE, LATENT_SIZE),
-            nn.SELU(inplace=True),
-            ResidualBlockDown(LATENT_SIZE, LATENT_SIZE),
-            nn.SELU(inplace=True),
-            Attention(LATENT_SIZE),
-            nn.SELU(inplace=True)
-        )
+        self.padding = Padding(224)
+        self.padding = Padding(224)
+        self.residual1 = ResidualBlockDown(6, 64)  # 64, 128
+        self.residual2 = ResidualBlockDown(64, 128)  # 128, 64
+        self.residual3 = ResidualBlockDown(128, 256)  # 256, 32
+        self.residual4 = ResidualBlockDown(256, LATENT_SIZE)  # 512 , 16
+        self.residual5 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512 , 8
+        self.residual6 = ResidualBlockDown(LATENT_SIZE, LATENT_SIZE)  # 512 , 4
         self.embeddings = nn.Embedding(num_persons, LATENT_SIZE)
         self.w0 = nn.Parameter(torch.rand(LATENT_SIZE), requires_grad=True)
         self.b = nn.Parameter(torch.rand(1), requires_grad=True)
         self.relu = nn.SELU()
         self.fc = spectral_norm(nn.Linear(LATENT_SIZE, 1))
         self.tanh = nn.Tanh()
-        self.avgPool = nn.AvgPool2d(kernel_size=7)
+        self.pool = nn.AdaptiveMaxPool2d((1, 1))
+        self.W_i = nn.Parameter(torch.rand(512, 128))
+        self.w_0 = nn.Parameter(torch.randn(512, 1))
+        self.b = nn.Parameter(torch.randn(1))
+        self.w_prime = nn.Parameter(torch.randn(512, 1))
 
-    def forward(self, x, indexes):
-        out = self.conv(x)
-        out = self.avgPool(out).squeeze()
-        out = self.relu(out)
+    def finetuning_init(self):
+        if self.finetuning:
+            self.w_prime = nn.Parameter(
+                self.w_0 + self.e_finetuning.mean(dim=0))
+
+    def forward(self, x, ldmk, indexes):
+        x = torch.cat((x, ldmk), dim=1)
+        x = self.padding(x)
+        out1 = self.residual1(x)  # bxk, 64, 112, 112
+        out2 = self.residual2(out1)  # b, 128, 56, 56
+        out3 = self.residual3(out2)  # b, 128, 56, 56
+        if ATTENTION:
+            out3 = self.attention1(out3)  # b, 128, 56, 56
+            out3 = self.relu(out3)
+        out4 = self.residual4(out3)  # b, 256, 28, 28
+        out5 = self.residual5(out4)  # b, 256, 28, 28
+        out6 = self.residual6(out5)  # b, 256, 28, 28
+        out = self.pooling(out6)
+        out = out.view(-1, 512, 1)
         final_out = self.fc(out)
 
-        w0 = self.w0.repeat(BATCH_SIZE).view(BATCH_SIZE, LATENT_SIZE)
-        b = self.b.repeat(BATCH_SIZE)
+        if self.finetuning:
+            out = torch.bmm(out.transpose(1, 2), (self.w_prime.unsqueeze(
+                0).expand(out.shape[0], 512, 1))) + self.b
+        else:
+            out = torch.bmm(out.transpose(
+                1, 2), (self.W_i[:, indexes].unsqueeze(-1)).transpose(0, 1) + self.w_0) + self.b  # 1x1
 
         condition = torch.bmm(
             self.embeddings(indexes).view(-1, 1, LATENT_SIZE),

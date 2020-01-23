@@ -538,3 +538,35 @@ def weight_init(m):
                 init.orthogonal_(param.data)
             else:
                 init.normal_(param.data)
+
+
+class Padding(nn.Module):
+    def __init__(self, in_shape):
+        super(Padding, self).__init__()
+
+        self.zero_pad = nn.ZeroPad2d(self.findPadSize(in_shape))
+
+    def forward(self, x):
+        out = self.zero_pad(x)
+        return out
+
+    def findPadSize(self, in_shape):
+        if in_shape < 256:
+            pad_size = (256 - in_shape)//2
+        else:
+            pad_size = 0
+        return pad_size
+
+
+def adaIN(feature, mean_style, std_style, eps=1e-5):
+    B, C, H, W = feature.shape
+
+    feature = feature.view(B, C, -1)
+
+    std_feat = (torch.std(feature, dim=2) + eps).view(B, C, 1)
+    mean_feat = torch.mean(feature, dim=2).view(B, C, 1)
+
+    adain = std_style * (feature - mean_feat)/std_feat + mean_style
+
+    adain = adain.view(B, C, H, W)
+    return adain
