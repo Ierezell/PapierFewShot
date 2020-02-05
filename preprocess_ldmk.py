@@ -120,14 +120,14 @@ class ldmkLoader(Dataset):
                 index = randint(0, len(self.context_names))
 
         gt_ldmk = dict_ldmk[frames[0]]
-        # gt_ldmk_im = np.zeros((IMAGE_SIZE[0], IMAGE_SIZE[1], 3), np.float32)
-        # gt_ldmk_im = write_landmarks_on_image(gt_ldmk_im, gt_ldmk)
-        # gt_ldmk_im = transforms.ToPILImage()(gt_ldmk_im)
-        # gt_ldmk_im = transforms.Resize(IMAGE_SIZE)(gt_ldmk_im)
-        # gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
+        gt_ldmk_im = np.zeros((IMAGE_SIZE[0], IMAGE_SIZE[1], 3), np.float32)
+        gt_ldmk_im = write_landmarks_on_image(gt_ldmk_im, gt_ldmk)
+        gt_ldmk_im = transforms.ToPILImage()(gt_ldmk_im)
+        gt_ldmk_im = transforms.Resize(IMAGE_SIZE)(gt_ldmk_im)
+        gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
         gt_ldmk = torch.tensor(gt_ldmk)
 
-        return gt_ldmk
+        return gt_ldmk_im_tensor, gt_ldmk
 
     def __len__(self):
         return len(self.context_names)

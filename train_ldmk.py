@@ -83,11 +83,13 @@ class Discriminator(nn.Module):
 
         # The height and width of downsampled image
         ds_size = IMAGE_SIZE[0] // 2 ** 4
+        print(ds_size)
         self.adv_layer = nn.Sequential(
             nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
 
     def forward(self, img):
         out = self.model(img)
+        print(out.size())
         out = out.view(out.shape[0], -1)
         validity = self.adv_layer(out)
 
@@ -160,7 +162,7 @@ except FileNotFoundError:
 wandb.watch((generator, discriminator))
 
 # Configure data loader
-dataloader, _ = get_data_loader()
+dataloader = get_data_loader()
 # Optimizers
 optimizer_G = torch.optim.Adam(
     generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
@@ -178,6 +180,7 @@ for epoch in range(999):
         if cuda:
             imgs = imgs.cuda()
         # Adversarial ground truths
+        print("Image size", imgs.size())
         valid = Variable(Tensor(imgs.shape[0], 1).fill_(1.0),
                          requires_grad=False)
         fake = Variable(Tensor(imgs.shape[0], 1).fill_(0.0),
@@ -196,7 +199,7 @@ for epoch in range(999):
         # Generate a batch of images
         gen_imgs = generator(z)
 
-        if i % 2 == 0:
+        if i % 2 == 1:
             optimizer_G.zero_grad()
             # Loss measures generator's ability to fool the discriminator
             g_loss = adversarial_loss(discriminator(gen_imgs), valid)
