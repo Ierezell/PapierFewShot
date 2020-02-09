@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
 from settings import (DEVICE, HALF, K_SHOT, LOAD_BATCH_SIZE, LOADER,
-                      NB_WORKERS, ROOT_DATASET, ROOT_WEIGHTS)
+                      NB_WORKERS, ROOT_DATASET, ROOT_WEIGHTS, BATCH_SIZE)
 
 
 def write_landmarks_on_image(image, landmarks):
@@ -108,24 +108,34 @@ def load_someone():
         _, ctx_img = cvVideo.read()
         ctx_img = cv2.cvtColor(ctx_img, cv2.COLOR_BGR2RGB)
         ctx_ldmk = dict_ldmk[frame]
-        ctx_img = write_landmarks_on_image(ctx_img, ctx_ldmk)
-        ctx_img = transforms.ToTensor()(ctx_img)
-        # ctx_img = transforms.Normalize([0.485, 0.456, 0.406],
-        #                                [0.229, 0.224, 0.225])(ctx_img)
 
+        ctx_ldmk_img = np.zeros(gt_im.shape, np.float32)
+        ctx_ldmk_img = write_landmarks_on_image(ctx_ldmk_img, ctx_ldmk)
+        ctx_ldmk_img = transforms.ToTensor()(ctx_ldmk_img)
+        ctx_ldmk_img = transforms.Normalize([0, 0, 0],
+                                            [255, 255, 225])(ctx_ldmk_img)
+
+        ctx_img = transforms.ToTensor()(ctx_img)
+        ctx_img = transforms.Normalize([0.5, 0.5, 0.5],
+                                       [0.5, 0.5, 0.5])(ctx_img)
         context_tensors_list.append(ctx_img)
+        context_tensors_list.append(ctx_ldmk_img)
 
     cvVideo.release()
 
     gt_im_tensor = transforms.ToTensor()(gt_im)
-    # gt_im_tensor = transforms.Normalize([0.485, 0.456, 0.406],
-    #                                     [0.229, 0.224, 0.225])(gt_im_tensor)
-    context_tensors = torch.cat(context_tensors_list).unsqueeze(0)
+    gt_im_tensor = transforms.Normalize([0.485, 0.456, 0.406],
+                                        [0.229, 0.224, 0.225])(gt_im_tensor)
+    gt_ldmk_im_tensor = transforms.ToTensor()(gt_ldmk_im)
+    context_tensors = torch.cat(context_tensors_list)
+    if len(context_tensors.size()) < 4:
+        context_tensors.unsqueeze_(0)
+
     gt_im_tensor = gt_im_tensor.to(DEVICE)
     context_tensors = context_tensors.to(DEVICE)
     itemId = itemId.to(DEVICE)
-    print(itemId)
-    return gt_im_tensor, gt_ldmk, context_tensors, itemId
+
+    return gt_im_tensor, gt_ldmk_im_tensor, context_tensors, itemId
 
 
 # #############

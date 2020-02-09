@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn.utils import spectral_norm
 
 from settings import (ATTENTION, BATCH_SIZE, CONCAT,
-                      DEVICE, HALF, LATENT_SIZE, FINETUNNING)
+                      DEVICE, HALF, LATENT_SIZE)
 from utils import load_layers, Padding, adaIN
 (ResidualBlock, ResidualBlockDown, ResidualBlockUp, Attention) = load_layers()
 

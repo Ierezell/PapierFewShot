@@ -11,15 +11,15 @@ from settings import DEVICE
 nb_pers = torch.load("./weights/top_small/Discriminator.pt",
                      map_location=DEVICE).get("embeddings.weight").size(0)
 
-emb, gen, disc = load_models(nb_pers, load_previous_state=False, model="small",
-                             root_path_weights="./weights/top_small/",
+emb, gen, disc = load_models(nb_pers, load_previous_state=True, model="small",
+                             root_path_weights="./weights/rich/",
                              freeze=True)
 
 gt_im_tensor, gt_ldmk, context_tensors, itemId = load_someone()
 
 real_image = gt_im_tensor.cpu().permute(1, 2, 0).numpy()
 
-print(context_tensors.size(1)/6, "  Frames Loaded")
+print(context_tensors.size())
 face_landmarks = FaceAlignment(landmarks_type=LandmarksType._2D, device="cuda")
 plt.ion()
 cam = cv2.VideoCapture(0)
@@ -43,27 +43,27 @@ while True:
     landmark_tensor = landmark_tensor.unsqueeze(0).to("cuda")
     with torch.no_grad():
         synth_im = gen(landmark_tensor, paramWeights, paramBias, layersUp)
-        score_synth, _ = disc(torch.cat((synth_im, landmark_tensor), dim=1),
-                              itemId)
-    score_synth = float(score_synth.data.cpu().numpy())
+        # score_synth, _ = disc(torch.cat((synth_im, landmark_tensor), dim=1),
+        #   itemId)
+    # score_synth = float(score_synth.data.cpu().numpy())
 
     im_synth = synth_im.squeeze().detach().cpu().permute(1, 2, 0).numpy()
     im_synth = (im_synth + 1) / 2
 
-    print(im_synth.max(), im_synth.min())
-    print(im_synth.shape)
+    # print(im_synth.max(), im_synth.min())
+    # print(im_synth.shape)
     fig, axes = plt.subplots(2, 2, num='Inf')
     axes[0, 0].clear()
     axes[0, 1].clear()
     axes[1, 0].clear()
     axes[0, 0].imshow(im_synth/im_synth.max())
     axes[0, 1].imshow(landmarks_img/landmarks_img.max())
-    axes[1, 0].imshow(image)
+    axes[1, 0].imshow(image/image.max())
     if first:
-        axes[1, 1].imshow(real_image)
+        axes[1, 1].imshow(real_image/real_image.max())
         first = False
 
-    print(score_synth)
+    # print(score_synth)
 
     fig.canvas.draw()
     fig.canvas.flush_events()

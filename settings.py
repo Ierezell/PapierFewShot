@@ -75,7 +75,7 @@ elif "Arc" in PLATFORM:
     BATCH_SIZE = 1
     BATCH_SIZE_LDMK = 1
     K_SHOT = 6
-    LATENT_SIZE = 256
+    LATENT_SIZE = 512
     NB_WORKERS = 12
 
 

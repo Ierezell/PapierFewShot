@@ -23,6 +23,17 @@ from settings import (DEVICE, HALF, LAYERS, LOAD_PREVIOUS, LOAD_PREVIOUS_RL,
 mplstyle.use(['dark_background', 'fast'])
 
 
+def remove_bad_keys(model, path_checkpoint, resave=True):
+    model_dict = model.state_dict()
+    pre_model_dict = torch.load(path_checkpoint,  map_location=DEVICE)
+    pre_model_dict = {k: v for k, v in pre_model_dict.items()
+                      if k in model_dict}
+    model_dict.update(pre_model_dict)
+    if resave:
+        torch.save(model_dict, path_checkpoint)
+    return model_dict
+
+
 def check_nan(x, msg=''):
     if torch.isnan(x).any():
         print(f"NAN IN {msg}{x[0]}")
@@ -34,7 +45,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
     if root_path_weights:
         print(root_path_weights)
         path_discriminator = root_path_weights + "Discriminator.pt"
-        path_embedder = root_path_weights + "Embdedder.pt"
+        path_embedder = root_path_weights + "Embedder.pt"
         path_generator = root_path_weights + "Generator.pt"
     else:
         print("Default")
@@ -43,7 +54,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
         path_generator = PATH_WEIGHTS_GENERATOR
 
     if model == "small":
-        from models import Discriminator, Embedder, Generator
+        from models2 import Discriminator, Embedder, Generator
         print("\tLoading Small Models (load previous)" if LOAD_PREVIOUS
               else "\tLoading Small Models (no load previous)")
 
@@ -74,11 +85,17 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
             discriminator, device_ids=range(torch.cuda.device_count()))
 
     if load_previous_state:
+        remove_bad_keys(embedder, path_embedder)
+        remove_bad_keys(embedder, path_embedder.replace(".pt", ".bk"))
+        remove_bad_keys(discriminator, path_discriminator)
+        remove_bad_keys(
+            discriminator, path_discriminator.replace(".pt", ".bk"))
+        remove_bad_keys(generator, path_generator)
+        remove_bad_keys(generator, path_generator.replace(".pt", ".bk"))
         try:
             if PARALLEL:
-                embedder.module.load_state_dict(
-                    torch.load(path_embedder,
-                               map_location=DEVICE))
+                embedder.module.load_state_dict(torch.load(path_embedder,
+                                                           map_location=DEVICE))
             else:
                 embedder.load_state_dict(torch.load(path_embedder))
         except RuntimeError:
