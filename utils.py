@@ -85,13 +85,13 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
             discriminator, device_ids=range(torch.cuda.device_count()))
 
     if load_previous_state:
-        remove_bad_keys(embedder, path_embedder)
-        remove_bad_keys(embedder, path_embedder.replace(".pt", ".bk"))
-        remove_bad_keys(discriminator, path_discriminator)
-        remove_bad_keys(
-            discriminator, path_discriminator.replace(".pt", ".bk"))
-        remove_bad_keys(generator, path_generator)
-        remove_bad_keys(generator, path_generator.replace(".pt", ".bk"))
+        # remove_bad_keys(embedder, path_embedder)
+        # remove_bad_keys(embedder, path_embedder.replace(".pt", ".bk"))
+        # remove_bad_keys(discriminator, path_discriminator)
+        # remove_bad_keys(
+        #     discriminator, path_discriminator.replace(".pt", ".bk"))
+        # remove_bad_keys(generator, path_generator)
+        # remove_bad_keys(generator, path_generator.replace(".pt", ".bk"))
         try:
             if PARALLEL:
                 embedder.module.load_state_dict(torch.load(path_embedder,

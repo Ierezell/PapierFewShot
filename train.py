@@ -41,13 +41,10 @@ if __name__ == '__main__':
     print(colored("Models Ok", "green"))
     print(colored("Loading Losses", "cyan"))
     advLoss, mchLoss, cntLoss, dscLoss = load_losses()
-    loss_generator = 1
-    loss_discriminator_real = 1
-    loss_discriminator_fake = 1
     print(colored("Losses Ok", "green"))
 
-    optimizerEmbGen = Adam(list(emb.parameters()) + list(gen.parameters(),
-                                                         lr=LEARNING_RATE_EMB))
+    optimizerEmb = Adam(emb.parameters(), lr=LEARNING_RATE_EMB)
+    optimizerGen = Adam(gen.parameters(), lr=LEARNING_RATE_GEN)
     optimizerDisc = Adam(disc.parameters(), lr=LEARNING_RATE_DISC)
 
     check = CheckpointsFewShots(len(train_loader))
@@ -83,63 +80,74 @@ if __name__ == '__main__':
         for i_batch, batch in enumerate(tqdm(train_loader)):
             step = (i_epoch * len(train_loader)) + i_batch
 
-            gt_im, gt_ldmks, context, itemIds = batch
+            gt_im, gt_landmarks, context, itemIds = batch
 
             gt_im = gt_im.to(DEVICE)
-            gt_ldmks = gt_ldmks.to(DEVICE)
+            gt_landmarks = gt_landmarks.to(DEVICE)
             context = context.to(DEVICE)
             itemIds = itemIds.to(DEVICE)
 
-            optimizerEmbGen.zero_grad()
-            optimizerDisc.zero_grad()
+            embeddings, paramWeights, paramBias, layersUp = emb(context)
+            synth_im = gen(gt_landmarks, paramWeights, paramBias, layersUp)
 
-            embeddings, layersUp = emb(context)
-            synth_im = gen(gt_ldmks, embeddings, layersUp)
+            optimizerEmb.zero_grad()
+            optimizerGen.zero_grad()
 
-            score_synth, feature_map_synth = disc(synth_im, gt_ldmks, itemIds)
-            score_gt, feature_map_gt = disc(gt_im, gt_ldmks, itemIds)
+            synth_im_w_ldmk = torch.cat((synth_im,
+                                         gt_landmarks.detach()), dim=1)
+            score_synth, feat_synth = disc(synth_im_w_ldmk, itemIds)
 
+            gt_im_w_ldmk = torch.cat((gt_im,
+                                      gt_landmarks.detach()), dim=1)
+            score_gt, feat_gt = disc(gt_im_w_ldmk, itemIds)
+
+            lossCnt = 10*cntLoss(gt_im, synth_im)
+            lossAdv = advLoss(score_synth, feat_gt, feat_synth)
             if PARALLEL:
-                embeddings_D = disc.module.embeddings(itemIds).detach()
+                lossMch = mchLoss(embeddings,
+                                  disc.module.embeddings(itemIds).detach())
             else:
-                embeddings_D = disc.embeddings(itemIds).detach()
+                lossMch = mchLoss(embeddings,
+                                  disc.embeddings(itemIds).detach())
 
-            loss_gen = loss_generator(gt_im, synth_im, score_synth,
-                                      feature_map_gt, feature_map_synth,
-                                      embeddings, embeddings_D)
-
-            loss_D_fake = loss_discriminator_fake(score_synth)
-            loss_D_real = loss_discriminator_real(score_gt)
-
-            loss = loss_D_fake + loss_D_real + lossG
+            loss = lossCnt + lossAdv + lossMch
             loss = loss.view(torch.cuda.device_count())
+            ones_grad = torch.ones(torch.cuda.device_count(),
+                                   dtype=(
+                torch.half if HALF else torch.float),
+                device=DEVICE)
             loss.backward(ones_grad)
 
-            optimizerEmbGen.step()
-            optimizerDisc.step()
+            optimizerEmb.step()
+            optimizerGen.step()
 
-            optimizerEmbGen.zero_grad()
-            optimizerDisc.zero_grad()
-            score_synth.detach_()
-            score_synth, feature_map_synth = disc(synth_im, gt_ldmks, itemIds)
-            score_gt, feature_map_gt = disc(gt_im, gt_ldmks, itemIds)
+            if i_batch % 2 == 0:
+                optimizerDisc.zero_grad()
+                score_synth, feat_synth = disc(torch.cat((synth_im.detach(),
+                                                          gt_landmarks.detach()), dim=1),
+                                               itemIds)
 
-            loss_D_fake = loss_discriminator_fake(score_synth)
-            loss_D_real = loss_discriminator_real(score_gt)
+                lossDsc = dscLoss(score_gt.detach(), score_synth)
+                lossDsc = lossDsc.view(torch.cuda.device_count())
+                ones_grad = torch.ones(torch.cuda.device_count(),
+                                       dtype=(
+                    torch.half if HALF else torch.float),
+                    device=DEVICE)
 
-            loss = loss_D_fake + loss_D_real
-            loss = loss.view(torch.cuda.device_count())
-            loss.backward(ones_grad)
-            optimizerDisc.step()
+                lossDsc.backward(ones_grad)
+                optimizerDisc.step()
 
             check.save("embGen", loss.mean(), emb, gen, disc)
             check.save("disc", loss.mean(), emb, gen, disc)
 
-            wandb.log({"Loss_dsc": loss_D_fake.mean()}, step=step)
-            wandb.log({"lossCnt": loss_D_real.mean()}, step=step)
+            wandb.log({"Loss_dsc": lossDsc.mean()}, step=step)
+            wandb.log({"lossCnt": lossCnt.mean()}, step=step)
+            wandb.log({"lossMch": lossMch.mean()}, step=step)
+            wandb.log({"lossAdv": lossAdv.mean()}, step=step)
+            wandb.log({"LossTot": loss.mean()}, step=step)
 
             if i_batch % (len(train_loader)//4) == 0:
-                images_to_grid = torch.cat((gt_ldmks, synth_im,
+                images_to_grid = torch.cat((gt_landmarks, synth_im,
                                             gt_im, context),
                                            dim=1).view(-1, 3, 224, 224)
                 grid = torchvision.utils.make_grid(
@@ -151,6 +159,5 @@ if __name__ == '__main__':
                     wandb.save(PATH_WEIGHTS_EMBEDDER)
                     wandb.save(PATH_WEIGHTS_GENERATOR)
                     wandb.save(PATH_WEIGHTS_DISCRIMINATOR)
-
 # if IN_DISC == "noisy":
 #     gt_im = gt_im + ((torch.randn_like(gt_im)*gt_im.max())/32)
