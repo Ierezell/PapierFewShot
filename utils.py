@@ -93,6 +93,8 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
         # remove_bad_keys(generator, path_generator)
         # remove_bad_keys(generator, path_generator.replace(".pt", ".bk"))
         try:
+            print(path_embedder)
+            # input()
             if PARALLEL:
                 embedder.module.load_state_dict(torch.load(path_embedder,
                                                            map_location=DEVICE))
@@ -166,6 +168,7 @@ def load_models(nb_pers, load_previous_state=LOAD_PREVIOUS, model=MODEL,
                 else:
                     discriminator.load_state_dict(state_dict_discriminator,
                                                   strict=False)
+    else:
         embedder.apply(weight_init)
         generator.apply(weight_init)
         discriminator.apply(weight_init)

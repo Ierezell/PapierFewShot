@@ -8,26 +8,38 @@ from preprocess import get_data_loader, load_someone, write_landmarks_on_image
 from utils import load_models
 from settings import DEVICE
 
-nb_pers = torch.load("./weights/top_small/Discriminator.pt",
+plt.ion()
+fig, axes = plt.subplots(2, 2)
+axes[0, 0].get_xaxis().set_visible(False)
+axes[0, 0].get_yaxis().set_visible(False)
+axes[0, 1].get_xaxis().set_visible(False)
+axes[0, 1].get_yaxis().set_visible(False)
+axes[1, 0].get_xaxis().set_visible(False)
+axes[1, 0].get_yaxis().set_visible(False)
+axes[1, 1].get_xaxis().set_visible(False)
+axes[1, 1].get_yaxis().set_visible(False)
+plt.axis('off')
+
+nb_pers = torch.load("./weights/top/Discriminator.pt",
                      map_location=DEVICE).get("embeddings.weight").size(0)
 
 emb, gen, disc = load_models(nb_pers, load_previous_state=True, model="small",
-                             root_path_weights="./weights/rich/",
+                             root_path_weights="./weights/blg_small_8_5e-05_5e-05_8_small_big___False_512/",
                              freeze=True)
 
 gt_im_tensor, gt_ldmk, context_tensors, itemId = load_someone()
 
 real_image = gt_im_tensor.cpu().permute(1, 2, 0).numpy()
+real_image = real_image/real_image.max()
+real_image = (real_image + 1) / 2
+real_image = real_image/real_image.max()
 
-print(context_tensors.size())
 face_landmarks = FaceAlignment(landmarks_type=LandmarksType._2D, device="cuda")
-plt.ion()
 cam = cv2.VideoCapture(0)
 
 with torch.no_grad():
     embeddings, paramWeights, paramBias, layersUp = emb(context_tensors)
 
-first = True
 while True:
     _, image = cam.read()
     image = cv2.flip(image, 1)
@@ -51,19 +63,13 @@ while True:
     im_synth = (im_synth + 1) / 2
 
     # print(im_synth.max(), im_synth.min())
-    # print(im_synth.shape)
-    fig, axes = plt.subplots(2, 2, num='Inf')
     axes[0, 0].clear()
     axes[0, 1].clear()
     axes[1, 0].clear()
     axes[0, 0].imshow(im_synth/im_synth.max())
     axes[0, 1].imshow(landmarks_img/landmarks_img.max())
     axes[1, 0].imshow(image/image.max())
-    if first:
-        axes[1, 1].imshow(real_image/real_image.max())
-        first = False
-
-    # print(score_synth)
+    axes[1, 1].imshow(real_image/real_image.max())
 
     fig.canvas.draw()
     fig.canvas.flush_events()

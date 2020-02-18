@@ -72,11 +72,12 @@ elif ("gpu" in PLATFORM) or ("GAT" in PLATFORM) or ("coi" in PLATFORM):
     BATCH_SIZE_LDMK = 32
 elif "Arc" in PLATFORM:
     ROOT_DATASET = './dataset/jsonDataset'
-    BATCH_SIZE = 2
-    BATCH_SIZE_LDMK = 1
-    K_SHOT = 4
-    LATENT_SIZE = 256
+    BATCH_SIZE = 1
+    K_SHOT = 8
+    LATENT_SIZE = 512
     NB_WORKERS = 12
+    MODEL = "small"
+    BATCH_SIZE_LDMK = 1
 
 
 LOAD_BATCH_SIZE = BATCH_SIZE * (torch.cuda.device_count()
@@ -159,10 +160,11 @@ else:
     LOAD_PREVIOUS_RL = False
 
 # Save
-PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+folder_weights
-PATH_WEIGHTS_EMBEDDER = ROOT_WEIGHTS+folder_weights+'Embedder.pt'
-PATH_WEIGHTS_GENERATOR = ROOT_WEIGHTS+folder_weights+'Generator.pt'
-PATH_WEIGHTS_DISCRIMINATOR = ROOT_WEIGHTS + folder_weights + 'Discriminator.pt'
+# PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+folder_weights
+PATH_WEIGHTS_ROOT = ROOT_WEIGHTS+"/blg_small_8_5e-05_5e-05_8_small_big___False_512/"
+PATH_WEIGHTS_EMBEDDER = PATH_WEIGHTS_ROOT+'Embedder.pt'
+PATH_WEIGHTS_GENERATOR = PATH_WEIGHTS_ROOT+'Generator.pt'
+PATH_WEIGHTS_DISCRIMINATOR = PATH_WEIGHTS_ROOT + 'Discriminator.pt'
 PATH_WEIGHTS_POLICY = ROOT_WEIGHTS+folder_weights_Rl+'Policy.pt'
 
 # PATH_WEIGHTS_EMBEDDER = "./weights/top_small/"+'Embedder.pt'
